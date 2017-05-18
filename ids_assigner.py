@@ -3,9 +3,12 @@
 Asigna IDs únicos para libros y para usuarios.
 Los guarda en archivos de salida {books_ids, users_ids}.txt
 con formato "id,{Book_Title__by__Author_Name, user_screen_name}"
+<<<<<<< HEAD
 
 Incluye función que asigna timestamps a ratings
 basándose en lo hallado en el dataset original (Hamed)
+=======
+>>>>>>> origin/master
 """
 
 #--------------------------------#
