@@ -4,6 +4,8 @@ from os import listdir
 from os.path import isfile, join
 
 import urllib.request
+import logging
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 #--------------------------------#
 
 
@@ -35,7 +37,7 @@ for i in range(0, len(json_titles)):
 		url_review = data_json[j]['entities']['urls'][-1]['expanded_url']
 		screen_name = data_json[j]['user']['screen_name']
 
-		print( "Obteniendo HTML del Tweet {1}/{2}. Usuario: {0}, {3}/{4}.".format( screen_name, j, len(data_json), i, len(json_titles) ) )
+		logging.info( "Obteniendo HTML del Tweet {1}/{2}. Usuario: {0}, {3}/{4}.".format( screen_name, j, len(data_json), i, len(json_titles) ) )
 
 		file_name = url_review.split('/')[-1]
-		urllib.request.urlretrieve( url_review, file_name )
+		urllib.request.urlretrieve( url_review, "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/" + file_name + ".html" )
