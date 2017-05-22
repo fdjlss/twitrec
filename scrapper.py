@@ -9,7 +9,7 @@ from os import listdir
 from os.path import isfile, join
 
 # Para scrapping
-import urllib.request
+import urllib
 
 # Logging
 import logging
@@ -51,6 +51,7 @@ def reviews_wgetter(path_jsons, db_c):
 		for j in range(0, len(data_json)):
 			# Guardando URL de la opinion del usuario en GR 
 			url_review = data_json[j]['entities']['urls'][-1]['expanded_url']
+
 			# Guardando username del usuario en Twitter
 			screen_name = data_json[j]['user']['screen_name']
 			# Guardando ID del usuario en Twitter
@@ -61,7 +62,19 @@ def reviews_wgetter(path_jsons, db_c):
 			# Guardando en disco el HTML crawleado de url_review
 			file_name = url_review.split('/')[-1]
 			save_path = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/" + file_name + ".html"
-			urllib.request.urlretrieve( url_review, save_path )
+
+			# Intentando ingresar a la URL
+			# Si no es accesible o si no corresponde a ruta de GR, 
+			# sigue con el próximo tweet
+			if "goodreads" in url_review:
+				try:
+					urllib.urlretrieve( url_review, save_path )
+				except Exception as e:
+					logging.info("No se pudo ingresar al sitio!")
+					continue
+			else:
+				continue
+
 			
 			with open( save_path ) as fp:
 				soup = BeautifulSoup(fp, 'html.parser')
@@ -70,7 +83,7 @@ def reviews_wgetter(path_jsons, db_c):
 			rating = int( soup.div(class_='rating')[0].find_all('span', class_='value-title')[0]['title'] )
 
 			try:
-				db_c.execute( "INSERT INTO {0} ({1}, {2}, {3}) VALUES ({3}, {4}, {5})"\
+				db_c.execute( "INSERT INTO {0} ({1}, {2}, {3}) VALUES ({4}, {5}, {6})"\
 				.format(table_name, \
 								col_user_id, \
 								col_url, \
