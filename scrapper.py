@@ -34,17 +34,17 @@ def unshorten_url(url):
 	una URL acortada (bit.ly, goo.gl, etc..).
 	Devuelve la URL en caso que no haya redirección.
 	"""
-  parsed = urlparse.urlparse(url)
-  h = httplib.HTTPConnection(parsed.netloc)
-  resource = parsed.path
-  if parsed.query != "":
+	parsed = urlparse.urlparse(url)
+	h = httplib.HTTPConnection(parsed.netloc)
+	resource = parsed.path
+	if parsed.query != "":
 		resource += "?" + parsed.query
-  h.request('HEAD', resource )
-  response = h.getresponse()
-  if response.status/100 == 3 and response.getheader('Location'):
+	h.request('HEAD', resource )
+	response = h.getresponse()
+	if response.status/100 == 3 and response.getheader('Location'):
 		return unshorten_url(response.getheader('Location')) # changed to process chains of short urls
-  else:
-  	return url
+	else:
+		return url
 
 
 def reviews_wgetter(path_jsons, db_c):
