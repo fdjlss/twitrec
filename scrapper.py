@@ -10,6 +10,8 @@ from os.path import isfile, join
 
 # Para scrapping
 import urllib
+import urlparse
+import httplib
 
 # Logging
 import logging
@@ -21,6 +23,28 @@ import sqlite3
 # Parsear HTML descargado
 from bs4 import BeautifulSoup
 #--------------------------------#
+
+# Esto no es estrictamente necesario, es sólo para
+# que los nombres de archivos de los HTML guardados
+# sean consistentes.
+# También sirve para identificar 
+def unshorten_url(url):
+	"""
+	Devuelve la URL expandida en caso que se le pase
+	una URL acortada (bit.ly, goo.gl, etc..).
+	Devuelve la URL en caso que no haya redirección.
+	"""
+  parsed = urlparse.urlparse(url)
+  h = httplib.HTTPConnection(parsed.netloc)
+  resource = parsed.path
+  if parsed.query != "":
+		resource += "?" + parsed.query
+  h.request('HEAD', resource )
+  response = h.getresponse()
+  if response.status/100 == 3 and response.getheader('Location'):
+		return unshorten_url(response.getheader('Location')) # changed to process chains of short urls
+  else:
+  	return url
 
 
 def reviews_wgetter(path_jsons, db_c):
@@ -46,15 +70,24 @@ def reviews_wgetter(path_jsons, db_c):
 	for i in range(0, len(json_titles)):
 
 		with open(path_jsons+json_titles[i], 'r') as f:
+			# Recuperando toda la info del documento
 			data_json = json.load(f)
 
 		for j in range(0, len(data_json)):
 			# Guardando texto del tweet
 			tweet  = data_json[j]['text']
+
 			# Guardando URL de la opinion del usuario en GR 
-			url_review = data_json[j]['entities']['urls'][-1]['expanded_url']
+			try:
+				url_review = data_json[j]['entities']['urls'][-1]['expanded_url']
+				url_review = unshorten_url( url_review )
+			except Exception as e:
+				logging.info("¡Tweet con contenido NO predefinido!")
+				continue
+
 			# Guardando username del usuario en Twitter
 			screen_name = data_json[j]['user']['screen_name']
+
 			# Guardando ID del usuario en Twitter
 			user_id = data_json[j]['user']['id']
 
