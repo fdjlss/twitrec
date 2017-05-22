@@ -49,9 +49,10 @@ def reviews_wgetter(path_jsons, db_c):
 			data_json = json.load(f)
 
 		for j in range(0, len(data_json)):
+			# Guardando texto del tweet
+			tweet  = data_json[j]['text']
 			# Guardando URL de la opinion del usuario en GR 
 			url_review = data_json[j]['entities']['urls'][-1]['expanded_url']
-
 			# Guardando username del usuario en Twitter
 			screen_name = data_json[j]['user']['screen_name']
 			# Guardando ID del usuario en Twitter
@@ -66,22 +67,39 @@ def reviews_wgetter(path_jsons, db_c):
 			# Intentando ingresar a la URL
 			# Si no es accesible o si no corresponde a ruta de GR, 
 			# sigue con el próximo tweet
-			if "goodreads" in url_review:
+			if "goodreads.com/review" in url_review:
 				try:
 					urllib.urlretrieve( url_review, save_path )
 				except Exception as e:
 					logging.info("No se pudo ingresar al sitio!")
 					continue
 			else:
+				logging.info("Enlace no es ruta de review de GR")
 				continue
 
-			
+			# Abriedo HTML recién guardado para capturar el rating
 			with open( save_path ) as fp:
 				soup = BeautifulSoup(fp, 'html.parser')
 
 			# Guardamos el rating
-			rating = int( soup.div(class_='rating')[0].find_all('span', class_='value-title')[0]['title'] )
+			# A veces en GR no se renderiza el HTML que incluye el rating (why? dunno), 
+			# pero sí está el rating puesto en el Tweet ("1 out of 5 stars to [...]")..
+			# ..en esos casos se usa un regex para capturar el rating desde el texto del tweet.
+			# Si todo falla guardamos el rating como 0, sólo indicando que el usuario
+			# consumió aquel item (presuponiendo de que si aparece la URL del review en el tweet
+			# es porque el item fue consumido) 
+			try:
+				rating = int( soup.div(class_='rating')[0].find_all('span', class_='value-title')[0]['title'] )
+			except Exception as e:
+				try:
+					match  = re.search(r"(\d+) of (\d+) stars", tweet.lower())
+					rating = int( match.group(1) )
+					if rating > 5 or rating < 0: 
+						rating = 0
+				except Exception as er:
+					rating = 0
 
+			# Insertando tupla (user_id, url_review, rating) en la BD
 			try:
 				db_c.execute( "INSERT INTO {0} ({1}, {2}, {3}) VALUES ({4}, {5}, {6})"\
 				.format(table_name, \
