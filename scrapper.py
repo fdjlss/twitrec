@@ -9,7 +9,7 @@ from os import listdir
 from os.path import isfile, join
 
 # Para scrapping
-import urllib.request
+import urllib
 
 # Logging
 import logging
@@ -61,7 +61,7 @@ def reviews_wgetter(path_jsons, db_c):
 			# Guardando en disco el HTML crawleado de url_review
 			file_name = url_review.split('/')[-1]
 			save_path = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/" + file_name + ".html"
-			urllib.request.urlretrieve( url_review, save_path )
+			urllib.urlretrieve( url_review, save_path )
 			
 			with open( save_path ) as fp:
 				soup = BeautifulSoup(fp, 'html.parser')
