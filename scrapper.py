@@ -1,3 +1,5 @@
+# coding=utf-8
+
 #--------------------------------#
 # Parsear los JSON (dataset de Hamid)
 import json
@@ -23,7 +25,7 @@ from bs4 import BeautifulSoup
 
 def reviews_wgetter(path_jsons, db_c):
 	"""
-	Recibe dirección de y cursor de la BD 
+	Recibe direccion de y cursor de la BD 
 	"""
 
 	# Creacion de la tabla en la BD: user_reviews(user_id, url_review, rating)
