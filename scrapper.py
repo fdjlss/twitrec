@@ -13,7 +13,7 @@ import urllib.request
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
-# Conexión con BD
+# Conexion con BD
 import sqlite3
 
 # Parsear HTML descargado
@@ -26,7 +26,7 @@ def reviews_wgetter(path_jsons, db_c):
 	Recibe dirección de y cursor de la BD 
 	"""
 
-	# Creación de la tabla en la BD: user_reviews(user_id, url_review, rating)
+	# Creacion de la tabla en la BD: user_reviews(user_id, url_review, rating)
 	table_name = 'user_reviews'
 	col_user_id = 'user_id'
 	col_url = 'url_review'
@@ -47,7 +47,7 @@ def reviews_wgetter(path_jsons, db_c):
 			data_json = json.load(f)
 
 		for j in range(0, len(data_json)):
-			# Guardando URL de la opinión del usuario en GR 
+			# Guardando URL de la opinion del usuario en GR 
 			url_review = data_json[j]['entities']['urls'][-1]['expanded_url']
 			# Guardando username del usuario en Twitter
 			screen_name = data_json[j]['user']['screen_name']
@@ -91,16 +91,16 @@ def users_wgetter(user_twitter_path):
 	pass
 
 
-# Creando la conexión a la BD
+# Creando la conexion a la BD
 sqlite_file = 'db/goodreads.sqlite'
 conn = sqlite3.connect(sqlite_file)
 c = conn.cursor()
 
-# Dirección de los archivos del dataset de Hamid
+# Direccion de los archivos del dataset de Hamid
 path_jsons = 'TwitterRatings/goodreads_renamed/'
 
 
 reviews_wgetter(path_jsons, c)
 
-# Cerramos la conexión a la BD
+# Cerramos la conexion a la BD
 conn.close()
