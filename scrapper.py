@@ -44,10 +44,13 @@ def unshorten_url(url):
 		return url
 
 
-def reviews_wgetter(path_jsons, db_c):
+def reviews_wgetter(path_jsons, db_conn):
 	"""
-	Recibe direccion de y cursor de la BD 
+	Recibe direccion de directorio de documentos JSON 
+	y el objeto de la conexión de la BD 
 	"""
+
+	c = db_conn.cursor()
 
 	# Creacion de la tabla en la BD: user_reviews(user_id, url_review, rating)
 	table_name = 'user_reviews'
@@ -55,7 +58,7 @@ def reviews_wgetter(path_jsons, db_c):
 	col_url = 'url_review'
 	col_rating = 'rating'
 
-	db_c.execute( 'CREATE TABLE IF NOT EXISTS {0} ({1} {2}, {3} {4} PRIMARY KEY, {5} {6})'\
+	c.execute( 'CREATE TABLE IF NOT EXISTS {0} ({1} {2}, {3} {4} PRIMARY KEY, {5} {6})'\
 	.format(table_name, \
 					col_user_id, 'INTEGER', \
 					col_url, 'TEXT', \
@@ -133,11 +136,16 @@ def reviews_wgetter(path_jsons, db_c):
 
 			# Insertando tupla (user_id, url_review, rating) en la BD
 			try:
-				db_c.execute( "INSERT INTO {0} ({1}, {2}, {3}) VALUES (?, ?, ?)" \
+				c.execute( "INSERT INTO {0} ({1}, {2}, {3}) VALUES (?, ?, ?)" \
 					.format(table_name, col_user_id, col_url  , col_rating), \
 								 						 (user_id    , file_name, rating) )
 			except sqlite3.IntegrityError:
-				logging.info('ERROR: Hubo un error insertando datos en la tabla {}'.format(table_name))
+				logging.info( 'ERROR: URI de review ya existe: {}'.format(file_name) )
+
+		# Manda los cambios al final de pasar por todos los tweets de cada usuario
+		c.commit()
+
+
 
 
 
@@ -154,13 +162,11 @@ def users_wgetter(user_twitter_path):
 # Creando la conexion a la BD
 sqlite_file = 'db/goodreads.sqlite'
 conn = sqlite3.connect(sqlite_file)
-c = conn.cursor()
 
 # Direccion de los archivos del dataset de Hamid
 path_jsons = 'TwitterRatings/goodreads_renamed/'
 
-
-reviews_wgetter(path_jsons, c)
+reviews_wgetter(path_jsons, conn)
 
 # Cerramos la conexion a la BD
 conn.close()
