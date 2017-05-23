@@ -143,7 +143,7 @@ def reviews_wgetter(path_jsons, db_conn):
 				logging.info( 'ERROR: URI de review ya existe: {}'.format(file_name) )
 
 		# Manda los cambios al final de pasar por todos los tweets de cada usuario
-		c.commit()
+		db_conn.commit()
 
 
 
