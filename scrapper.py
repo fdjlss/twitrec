@@ -54,7 +54,8 @@ def reviews_wgetter(path_jsons, db_c):
 	col_user_id = 'user_id'
 	col_url = 'url_review'
 	col_rating = 'rating'
-	db_c.execute( 'CREATE TABLE IF NOT EXISTS {0} ({1} {2}, {3} {4}, {5} {6})'\
+
+	db_c.execute( 'CREATE TABLE IF NOT EXISTS {0} ({1} {2}, {3} {4} PRIMARY KEY, {5} {6})'\
 	.format(table_name, \
 					col_user_id, 'INTEGER', \
 					col_url, 'TEXT', \
@@ -91,7 +92,8 @@ def reviews_wgetter(path_jsons, db_c):
 			logging.info( "Obteniendo HTML del Tweet {1}/{2}. Usuario: {0}, {3}/{4}.".format( screen_name, j, len(data_json), i, len(json_titles) ) )
 
 			# Guardando en disco el HTML crawleado de url_review
-			file_name = url_review.split('/')[-1]
+			file_name = url_review.split('/')[-1] # Cortamos después del último '/' de la URL
+			file_name = file_name.split('?')[0] # Cortamos después del primer '?' de la URI
 			save_path = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/" + file_name + ".html"
 
 			# Intentando ingresar a la URL
@@ -131,14 +133,9 @@ def reviews_wgetter(path_jsons, db_c):
 
 			# Insertando tupla (user_id, url_review, rating) en la BD
 			try:
-				db_c.execute( "INSERT INTO {0} ({1}, {2}, {3}) VALUES ({4}, {5}, {6})"\
-				.format(table_name, \
-								col_user_id, \
-								col_url, \
-								col_rating,\
-								user_id, \
-								file_name, \
-								rating) )
+				db_c.execute( "INSERT INTO {0} ({1}, {2}, {3}) VALUES (?, ?, ?)" \
+					.format(table_name, col_user_id, col_url  , col_rating), \
+								 						 (user_id    , file_name, rating) )
 			except sqlite3.IntegrityError:
 				logging.info('ERROR: Hubo un error insertando datos en la tabla {}'.format(table_name))
 
