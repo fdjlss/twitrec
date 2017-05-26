@@ -6,11 +6,7 @@ Se seleccionan libros sólo de estos usuarios aleatorios.
 from random import sample
 import shutil
 
-<<<<<<< HEAD
 ############################################################################
-
-=======
->>>>>>> origin/master
 """
 Creación ratings_sampled.txt
 """

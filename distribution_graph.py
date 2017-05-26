@@ -1,3 +1,4 @@
+# coding=utf-8
 """
 Grafica distribución de libros por usuario
 a partir de books_distribution.txt
@@ -11,7 +12,7 @@ import pandas as pd
 
 distribution = []
 
-with open('TwitterRatings/books_distribution_sampled.txt', 'r') as f:
+with open('TwitterRatings/books_distribution.txt', 'r') as f:
 	for line in f:
 		distribution.append( line.strip().split(',') )
 
@@ -23,8 +24,8 @@ distribution.sort( key=lambda x: x[1] )
 x = [duple[0] for duple in distribution]
 y = [duple[1] for duple in distribution]
 
-# plt.xlabel("Users IDs")
-# plt.ylabel("# Consumed Books")
+plt.xlabel("Users IDs")
+plt.ylabel("#Consumed Books")
 
 distribution = pd.DataFrame({ "User ID": x,
 															"Consumed Books": y })
@@ -32,5 +33,8 @@ distribution = pd.DataFrame({ "User ID": x,
 distribution.sort(columns='Consumed Books', inplace=True, ascending=False)
 
 ax = distribution.plot(y='Consumed Books', kind='bar')
+ax.grid(False)
 # _ = ax.set_xticklabels(distribution['User ID'])
+plt.setp(ax.get_xticklabels(), visible=False)
+
 plt.show()
