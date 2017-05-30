@@ -138,5 +138,5 @@ plt.ylabel("Cuentas")
 plt.xlabel("Rating")
 plt.savefig('db/h_ratings2.png')
 
-print(sum(ratings[1:]))
+print( "#ratings (no 0) = {0}".format(sum(counts[1:])) )
 # ##################################################################
