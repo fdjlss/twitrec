@@ -116,17 +116,17 @@ print( "#ratings = {0}".format(len(ratings)) )
 
 with open("TwitterRatings/ratings.txt", 'r') as f:
 	for rating in ratings:
-		if rating == '0':
+		if rating == 0:
 			counts[0] += 1
-		if rating == '1':
+		if rating == 1:
 			counts[1] += 1
-		if rating == '2':
+		if rating == 2:
 			counts[2] += 1
-		if rating == '3':
+		if rating == 3:
 			counts[3] += 1
-		if rating == '4':
+		if rating == 4:
 			counts[4] += 1
-		if rating == '5':
+		if rating == 5:
 			counts[5] += 1
 
 
