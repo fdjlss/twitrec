@@ -132,11 +132,11 @@ with open("TwitterRatings/ratings.txt", 'r') as f:
 
 plt.bar([0, 1, 2, 3, 4, 5], counts, align='center', color=plot_color)
 axes = plt.gca()
-axes.set_xlim([0.5,5.5])
+axes.set_xlim([-0.5,5.5])
 plt.title("Distribución de ratings ")
 plt.ylabel("Cuentas")
 plt.xlabel("Rating")
-plt.savefig('db/h_ratings.png')
+plt.savefig('db/h_ratings2.png')
 
 print(sum(ratings[1:]))
 # ##################################################################
