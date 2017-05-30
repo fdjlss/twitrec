@@ -68,7 +68,7 @@ def reviews_wgetter(path_jsons, db_conn):
 	# Listando el contenido del directorio <path_jsons>/
 	json_titles = [ f for f in listdir(path_jsons) if isfile(join(path_jsons, f)) ]
 
-	for i in range(3716, len(json_titles)):
+	for i in range(0, len(json_titles)):
 
 		with open(path_jsons+json_titles[i], 'r') as f:
 			# Recuperando toda la info del documento
