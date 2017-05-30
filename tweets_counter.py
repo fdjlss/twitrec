@@ -136,7 +136,7 @@ axes.set_xlim([-0.5,5.5])
 plt.title("Distribución de ratings ")
 plt.ylabel("Cuentas")
 plt.xlabel("Rating")
-plt.savefig('db/h_ratings2.png')
+# plt.savefig('db/h_ratings2.png')
 
 print( "#ratings (no 0) = {0}".format(sum(counts[1:])) )
 # ##################################################################
