@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from os import path
+from os import path, listdir
 from os.path import isfile, join
 from wordcloud import WordCloud
 import numpy as np
