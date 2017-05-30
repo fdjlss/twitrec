@@ -139,4 +139,9 @@ plt.xlabel("Rating")
 # plt.savefig('db/h_ratings2.png')
 
 print( "#ratings (no 0) = {0}".format(sum(counts[1:])) )
+print( "#ratings 1 = {0}".format(counts[1]*100/79889) )
+print( "#ratings 2 = {0}".format(counts[2]*100/79889) )
+print( "#ratings 3 = {0}".format(counts[3]*100/79889) )
+print( "#ratings 4 = {0}".format(counts[4]*100/79889) )
+print( "#ratings 5 = {0}".format(counts[5]*100/79889) )
 # ##################################################################
