@@ -51,10 +51,10 @@ for i in range(0, len(filenames)):
 	if i%500==0: print( "Viendo libro {0} de {1}".format(i, len(filenames)) )
 
 stop_words=set( list(STOPWORDS) )
-book_mask = np.array( Image.open("book_mask.png") )
+book_mask = np.array( Image.open("book_mask2.png") )
 
 print("Generando wordcloud")
-wordcloud = WordCloud(background_color="white", max_font_size=30, max_words=10).generate(text)
+wordcloud = WordCloud(background_color="white", max_font_size=50, stopwords=stop_words, max_words=500, mask=book_mask).generate(text)
 print("Ploteando")
 plt.figure()
 plt.imshow(wordcloud, interpolation="bilinear")
