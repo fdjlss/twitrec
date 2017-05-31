@@ -53,10 +53,12 @@ for i in range(0, len(filenames)):
 stop_words=set( list(STOPWORDS) )
 book_mask = np.array( Image.open("book_mask.png") )
 
-
+print("Generando wordcloud")
 wordcloud = WordCloud(background_color="white", max_font_size=50, stopwords=stop_words, max_words=500, mask=book_mask).generate(text)
+print("Ploteando")
 plt.figure()
 plt.imshow(wordcloud, interpolation="bilinear")
 plt.axis("off")
+print("Guardando")
 plt.savefig('books_wordcloud.png')
 #################################################################
