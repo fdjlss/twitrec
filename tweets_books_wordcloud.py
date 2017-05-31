@@ -40,9 +40,6 @@ import matplotlib.pyplot as plt
 books_path = 'TwitterRatings/items_goodreads_sampled/'
 filenames = [ books_path + f for f in listdir(books_path) ]
 
-# not_words = ['https', 'co', 'goodreads', 'review', 'bit', 'ly', 'id', 'user_status', 'html', 'spref', 'goo', 'gl', 'fb', 'facebook', \
-							# 'show', 'star', 'instagram', 'blog', 'YouTube', 'Marked', 'page', 'bloglovin', 'amazon', 'dp', 'youtu', 'pinterest', 'pin']
-
 text = ''
 for i in range(0, len(filenames)):
 	info = open(filenames[i], 'r', encoding='utf-8', errors='ignore').read()
@@ -51,7 +48,7 @@ for i in range(0, len(filenames)):
 	if i%500==0: print( "Viendo libro {0} de {1}".format(i, len(filenames)) )
 
 stop_words=set( list(STOPWORDS) )
-book_mask = np.array( Image.open("book_mask2.png") )
+book_mask = np.array( Image.open("book_mask.png") )
 
 print("Generando wordcloud")
 wordcloud = WordCloud(background_color="white", max_font_size=50, stopwords=stop_words, max_words=500, mask=book_mask).generate(text)
