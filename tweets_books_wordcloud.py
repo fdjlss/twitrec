@@ -26,7 +26,7 @@ stop_words=set( list(STOPWORDS) + not_words)
 twitter_mask = np.array( Image.open("twitter_mask.png") )
 
 
-wordcloud = WordCloud(background_color="white", max_font_size=40, stopwords=stop_words, max_words=800, mask=twitter_mask).generate(text)
+wordcloud = WordCloud(background_color="white", max_font_size=50, stopwords=stop_words, max_words=500, mask=twitter_mask).generate(text)
 plt.figure()
 plt.imshow(wordcloud, interpolation="bilinear")
 plt.axis("off")
