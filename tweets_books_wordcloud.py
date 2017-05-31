@@ -54,7 +54,7 @@ stop_words=set( list(STOPWORDS) )
 book_mask = np.array( Image.open("book_mask.png") )
 
 print("Generando wordcloud")
-wordcloud = WordCloud().generate(text)
+wordcloud = WordCloud(background_color="white", max_font_size=30, max_words=10).generate(text)
 print("Ploteando")
 plt.figure()
 plt.imshow(wordcloud, interpolation="bilinear")
