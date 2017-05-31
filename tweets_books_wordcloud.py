@@ -44,9 +44,11 @@ filenames = [ books_path + f for f in listdir(books_path) ]
 							# 'show', 'star', 'instagram', 'blog', 'YouTube', 'Marked', 'page', 'bloglovin', 'amazon', 'dp', 'youtu', 'pinterest', 'pin']
 
 text = ''
-for filename in filenames:
-	info = open(filename, 'r', encoding='utf-8', errors='ignore').read()
+for i in range(0, len(filenames)):
+	info = open(filenames[i], 'r', encoding='utf-8', errors='ignore').read()
 	text = text + info
+
+	if i%100==0: print( "Viendo libro {0} de {1}".format(i, len(filenames)) )
 
 stop_words=set( list(STOPWORDS) )
 book_mask = np.array( Image.open("book_mask.png") )
