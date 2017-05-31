@@ -37,7 +37,7 @@ import matplotlib.pyplot as plt
 
 # Books
 #################################################################
-books_path = 'TwitterRatings/items_goodreads/'
+books_path = 'TwitterRatings/items_goodreads_sampled/'
 filenames = [ books_path + f for f in listdir(books_path) ]
 
 # not_words = ['https', 'co', 'goodreads', 'review', 'bit', 'ly', 'id', 'user_status', 'html', 'spref', 'goo', 'gl', 'fb', 'facebook', \
