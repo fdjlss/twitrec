@@ -170,7 +170,7 @@ def add_column_book_url(db_conn, alter_table=False):
 		i+=1
 		print("{0} de {1}".format(i, len(all_rows)) )
 
-		with open( reviews_path+url_review+'.html', 'r', encoding='utf-8' ) as fp:
+		with open( reviews_path+url_review+'.html', 'r') as fp:
 			soup = BeautifulSoup(fp, 'html.parser')
 
 		url_book = soup.div(class_='bookTitle')[0].get('href')
