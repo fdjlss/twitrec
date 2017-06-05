@@ -125,8 +125,11 @@ def reviews_wgetter(path_jsons, db_conn):
 			# es porque el item fue consumido) 
 			try:
 				rating = int( soup.div(class_='rating')[0].find_all('span', class_='value-title')[0]['title'] )
+			# En caso que no encuentre rating en la ruta del review (porque no puede encontrar 
+			# la rewview o porque no hay estrellitas donde debiera estar el rating)...
 			except Exception as e:
 				try:
+					#..lo capturo con un regex desde el tweet
 					match  = re.search(r"(\d+) of (\d+) stars", tweet.lower())
 					rating = int( match.group(1) )
 					if rating > 5 or rating < 0: 
@@ -149,6 +152,8 @@ def reviews_wgetter(path_jsons, db_conn):
 
 
 def add_column_book_url(db_conn, alter_table=False):
+
+
 	db_conn.row_factory = lambda cursor, row: row[0]
 
 	c = db_conn.cursor()
@@ -167,13 +172,23 @@ def add_column_book_url(db_conn, alter_table=False):
 
 	i = 0
 	for url_review in all_rows:
+		logging.info("Viendo fila {0} de {1}".format(i, len(all_rows)) )
 		i+=1
-		print("{0} de {1}".format(i, len(all_rows)) )
 
 		with open( reviews_path+url_review+'.html', 'r') as fp:
 			soup = BeautifulSoup(fp, 'html.parser')
 
-		url_book = soup.div(class_='bookTitle')[0].get('href')
+		try:
+			url_book = soup.div(class_='bookTitle')[0].get('href')
+		except Exception as e:
+			logging.info("URL DE LIBRO NO ENCONTRADO: {}".format(e))
+			logging.info("Encontrado HTML conflictivo: {}".format(url_review))
+			
+			with open("non_user_reviews_htmls.txt", 'a+') as f:
+				f.write( "{0}\n".format(url_review) )
+
+			continue
+
 
 		try:
 			c.execute( "UPDATE {0} SET {1} = '{2}' WHERE url_review = '{3}'"\
