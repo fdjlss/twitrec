@@ -148,8 +148,44 @@ def reviews_wgetter(path_jsons, db_conn):
 
 
 
+def add_column_book_url(db_conn, alter_table=False):
+	db_conn.row_factory = lambda cursor, row: row[0]
+
+	c = db_conn.cursor()
+
+	table_name = 'user_reviews'
+	col_book = 'url_book'
+
+	# Creamos columna que contiene las URL de los libros en la tabla de consumos
+	if alter_table:
+		c.execute( "ALTER TABLE {0} ADD COLUMN {1} {2}".format(table_name, col_book, 'TEXT') )
+
+	c.execute( "SELECT url_review FROM {0}".format(table_name) )
+	all_rows = c.fetchall()
+
+	reviews_path = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/"
+
+	i = 0
+	for url_review in all_rows:
+		i+=1
+		print("{0} de {1}".format(i, len(all_rows)) )
+
+		with open( reviews_path+url_review+'.html', 'r', encoding='utf-8' ) as fp:
+			soup = BeautifulSoup(fp, 'html.parser')
+
+		url_book = soup.div(class_='bookTitle')[0].get('href')
+
+		try:
+			c.execute( "UPDATE {0} SET {1} = '{2}' WHERE url_review = '{3}'"\
+				.format(table_name,
+								col_book,
+								 url_book,
+								 url_review))
+		except sqlite3.IntegrityError:
+			logging.info( 'ERROR ACTUALIZANDO VALORES'.format(file_name) )
 
 
+	db_conn.commit()
 
 
 def books_wgetter(book_path):
@@ -166,7 +202,9 @@ conn = sqlite3.connect(sqlite_file)
 # Direccion de los archivos del dataset de Hamid
 path_jsons = 'TwitterRatings/goodreads_renamed/'
 
-reviews_wgetter(path_jsons, conn)
+# reviews_wgetter(path_jsons, conn)
+add_column_book_url(conn, alter_table=True)
+
 
 # Cerramos la conexion a la BD
 conn.close()
