@@ -203,7 +203,7 @@ conn = sqlite3.connect(sqlite_file)
 path_jsons = 'TwitterRatings/goodreads_renamed/'
 
 # reviews_wgetter(path_jsons, conn)
-add_column_book_url(conn, alter_table=True)
+add_column_book_url(conn)
 
 
 # Cerramos la conexion a la BD
