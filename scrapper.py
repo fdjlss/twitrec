@@ -233,7 +233,7 @@ def books_wgetter(db_conn):
 		try:
 			urllib.urlretrieve( url, save_path )
 		except Exception as e:
-			logging.info( "NO PUDO ACCEDERSE A LIBRO {}".format(book_url) )
+			logging.info( "NO PUDO ACCEDERSE A LIBRO {0}, Error: {1}".format(book_url, e) )
 			continue
 
 
