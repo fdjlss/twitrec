@@ -215,23 +215,24 @@ def books_wgetter(db_conn):
 	c.execute( "SELECT DISTINCT {0} FROM {1}".format(col_book, table_name) )
 	books_urls = c.fetchall()
 
-	save_path = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/books_data/"
 	goodreads_url = "www.goodreads.com"
 
 	i = 0
 	for book_url in books_urls:
+		file_name = book_url.split('/')[-1] 
+		save_file = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/books_data/" + file_name + ".html"
+
 		logging.info( "VIENDO LIBRO {0}... {1} DE {2}".format(book_url, i, len(books_urls)) )
 		i+=1
 
 		try:
 			url = goodreads_url+book_url
-			logging.info("Ingresando a {}".format(url))
 		except TypeError as e:
 			logging.info( "TypeError: book_url es NULL" )
 			continue
 
 		try:
-			urllib.urlretrieve( url, save_path )
+			urllib.urlretrieve( url, save_file )
 		except Exception as e:
 			logging.info( "NO PUDO ACCEDERSE A LIBRO {0}, Error: {1}".format(book_url, e) )
 			continue
