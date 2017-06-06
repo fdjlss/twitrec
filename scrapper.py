@@ -97,7 +97,7 @@ def reviews_wgetter(path_jsons, db_conn):
 			# Guardando en disco el HTML crawleado de url_review
 			file_name = url_review.split('/')[-1] # Cortamos después del último '/' de la URL
 			file_name = file_name.split('?')[0] # Cortamos después del primer '?' de la URI
-			save_path = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/" + file_name + ".html"
+			save_path = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/user_reviews/" + file_name + ".html"
 
 			# Intentando ingresar a la URL
 			# Si no es accesible o si no corresponde a ruta de GR, 
@@ -149,8 +149,6 @@ def reviews_wgetter(path_jsons, db_conn):
 		db_conn.commit()
 
 
-
-
 def add_column_book_url(db_conn, alter_table=False):
 
 
@@ -168,7 +166,7 @@ def add_column_book_url(db_conn, alter_table=False):
 	c.execute( "SELECT url_review FROM {0}".format(table_name) )
 	all_rows = c.fetchall()
 
-	reviews_path = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/"
+	reviews_path = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/user_reviews/"
 
 	i = 0
 	for url_review in all_rows:
@@ -203,8 +201,40 @@ def add_column_book_url(db_conn, alter_table=False):
 	db_conn.commit()
 
 
-def books_wgetter(book_path):
-	pass
+def books_wgetter(db_conn):
+	"""
+	Descarga HTML de libros a partir de los url_book de la DB
+	"""
+	db_conn.row_factory = lambda cursor, row: row[0]
+
+	c = db_conn.cursor()
+
+	table_name = 'user_reviews'
+	col_book = 'url_book'
+
+	c.execute( "SELECT DISTINCT {0} FROM {1}".format(col_book, table_name) )
+	books_urls = c.fetchall()
+
+	save_path = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/books_data/"
+	goodreads_url = "goodreads.com"
+
+	i = 0
+	for book_url in books_urls:
+		looging.info( "VIENDO LIBRO {0}. {1} DE {2}".format(book_url, i, len(books_urls)) )
+		i+=1
+
+		url = goodreads_url+book_url
+
+		try:
+			urllib.urlretrieve( url, save_path )
+		except Exception as e:
+			logging.info( "NO PUDO ACCEDERSE A LIBRO {}".format(book_url) )
+			continue
+
+
+
+
+	
 
 def users_wgetter(user_twitter_path):
 	pass
@@ -218,8 +248,8 @@ conn = sqlite3.connect(sqlite_file)
 path_jsons = 'TwitterRatings/goodreads_renamed/'
 
 # reviews_wgetter(path_jsons, conn)
-add_column_book_url(conn)
-
+# add_column_book_url(conn)
+books_wgetter(conn, )
 
 # Cerramos la conexion a la BD
 conn.close()
