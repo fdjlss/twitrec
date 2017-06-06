@@ -223,7 +223,10 @@ def books_wgetter(db_conn):
 		logging.info( "VIENDO LIBRO {0}. {1} DE {2}".format(book_url, i, len(books_urls)) )
 		i+=1
 
-		url = goodreads_url+book_url
+		try:
+			url = goodreads_url+book_url
+		except TypeError as e:
+			logging.info( "TypeError: book_url es NULL" )
 
 		try:
 			urllib.urlretrieve( url, save_path )
