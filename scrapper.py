@@ -216,7 +216,7 @@ def books_wgetter(db_conn):
 	books_urls = c.fetchall()
 
 	save_path = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/books_data/"
-	goodreads_url = "goodreads.com"
+	goodreads_url = "www.goodreads.com"
 
 	i = 0
 	for book_url in books_urls:
