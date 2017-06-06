@@ -220,7 +220,7 @@ def books_wgetter(db_conn):
 
 	i = 0
 	for book_url in books_urls:
-		looging.info( "VIENDO LIBRO {0}. {1} DE {2}".format(book_url, i, len(books_urls)) )
+		logging.info( "VIENDO LIBRO {0}. {1} DE {2}".format(book_url, i, len(books_urls)) )
 		i+=1
 
 		url = goodreads_url+book_url
