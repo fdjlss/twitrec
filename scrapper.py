@@ -215,7 +215,7 @@ def books_wgetter(db_conn):
 	c.execute( "SELECT DISTINCT {0} FROM {1}".format(col_book, table_name) )
 	books_urls = c.fetchall()
 
-	goodreads_url = "www.goodreads.com"
+	goodreads_url = "https://www.goodreads.com"
 
 	i = 0
 	for book_url in books_urls:
@@ -255,7 +255,7 @@ path_jsons = 'TwitterRatings/goodreads_renamed/'
 
 # reviews_wgetter(path_jsons, conn)
 # add_column_book_url(conn)
-books_wgetter(conn, )
+books_wgetter(conn)
 
 # Cerramos la conexion a la BD
 conn.close()
