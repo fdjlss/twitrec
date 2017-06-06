@@ -219,8 +219,6 @@ def books_wgetter(db_conn):
 
 	i = 0
 	for book_url in books_urls:
-		file_name = book_url.split('/')[-1] 
-		save_file = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/books_data/" + file_name + ".html"
 
 		logging.info( "VIENDO LIBRO {0}... {1} DE {2}".format(book_url, i, len(books_urls)) )
 		i+=1
@@ -232,6 +230,8 @@ def books_wgetter(db_conn):
 			continue
 
 		try:
+			file_name = book_url.split('/')[-1] 
+			save_file = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/books_data/" + file_name + ".html"
 			urllib.urlretrieve( url, save_file )
 		except Exception as e:
 			logging.info( "NO PUDO ACCEDERSE A LIBRO {0}, Error: {1}".format(book_url, e) )
