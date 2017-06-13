@@ -333,7 +333,7 @@ def ratings_maker(db_conn, frac_train, output_train, output_test):
 	logging.info("Sorteando por fechas..")
 	interactions.sort( key= lambda x: x[3] )
 
-	num_train = len(interactions)*frac_train
+	num_train = int( len(interactions)*frac_train )
 
 	rows_train = interactions[:num_train]
 	rows_test  = interactions[num_train:]
