@@ -301,6 +301,7 @@ def ratings_maker(db_conn, frac_train, output_train, output_test):
 	all_rows = c.fetchall()
 
 	interactions = []
+	logging.info("-> Iterando sobre resultado de la consulta..")
 	for tupl in all_rows:
 		user_id, url_review, rating, url_book, timestamp = tupl
 		# Book ID es el número incluido en la URI del libro en GR
@@ -311,6 +312,7 @@ def ratings_maker(db_conn, frac_train, output_train, output_test):
 		interactions.append( (user_id, book_id, rating, int(timestamp)) )
 	
 	# Sort con timestamp ascendientes
+	logging.info("Sorteando por fechas..")
 	interactions.sort( key= lambda x: x[3] )
 
 	num_train = len(interactions)*frac_train
@@ -318,12 +320,14 @@ def ratings_maker(db_conn, frac_train, output_train, output_test):
 	rows_train = interactions[:num_train]
 	rows_test  = interactions[num_train:]
 
+	logging.info("Guardando archivo de training..")
 	with open(output_train, 'w') as f:
 		# x[-1]: no guardamos el timestamp
-		f.write( '\n'.join('%s,%s,%s' % for x[-1] in rows_train) )
+		f.write( '\n'.join('%s,%s,%s' % x[-1] for x in rows_train) )
 
+	logging.info("Guardando archivo de testing..")
 	with open(output_test, 'w') as f:
-		f.write( '\n'.join('%s,%s,%s' % for x[-1] in rows_test) )	
+		f.write( '\n'.join('%s,%s,%s' % x[-1] for x in rows_test) )	
 
 
 
