@@ -306,6 +306,7 @@ def ratings_maker(db_conn, frac_train, output_train, output_test):
 	interactions = []
 	logging.info("-> Iterando sobre resultado de la consulta..")
 	for tupl in all_rows:
+		
 		user_id, url_review, rating, url_book, timestamp = tupl
 		
 		try:
@@ -339,13 +340,14 @@ def ratings_maker(db_conn, frac_train, output_train, output_test):
 	rows_test  = interactions[num_train:]
 
 	logging.info("Guardando archivo de training..")
+
 	with open(output_train, 'w') as f:
 		# x[-1]: no guardamos el timestamp
-		f.write( '\n'.join('%s,%s,%s' % x[-1] for x in rows_train) )
+		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in rows_train) )
 
 	logging.info("Guardando archivo de testing..")
 	with open(output_test, 'w') as f:
-		f.write( '\n'.join('%s,%s,%s' % x[-1] for x in rows_test) )	
+		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in rows_test) )	
 
 
 
