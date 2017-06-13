@@ -10,7 +10,7 @@ from os.path import isfile, join
 
 # Para scrapping
 import urllib
-import urlparse
+# import urlparse
 import httplib
 
 # Logging
@@ -28,20 +28,20 @@ from bs4 import BeautifulSoup
 # que los nombres de archivos de los HTML guardados
 # sean consistentes.
 # También sirve para identificar 
-def unshorten_url(url):
-	"""
-	Devuelve la URL expandida en caso que se le pase
-	una URL acortada (bit.ly, goo.gl, etc..).
-	Devuelve la URL en caso que no haya redirección.
-	"""
-	parsed = urlparse.urlparse(url)
-	h = httplib.HTTPConnection(parsed.netloc)
-	h.request('HEAD', parsed.path)
-	response = h.getresponse()
-	if response.status/100 == 3 and response.getheader('Location'):
-		return response.getheader('Location')
-	else:
-		return url
+# def unshorten_url(url):
+# 	"""
+# 	Devuelve la URL expandida en caso que se le pase
+# 	una URL acortada (bit.ly, goo.gl, etc..).
+# 	Devuelve la URL en caso que no haya redirección.
+# 	"""
+# 	parsed = urlparse.urlparse(url)
+# 	h = httplib.HTTPConnection(parsed.netloc)
+# 	h.request('HEAD', parsed.path)
+# 	response = h.getresponse()
+# 	if response.status/100 == 3 and response.getheader('Location'):
+# 		return response.getheader('Location')
+# 	else:
+# 		return url
 
 
 def reviews_wgetter(path_jsons, db_conn):
