@@ -11,7 +11,7 @@ from os.path import isfile, join
 # Para scrapping
 import urllib
 # import urlparse
-import httplib
+# import httplib
 
 # Logging
 import logging
