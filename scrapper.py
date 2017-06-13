@@ -22,6 +22,9 @@ import sqlite3
 
 # Parsear HTML descargado
 from bs4 import BeautifulSoup
+
+# Random numbers para fechas desconocidas
+from random import randint
 #--------------------------------#
 
 # Esto no es estrictamente necesario, es sólo para
@@ -304,10 +307,23 @@ def ratings_maker(db_conn, frac_train, output_train, output_test):
 	logging.info("-> Iterando sobre resultado de la consulta..")
 	for tupl in all_rows:
 		user_id, url_review, rating, url_book, timestamp = tupl
+		
+		try:
 		# Book ID es el número incluido en la URI del libro en GR
 		# Hay veces que luego deĺ número le sigue un punto o un guión,
 		# y luego el nombre del libro separado con guiones
-		book_id = url_book.split('/')[-1].split('-')[0].split('.')[0]
+			book_id = url_book.split('/')[-1].split('-')[0].split('.')[0]
+		except AttributeError as e:
+			logging.info( "url_book es NULL en la DB! Tratado de obtener desde la review {0}".format(url_review) )
+			continue
+
+		if timestamp==None or timestamp=='':
+			# Si no hay fecha, pero se sabe el consumo y rating, 
+			# la seteamos a una de las últimas para tenerla en 
+			# set de test (últimos consumos: 2014-feb)
+			timestamp = int( "201401" + str(randint(01,28)) )
+
+
 
 		interactions.append( (user_id, book_id, rating, int(timestamp)) )
 	
