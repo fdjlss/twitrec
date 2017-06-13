@@ -258,9 +258,9 @@ def add_column_timestamp(db_conn, alter_table=False):
 
 	i = 0
 	for tupl in all_rows:
-		logging.info( "-> Viendo tupla {0} de {1}. Usuario: {2}, Review: {3}"..format(i, len(all_rows), tupl[0], tupl[1]) )
+		logging.info( "-> Viendo tupla {0} de {1}. Usuario: {2}, Review: {3}".format(i, len(all_rows), tupl[0], tupl[1]) )
 		i+=1
-		
+
 		try:
 			with open(reviews_path+tupl[1]+'.html', 'r') as fp:
 				soup = BeautifulSoup(fp, 'html.parser')
