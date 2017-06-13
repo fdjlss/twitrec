@@ -288,7 +288,8 @@ def add_column_timestamp(db_conn, alter_table=False):
 	db_conn.commit()
 
 
-def ratings_maker(db_conn, frac_train, frac_test, output_train, output_test):
+
+def ratings_maker(db_conn, frac_train, output_train, output_test):
 	"""
 	Guarda un set de entrenamiento y un set de test a partir
 	de datos de la DB
@@ -299,8 +300,32 @@ def ratings_maker(db_conn, frac_train, frac_test, output_train, output_test):
 	c.execute( "SELECT * FROM {0}".format(table_name) )
 	all_rows = c.fetchall()
 
+	interactions = []
+	for tupl in all_rows:
+		user_id, url_review, rating, url_book, timestamp = tupl
+		# Book ID es el número incluido en la URI del libro en GR
+		# Hay veces que luego deĺ número le sigue un punto o un guión,
+		# y luego el nombre del libro separado con guiones
+		book_id = url_book.split('/')[-1].split('-')[0].split('.')[0]
 
+		interactions.append( (user_id, book_id, rating, int(timestamp)) )
 	
+	# Sort con timestamp ascendientes
+	interactions.sort( key= lambda x: x[3] )
+
+	num_train = len(interactions)*frac_train
+
+	rows_train = interactions[:num_train]
+	rows_test  = interactions[num_train:]
+
+	with open(output_train, 'w') as f:
+		# x[-1]: no guardamos el timestamp
+		f.write( '\n'.join('%s,%s,%s' % for x[-1] in rows_train) )
+
+	with open(output_test, 'w') as f:
+		f.write( '\n'.join('%s,%s,%s' % for x[-1] in rows_test) )	
+
+
 
 def users_wgetter(user_twitter_path):
 	pass
@@ -313,12 +338,16 @@ conn = sqlite3.connect(sqlite_file)
 # Direccion de los archivos del dataset de Hamid
 path_jsons = 'TwitterRatings/goodreads_renamed/'
 
-
+# 1)
 # reviews_wgetter(path_jsons, conn)
+# 2)
 # add_column_book_url(conn)
+# 3)
 # books_wgetter(conn)
-add_column_timestamp(db_conn= conn, alter_table= True)
-# ratings_maker(db_conn= conn, frac_train= 80, frac_test= 20, output_train= 'TwitterRatings/ratings.train', output_test= 'TwitterRatings/ratings.test')
+# 4)
+# add_column_timestamp(db_conn= conn, alter_table= True)
+# 5)
+ratings_maker(db_conn= conn, frac_train= 0.8, output_train= 'TwitterRatings/funkSVD/ratings.train', output_test= 'TwitterRatings/funkSVD/ratings.test')
 
 
 # Cerramos la conexion a la BD
