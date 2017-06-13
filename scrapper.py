@@ -151,13 +151,13 @@ def reviews_wgetter(path_jsons, db_conn):
 
 def add_column_book_url(db_conn, alter_table=False):
 
-
 	db_conn.row_factory = lambda cursor, row: row[0]
 
 	c = db_conn.cursor()
 
 	table_name = 'user_reviews'
 	col_book = 'url_book'
+	reviews_path = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/user_reviews/"
 
 	# Creamos columna que contiene las URL de los libros en la tabla de consumos
 	if alter_table:
@@ -165,8 +165,6 @@ def add_column_book_url(db_conn, alter_table=False):
 
 	c.execute( "SELECT url_review FROM {0}".format(table_name) )
 	all_rows = c.fetchall()
-
-	reviews_path = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/user_reviews/"
 
 	i = 0
 	for url_review in all_rows:
@@ -186,7 +184,6 @@ def add_column_book_url(db_conn, alter_table=False):
 				f.write( "{0}\n".format(url_review) )
 
 			continue
-
 
 		try:
 			c.execute( "UPDATE {0} SET {1} = '{2}' WHERE url_review = '{3}'"\
@@ -211,11 +208,12 @@ def books_wgetter(db_conn):
 
 	table_name = 'user_reviews'
 	col_book = 'url_book'
+	goodreads_url = "https://www.goodreads.com"
 
+
+	# Obtiene lista única de URL de libros consumidos por usuarios
 	c.execute( "SELECT DISTINCT {0} FROM {1}".format(col_book, table_name) )
 	books_urls = c.fetchall()
-
-	goodreads_url = "https://www.goodreads.com"
 
 	i = 0
 	for book_url in books_urls:
@@ -223,12 +221,15 @@ def books_wgetter(db_conn):
 		logging.info( "VIENDO LIBRO {0}... {1} DE {2}".format(book_url, i, len(books_urls)) )
 		i+=1
 
+		# Algunas URL son NULL: no se pudo rescatar el URL del libro a partir de la URL de la review 
 		try:
 			url = goodreads_url+book_url
 		except TypeError as e:
 			logging.info( "TypeError: book_url es NULL" )
 			continue
 
+		# Intenta descargar HTML del libro dado el url_book de la tabla
+		# OJO: aún así descarga el HTML redireccionado en caso de error al ingresar a la ruta
 		try:
 			file_name = book_url.split('/')[-1] 
 			save_file = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/books_data/" + file_name + ".html"
@@ -237,7 +238,66 @@ def books_wgetter(db_conn):
 			logging.info( "NO PUDO ACCEDERSE A LIBRO {0}, Error: {1}".format(book_url, e) )
 			continue
 
+def add_column_timestamp(db_conn, alter_table=False):
+	"""
+	Agrega columna timestamp a la tabla según la fecha
+	de consumo parseada del url_review del usuario
+	"""
 
+	c = db_conn.cursor()
+
+	table_name = 'user_reviews'
+	col_timestamp = 'timestamp'
+	reviews_path = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/user_reviews/"
+
+	if alter_table:
+		c.execute( "ALTER TABLE {0} ADD COLUMN {1} {2}".format(table_name, col_timestamp, 'INTEGER') )
+
+	c.execute( "SELECT * FROM {0}".format(table_name) )
+	all_rows = c.fetchall()
+
+	i = 0
+	for tupl in all_rows:
+		logging.info( "-> Viendo tupla {0} de {1}. Usuario: {2}, Review: {3}"..format(i, len(all_rows), tupl[0], tupl[1]) )
+		i+=1
+		
+		try:
+			with open(reviews_path+tupl[1]+'.html', 'r') as fp:
+				soup = BeautifulSoup(fp, 'html.parser')
+		except Exception as e:
+			logging.info( "No se pudo abrir HTML {0}. Error: {1}".format(tupl[1], e) )
+			continue
+
+		try:
+			date = int( soup.div(class_='dtreviewed')[0].find_all('span', class_='value-title')[0]['title'].replace('-', '') )
+		except Exception as e:
+			logging.info( "No se pudo parsear fecha" )
+			continue
+
+		try:
+			c.execute( "UPDATE {0} SET {1} = '{2}' WHERE user_id = {3} AND url_review = '{4}'"\
+				.format( table_name,
+								 col_timestamp,
+								 date,
+								 tupl[0],
+								 tupl[1] ))
+		except sqlite3.IntegrityError:
+			logging.info( 'ERROR ACTUALIZANDO VALORES'.format(file_name) )
+			continue
+
+	db_conn.commit()
+
+
+def ratings_maker(db_conn, frac_train, frac_test, output_train, output_test):
+	"""
+	Guarda un set de entrenamiento y un set de test a partir
+	de datos de la DB
+	"""
+	c = db_conn.cursor()
+	table_name = 'user_reviews'
+
+	c.execute( "SELECT * FROM {0}".format(table_name) )
+	all_rows = c.fetchall()
 
 
 	
@@ -253,9 +313,13 @@ conn = sqlite3.connect(sqlite_file)
 # Direccion de los archivos del dataset de Hamid
 path_jsons = 'TwitterRatings/goodreads_renamed/'
 
+
 # reviews_wgetter(path_jsons, conn)
 # add_column_book_url(conn)
-books_wgetter(conn)
+# books_wgetter(conn)
+add_column_timestamp(db_conn= conn, alter_table= True)
+# ratings_maker(db_conn= conn, frac_train= 80, frac_test= 20, output_train= 'TwitterRatings/ratings.train', output_test= 'TwitterRatings/ratings.test')
+
 
 # Cerramos la conexion a la BD
 conn.close()
