@@ -32,13 +32,13 @@ logging.info( "training time: " + str(end - start) )
 
 logging.info( "-> Test de Predicción.." )
 start = time.clock()
- predlist, mae, rmse = svd.test( input_file  = 'TwitterRatings/funkSVD/ratings.test',
-                                 dlmchar     = b',',
-                                 header      = False,
-                                 usercol     = 0,
-                                 itemcol     = 1,
-                                 ratingcol   = 2,
-																 output_file = 'TwitterRatings/funkSVD/predictions_1000.csv' )
+predlist, mae, rmse = svd.test( input_file  = 'TwitterRatings/funkSVD/ratings.test',
+                                dlmchar     = b',',
+                                header      = False,
+                                usercol     = 0,
+                                itemcol     = 1,
+                                ratingcol   = 2,
+																output_file = 'TwitterRatings/funkSVD/predictions_1000.csv' )
 end = time.clock()
 logging.info( "prediction time: " + str(end - start) )
 
