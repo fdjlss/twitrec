@@ -321,7 +321,9 @@ def ratings_maker(db_conn, frac_train, output_train, output_test):
 			# Si no hay fecha, pero se sabe el consumo y rating, 
 			# la seteamos a una de las últimas para tenerla en 
 			# set de test (últimos consumos: 2014-feb)
-			timestamp = int( "201401" + str(randint(01,28)) )
+			randday = str(randint(01,28))
+			if randday==1: randday = "0" + randday 
+			timestamp = int( "201401" + randday )
 
 
 
