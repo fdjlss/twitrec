@@ -342,7 +342,7 @@ def ratings_maker(db_conn, frac_train, output_train, output_test):
 	logging.info("Guardando archivo de training..")
 
 	with open(output_train, 'w') as f:
-		# x[-1]: no guardamos el timestamp
+		# x[:-1] : no guardamos el timestamp
 		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in rows_train) )
 
 	logging.info("Guardando archivo de testing..")
