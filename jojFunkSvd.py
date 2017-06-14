@@ -50,7 +50,7 @@ for f in factores:
 	logging.info( 'RMSE: ' + str(rmse) )
 
 	rmses.append(rmse)
-	mae.append(mae)
+	maes.append(mae)
 
 
 with open('TwitterRatings/funkSVD/metrics.txt', 'w') as f:
