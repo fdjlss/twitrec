@@ -9,13 +9,10 @@ import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 #--------------------------------#
 
-factores = [50, 100, 150, 200, 250, 300, 400, 500, 1000, 1500, 2000, 5000, 10000]
-max_iters = [10, 50, 100, 200, 300, 500, 1000]
-lrn_rates = [0.0001, 0.001, 0.01, 0.1, 1]
-reg_params = [0.001, 0.01, 0.1, 1]
 
 
-def SVDJob(iterator=[], f=1000, mi=100, lr=0.01, lamb=0.1):
+
+def SVDJob(iterator=[], param=""):
 
 	rmses = []
 	maes =  []
@@ -30,18 +27,31 @@ def SVDJob(iterator=[], f=1000, mi=100, lr=0.01, lamb=0.1):
 												ratingcol = 2 )
 
 		# Pésima decisión de diseño, sí sé, pero bueno..
-		if f==0:
+		
+		if param=="factors":
 			f=i
-			fn = 'metrics_f.txt'
-		if mi==0:
+			mi=100
+			lr=0.01
+			lamb=0.1
+			fn = 'metrics_f'
+		elif param=="maxiter":
+			f=1000
 			mi=i
-			fn = 'metrics_mi.txt'
-		if lr==0:
+			lr=0.01
+			lamb=0.1
+			fn = 'metrics_mi'
+		elif param=="lr":
+			f=1000
+			mi=100
 			lr=i
-			fn = 'metrics_lr.txt'
-		if lamb==0:
+			lamb=0.1
+			fn = 'metrics_lr'
+		elif param=="lamb":
+			f=1000
+			mi=100
+			lr=0.01
 			lamb=i
-			fn = 'metrics_lamb.txt'
+			fn = 'metrics_lamb'
 
 		logging.info( "-> Entrenando modelo.." )
 		logging.info( "N° Factores: {0}; maxiter: {1}; learning rate: {2}; lambda: {3} ".format(f, mi, lr, lamb) )
@@ -70,11 +80,16 @@ def SVDJob(iterator=[], f=1000, mi=100, lr=0.01, lamb=0.1):
 		rmses.append(rmse)
 		maes.append(mae)
 
-	with open('TwitterRatings/funkSVD/'+fn, 'w') as f:
+	with open('TwitterRatings/funkSVD/'+fn+'_new.txt', 'w') as f:
 		for i in range(0, len(iterator)):
 			f.write( "%s\t%s\t%s\n" % (iterator[i], rmses[i], maes[i] ) )
 
 
+
+factores = [50, 100, 150, 200, 250, 300, 400, 500, 1000, 1500, 2000, 5000, 10000]
+max_iters = [10, 50, 100, 200, 300, 500, 1000]
+lrn_rates = [0.0001, 0.001, 0.01, 0.1, 1]
+reg_params = [0.001, 0.01, 0.1, 1]
 
 SVDJob(iterator=factores, f=0)
 SVDJob(iterator=max_iters, mi=0)
