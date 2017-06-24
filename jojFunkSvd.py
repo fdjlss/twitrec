@@ -91,8 +91,8 @@ max_iters = [10, 50, 100, 200, 300, 500, 1000]
 lrn_rates = [0.0001, 0.001, 0.01, 0.1, 1]
 reg_params = [0.001, 0.01, 0.1, 1]
 
-SVDJob(iterator=factores, f=0)
-SVDJob(iterator=max_iters, mi=0)
-SVDJob(iterator=lrn_rates, lr=0)
-SVDJob(iterator=reg_params, lamb=0)
+SVDJob(iterator=factores, param="factors")
+SVDJob(iterator=max_iters, param="maxiter")
+SVDJob(iterator=lrn_rates, param="lr")
+SVDJob(iterator=reg_params, param="lamb")
 
