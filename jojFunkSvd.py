@@ -85,14 +85,50 @@ def SVDJob(iterator=[], param=""):
 			f.write( "%s\t%s\t%s\n" % (iterator[i], rmses[i], maes[i] ) )
 
 
+def SVDTesting():
 
-factores = [50, 100, 150, 200, 250, 300, 400, 500, 1000, 1500, 2000, 5000, 10000]
-max_iters = [10, 50, 100, 200, 300, 500, 1000]
-lrn_rates = [0.0001, 0.001, 0.01, 0.1, 1]
-reg_params = [0.001, 0.01, 0.1, 1]
+	svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.train',
+											dlmchar   = b',',
+											header    = False,
+											usercol   = 0,
+											itemcol   = 1,
+											ratingcol = 2 )
 
-SVDJob(iterator=factores, param="factors")
-SVDJob(iterator=max_iters, param="maxiter")
-SVDJob(iterator=lrn_rates, param="lr")
-SVDJob(iterator=reg_params, param="lamb")
+	f    = 10000
+	mi   = 10
+	lr   = 0.0001
+	lamb = 0.001
 
+	logging.info( "-> Entrenando modelo.." )
+	logging.info( "N° Factores: {0}; maxiter: {1}; learning rate: {2}; lambda: {3} ".format(f, mi, lr, lamb) )
+
+	start = time.clock()
+	svd.train( factors= f, maxiter= mi, lr= lr, lamb= lamb )
+	end = time.clock()
+
+	logging.info( "training time: " + str(end - start) )
+
+	logging.info( "-> Test de Recomendación.." )
+	start = time.clock()
+	recommendationList = obj.testrec( input_file    = 'TwitterRatings/funkSVD/ratings.test',
+                                      dlmchar     = b'\t',
+                                      header      = False,
+                                      usercol     = 0,
+                                      itemcol     = 1,
+                                      ratingcol   = 2,
+                                      topn        = 10,
+                                      output_file = 'TwitterRatings/funkSVD/ranking.json' )
+	end = time.clock()
+	logging.info( 'recommendation time: ' + str( end - start ) )
+
+# factores = [50, 100, 150, 200, 250, 300, 400, 500, 1000, 1500, 2000, 5000, 10000]
+# max_iters = [10, 50, 100, 200, 300, 500, 1000]
+# lrn_rates = [0.0001, 0.001, 0.01, 0.1, 1]
+# reg_params = [0.001, 0.01, 0.1, 1]
+
+# SVDJob(iterator=factores, param="factors")
+# SVDJob(iterator=max_iters, param="maxiter")
+# SVDJob(iterator=lrn_rates, param="lr")
+# SVDJob(iterator=reg_params, param="lamb")
+
+SVDTesting()
