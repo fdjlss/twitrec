@@ -111,7 +111,7 @@ def SVDTesting():
 	logging.info( "-> Test de Recomendación.." )
 	start = time.clock()
 	recommendationList = svd.testrec( input_file    = 'TwitterRatings/funkSVD/ratings.test',
-                                      dlmchar     = b'\t',
+                                      dlmchar     = b',',
                                       header      = False,
                                       usercol     = 0,
                                       itemcol     = 1,
