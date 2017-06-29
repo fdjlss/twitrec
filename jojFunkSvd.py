@@ -29,29 +29,29 @@ def SVDJob(iterator=[], param=""):
 		# Pésima decisión de diseño, sí sé, pero bueno..
 		
 		if param=="factors":
-			f=i
-			mi=100
-			lr=0.01
-			lamb=0.1
-			fn = 'metrics_f'
+			f    = i
+			mi   = 100
+			lr   = 0.01
+			lamb = 0.1
+			fn   = 'metrics_f'
 		elif param=="maxiter":
-			f=1000
-			mi=i
-			lr=0.01
-			lamb=0.1
-			fn = 'metrics_mi'
+			f    = 1000
+			mi   = i
+			lr   = 0.01
+			lamb = 0.1
+			fn   = 'metrics_mi'
 		elif param=="lr":
-			f=1000
-			mi=100
-			lr=i
-			lamb=0.1
-			fn = 'metrics_lr'
+			f    = 1000
+			mi   = 100
+			lr   = i/200
+			lamb = 0.1
+			fn   = 'metrics_lr'
 		elif param=="lamb":
-			f=1000
-			mi=100
-			lr=0.01
-			lamb=i
-			fn = 'metrics_lamb'
+			f    = 1000
+			mi   = 100
+			lr   = 0.01
+			lamb = i/20
+			fn   = 'metrics_lamb'
 
 		logging.info( "-> Entrenando modelo.." )
 		logging.info( "N° Factores: {0}; maxiter: {1}; learning rate: {2}; lambda: {3} ".format(f, mi, lr, lamb) )
@@ -80,7 +80,7 @@ def SVDJob(iterator=[], param=""):
 		rmses.append(rmse)
 		maes.append(mae)
 
-	with open('TwitterRatings/funkSVD/'+fn+'_new.txt', 'w') as f:
+	with open('TwitterRatings/funkSVD/'+fn+'.txt', 'w') as f:
 		for i in range(0, len(iterator)):
 			f.write( "%s\t%s\t%s\n" % (iterator[i], rmses[i], maes[i] ) )
 
@@ -121,14 +121,14 @@ def SVDTesting():
 	end = time.clock()
 	logging.info( 'recommendation time: ' + str( end - start ) )
 
-# factores = [50, 100, 150, 200, 250, 300, 400, 500, 1000, 1500, 2000, 5000, 10000]
-# max_iters = [10, 50, 100, 200, 300, 500, 1000]
-# lrn_rates = [0.0001, 0.001, 0.01, 0.1, 1]
-# reg_params = [0.001, 0.01, 0.1, 1]
+factores = range(300, 1025, 25) # [300, 325, .., 1000]
+max_iters = range(100, 520, 20) # [100, 120, .., 500]
+lrn_rates = range(2, 21,1) # [2, 3, .., 20] / 200 = [0.01, 0.015, .., 0.1]
+reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
 
-# SVDJob(iterator=factores, param="factors")
-# SVDJob(iterator=max_iters, param="maxiter")
-# SVDJob(iterator=lrn_rates, param="lr")
-# SVDJob(iterator=reg_params, param="lamb")
+SVDJob(iterator=factores, param="factors")
+SVDJob(iterator=max_iters, param="maxiter")
+SVDJob(iterator=lrn_rates, param="lr")
+SVDJob(iterator=reg_params, param="lamb")
 
-SVDTesting()
+# SVDTesting()
