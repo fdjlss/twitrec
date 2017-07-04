@@ -144,7 +144,7 @@ def SVDTesting():
 
 
 
-def boosting(iterator=[], param="", folds):
+def boosting(iterator, param, folds):
 
 
 	for i in iterator:
