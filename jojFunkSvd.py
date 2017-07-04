@@ -3,6 +3,7 @@
 #--------------------------------#
 import time
 import pyreclab
+from random import sample
 
 # Logging
 import logging
@@ -10,12 +11,25 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 #--------------------------------#
 
 
+def ratingsSampler(fin, fout, n):
+	ratings = []
 
+
+	with open(fin, 'r') as f:
+		for line in f:
+			ratings.append( line.strip() )
+
+	l = len(ratings)
+	K = l*n
+	ratings = sample(ratings, k=int(K))
+
+	with open(fout, 'w') as f:
+		f.write( '\n'.join('%s' % x for x in ratings) )
 
 def SVDJob(iterator=[], param=""):
 
 	rmses = []
-	maes =  []
+	maes  = []
 
 	for i in iterator:
 
@@ -84,7 +98,6 @@ def SVDJob(iterator=[], param=""):
 		for i in range(0, len(iterator)):
 			f.write( "%s\t%s\t%s\n" % (iterator[i], rmses[i], maes[i] ) )
 
-
 def SVDTesting():
 
 	svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.train',
@@ -121,14 +134,86 @@ def SVDTesting():
 	end = time.clock()
 	logging.info( 'recommendation time: ' + str( end - start ) )
 
+
+
+
+
+
+
+
+
+
+
+def boosting(iterator=[], param="", folds):
+
+
+	for i in iterator:
+		rmses = []
+		maes  = []
+
+		if param=="factors":
+			f    = i
+			mi   = 100
+			lr   = 0.01
+			lamb = 0.1
+			fn   = 'metrics_f'
+		elif param=="maxiter":
+			f    = 1000
+			mi   = i
+			lr   = 0.01
+			lamb = 0.1
+			fn   = 'metrics_mi'
+		elif param=="lr":
+			f    = 1000
+			mi   = 100
+			lr   = i/200
+			lamb = 0.1
+			fn   = 'metrics_lr'
+		elif param=="lamb":
+			f    = 1000
+			mi   = 100
+			lr   = 0.01
+			lamb = i/20
+			fn   = 'metrics_lamb'
+		
+		for _ in folds:
+
+			ratingsSampler('TwitterRatings/funkSVD/ratings.train', 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
+			svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings_temp.train',
+													dlmchar   = b',',
+													header    = False,
+													usercol   = 0,
+													itemcol   = 1,
+													ratingcol = 2 )
+
+			svd.train( factors= f, maxiter= mi, lr= lr, lamb= lamb )
+
+			ratingsSampler('TwitterRatings/funkSVD/ratings.test', 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
+			predlist, mae, rmse = svd.test( input_file  = 'TwitterRatings/funkSVD/ratings_temp.test',
+			                                dlmchar     = b',',
+			                                header      = False,
+			                                usercol     = 0,
+			                                itemcol     = 1,
+			                                ratingcol   = 2,
+																			output_file = 'TwitterRatings/funkSVD/predictions_'+str(f)+'.csv' )
+			
+			rmses.append(rmse)
+			maes.append(mae)
+
+		# Escribe 1 archivo por cada valor de cada parámetro
+		with open('TwitterRatings/funkSVD/params/'+param+'/'+str(i)+'.txt', 'w') as f:
+			for i in range(0, len(iterator)):
+				f.write( "%s\t%s\n" % (rmses[i], maes[i]) )
+
+
+
 factores = range(300, 1025, 25) # [300, 325, .., 1000]
 max_iters = range(100, 520, 20) # [100, 120, .., 500]
 lrn_rates = range(2, 21,1) # [2, 3, .., 20] / 200 = [0.01, 0.015, .., 0.1]
 reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
 
-SVDJob(iterator=factores, param="factors")
-SVDJob(iterator=max_iters, param="maxiter")
-SVDJob(iterator=lrn_rates, param="lr")
-SVDJob(iterator=reg_params, param="lamb")
-
+boosting(iterator=factores, param="factors", 20)
+boosting(iterator=max_iters, param="maxiter", 20)
+boosting(iterator=lrn_rates, param="lr", 20)
+boosting(iterator=reg_params, param="lamb", 20)
 # SVDTesting()
