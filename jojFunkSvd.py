@@ -202,7 +202,7 @@ def boosting(iterator, param, folds):
 
 		# Escribe 1 archivo por cada valor de cada parámetro
 		with open('TwitterRatings/funkSVD/params/'+param+'/'+str(i)+'.txt', 'w') as f:
-			for i in range(0, len(iterator)):
+			for i in range(0, folds):
 				f.write( "%s\t%s\n" % (rmses[i], maes[i]) )
 
 
@@ -212,8 +212,8 @@ max_iters = range(100, 520, 20) # [100, 120, .., 500]
 lrn_rates = range(2, 21,1) # [2, 3, .., 20] / 200 = [0.01, 0.015, .., 0.1]
 reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
 
-boosting(iterator=factores, param="factors", folds=20)
-boosting(iterator=max_iters, param="maxiter", folds=20)
-boosting(iterator=lrn_rates, param="lr", folds=20)
-boosting(iterator=reg_params, param="lamb", folds=20)
+boosting(iterator=factores, param="factors", folds=15)
+boosting(iterator=max_iters, param="maxiter", folds=15)
+boosting(iterator=lrn_rates, param="lr", folds=15)
+boosting(iterator=reg_params, param="lamb", folds=15)
 # SVDTesting()
