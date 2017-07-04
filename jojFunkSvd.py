@@ -212,8 +212,8 @@ max_iters = range(100, 520, 20) # [100, 120, .., 500]
 lrn_rates = range(2, 21,1) # [2, 3, .., 20] / 200 = [0.01, 0.015, .., 0.1]
 reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
 
-boosting(iterator=factores, param="factors", 20)
-boosting(iterator=max_iters, param="maxiter", 20)
-boosting(iterator=lrn_rates, param="lr", 20)
-boosting(iterator=reg_params, param="lamb", 20)
+boosting(iterator=factores, param="factors", folds=20)
+boosting(iterator=max_iters, param="maxiter", folds=20)
+boosting(iterator=lrn_rates, param="lr", folds=20)
+boosting(iterator=reg_params, param="lamb", folds=20)
 # SVDTesting()
