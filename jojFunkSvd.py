@@ -176,7 +176,7 @@ def boosting(iterator, param, folds):
 			lamb = i/20
 			fn   = 'metrics_lamb'
 		
-		for _ in folds:
+		for _ in range(0,folds):
 
 			ratingsSampler('TwitterRatings/funkSVD/ratings.train', 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
 			svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings_temp.train',
