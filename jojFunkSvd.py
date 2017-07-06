@@ -27,7 +27,7 @@ def ratingsSampler(fin, fout, n):
 	with open(fout, 'w') as f:
 		f.write( '\n'.join('%s' % x for x in ratings) )
 
-	ratings = []
+	del ratings
 
 def SVDJob(iterator=[], param=""):
 
@@ -210,11 +210,14 @@ def boosting(iterator, param, folds):
 			for j in range(0, folds):
 				f.write( "%s\t%s\n" % (rmses[j], maes[j]) )
 
+		del rmses
+		del maes
+
 		gc.collect()
 
 
 
-factores = range(300, 1025, 25) # [300, 325, .., 1000]
+factores = range(500, 1025, 25) # [300, 325, .., 1000]
 max_iters = range(100, 520, 20) # [100, 120, .., 500]
 lrn_rates = range(2, 21,1) # [2, 3, .., 20] / 200 = [0.01, 0.015, .., 0.1]
 reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
