@@ -176,7 +176,7 @@ def boosting(iterator, param, folds):
 			lamb = i/20
 			fn   = 'metrics_lamb'
 		
-		for _ in range(0,folds):
+		for _ in range(0, folds):
 
 			ratingsSampler('TwitterRatings/funkSVD/ratings.train', 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
 			svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings_temp.train',
@@ -202,8 +202,8 @@ def boosting(iterator, param, folds):
 
 		# Escribe 1 archivo por cada valor de cada parámetro
 		with open('TwitterRatings/funkSVD/params/'+param+'/'+str(i)+'.txt', 'w') as f:
-			for i in range(0, folds):
-				f.write( "%s\t%s\n" % (rmses[i], maes[i]) )
+			for j in range(0, folds):
+				f.write( "%s\t%s\n" % (rmses[j], maes[j]) )
 
 
 
