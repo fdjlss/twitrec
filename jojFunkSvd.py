@@ -203,8 +203,7 @@ def boosting(iterator, param, folds):
 			rmses.append(rmse)
 			maes.append(mae)
 
-			svd = 0
-			predlist = 0
+			del svd
 
 		# Escribe 1 archivo por cada valor de cada parámetro
 		with open('TwitterRatings/funkSVD/params/'+param+'/'+str(i)+'.txt', 'w') as f:
