@@ -4,6 +4,7 @@
 import time
 import pyreclab
 from random import sample
+import gc
 
 # Logging
 import logging
@@ -25,6 +26,8 @@ def ratingsSampler(fin, fout, n):
 
 	with open(fout, 'w') as f:
 		f.write( '\n'.join('%s' % x for x in ratings) )
+
+	ratings = []
 
 def SVDJob(iterator=[], param=""):
 
@@ -200,10 +203,15 @@ def boosting(iterator, param, folds):
 			rmses.append(rmse)
 			maes.append(mae)
 
+			svd = 0
+			predlist = 0
+
 		# Escribe 1 archivo por cada valor de cada parámetro
 		with open('TwitterRatings/funkSVD/params/'+param+'/'+str(i)+'.txt', 'w') as f:
 			for j in range(0, folds):
 				f.write( "%s\t%s\n" % (rmses[j], maes[j]) )
+
+		gc.collect()
 
 
 
