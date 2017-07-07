@@ -139,7 +139,6 @@ def boosting(iterator, param, folds):
 
 	ratings_train, ratings_test = [], []
 	ratings_train_path, ratings_test_path = 'TwitterRatings/funkSVD/ratings.train', 'TwitterRatings/funkSVD/ratings.test'
-
 	with open(ratings_train_path, 'r') as f:
 		for line in f:
 			ratings_train.append( line.strip() )
@@ -217,7 +216,11 @@ def boosting(iterator, param, folds):
 
 
 
-factores = range(900, 1025, 25) # [300, 325, .., 1000]
+def RMSEMAEdistr():
+	pass
+
+
+factores = range(975, 1025, 25) # [300, 325, .., 1000]
 max_iters = range(100, 520, 20) # [100, 120, .., 500]
 lrn_rates = range(2, 21,1) # [2, 3, .., 20] / 200 = [0.01, 0.015, .., 0.1]
 reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
@@ -226,4 +229,3 @@ boosting(iterator=factores, param="factors", folds=15)
 boosting(iterator=max_iters, param="maxiter", folds=15)
 boosting(iterator=lrn_rates, param="lr", folds=15)
 boosting(iterator=reg_params, param="lamb", folds=15)
-# SVDTesting()
