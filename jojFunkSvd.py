@@ -5,6 +5,7 @@ import time
 import pyreclab
 from random import sample
 import gc
+from time import sleep
 
 # Logging
 import logging
@@ -12,22 +13,16 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 #--------------------------------#
 
 
-def ratingsSampler(fin, fout, n):
-	ratings = []
+def ratingsSampler(rats, fin, fout, n):
 
-
-	with open(fin, 'r') as f:
-		for line in f:
-			ratings.append( line.strip() )
-
-	l = len(ratings)
+	l = len(rats)
 	K = l*n
-	ratings = sample(ratings, k=int(K))
+	ratings_sampled = sample(rats, k=int(K))
 
 	with open(fout, 'w') as f:
-		f.write( '\n'.join('%s' % x for x in ratings) )
+		f.write( '\n'.join('%s' % x for x in ratings_sampled) )
 
-	del ratings
+	del ratings_sampled
 
 def SVDJob(iterator=[], param=""):
 
@@ -149,6 +144,11 @@ def SVDTesting():
 
 def boosting(iterator, param, folds):
 
+	ratings = []
+	with open(fin, 'r') as f:
+		for line in f:
+			ratings.append( line.strip() )
+
 
 	for i in iterator:
 		rmses = []
@@ -181,7 +181,7 @@ def boosting(iterator, param, folds):
 		
 		for _ in range(0, folds):
 
-			ratingsSampler('TwitterRatings/funkSVD/ratings.train', 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
+			ratingsSampler(ratings, 'TwitterRatings/funkSVD/ratings.train', 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
 			svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings_temp.train',
 													dlmchar   = b',',
 													header    = False,
@@ -191,7 +191,7 @@ def boosting(iterator, param, folds):
 
 			svd.train( factors= f, maxiter= mi, lr= lr, lamb= lamb )
 
-			ratingsSampler('TwitterRatings/funkSVD/ratings.test', 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
+			ratingsSampler(ratings, 'TwitterRatings/funkSVD/ratings.test', 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
 			predlist, mae, rmse = svd.test( input_file  = 'TwitterRatings/funkSVD/ratings_temp.test',
 			                                dlmchar     = b',',
 			                                header      = False,
@@ -204,6 +204,9 @@ def boosting(iterator, param, folds):
 			maes.append(mae)
 
 			del svd
+			del predlist
+
+			sleep(5)
 
 		# Escribe 1 archivo por cada valor de cada parámetro
 		with open('TwitterRatings/funkSVD/params/'+param+'/'+str(i)+'.txt', 'w') as f:
