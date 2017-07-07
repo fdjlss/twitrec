@@ -220,7 +220,7 @@ def boosting(iterator, param, folds):
 def RMSEMAEdistr():
 	for param in os.listdir('TwitterRatings/funkSVD/params/'):
 		for value in os.listdir('TwitterRatings/funkSVD/params/'+param):
-
+			pass
 
 factores = range(300, 1025, 25) # [300, 325, .., 1000]
 max_iters = range(100, 520, 20) # [100, 120, .., 500]
