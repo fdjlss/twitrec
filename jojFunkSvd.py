@@ -180,7 +180,7 @@ def boosting(iterator, param, folds):
 		
 		for _ in range(0, folds):
 
-			# ratingsSampler(ratings_train, 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
+			ratingsSampler(ratings_train, 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
 			svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings_temp.train',
 													dlmchar   = b',',
 													header    = False,
@@ -190,7 +190,7 @@ def boosting(iterator, param, folds):
 
 			svd.train( factors= f, maxiter= mi, lr= lr, lamb= lamb )
 
-			# ratingsSampler(ratings_test, 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
+			ratingsSampler(ratings_test, 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
 			predlist, mae, rmse = svd.test( input_file  = 'TwitterRatings/funkSVD/ratings_temp.test',
 			                                dlmchar     = b',',
 			                                header      = False,
