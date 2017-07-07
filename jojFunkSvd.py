@@ -217,7 +217,7 @@ def boosting(iterator, param, folds):
 
 
 
-factores = range(725, 1025, 25) # [300, 325, .., 1000]
+factores = range(825, 1025, 25) # [300, 325, .., 1000]
 max_iters = range(100, 520, 20) # [100, 120, .., 500]
 lrn_rates = range(2, 21,1) # [2, 3, .., 20] / 200 = [0.01, 0.015, .., 0.1]
 reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
