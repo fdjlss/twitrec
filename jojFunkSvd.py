@@ -13,7 +13,7 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 #--------------------------------#
 
 
-def ratingsSampler(rats, fin, fout, n):
+def ratingsSampler(rats, fout, n):
 
 	l = len(rats)
 	K = l*n
@@ -144,10 +144,16 @@ def SVDTesting():
 
 def boosting(iterator, param, folds):
 
-	ratings = []
-	with open(fin, 'r') as f:
+	ratings_train, ratings_test = [], []
+	ratings_train_path, ratings_test_path = 'TwitterRatings/funkSVD/ratings.train', 'TwitterRatings/funkSVD/ratings.test'
+
+	with open(ratings_train_path, 'r') as f:
 		for line in f:
-			ratings.append( line.strip() )
+			ratings_train.append( line.strip() )
+
+	with open(ratings_test_path, 'r') as f:
+		for line in f:
+			ratings_test.append( line.strip() )
 
 
 	for i in iterator:
@@ -181,7 +187,7 @@ def boosting(iterator, param, folds):
 		
 		for _ in range(0, folds):
 
-			ratingsSampler(ratings, 'TwitterRatings/funkSVD/ratings.train', 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
+			ratingsSampler(ratings_train, 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
 			svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings_temp.train',
 													dlmchar   = b',',
 													header    = False,
@@ -191,7 +197,7 @@ def boosting(iterator, param, folds):
 
 			svd.train( factors= f, maxiter= mi, lr= lr, lamb= lamb )
 
-			ratingsSampler(ratings, 'TwitterRatings/funkSVD/ratings.test', 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
+			ratingsSampler(ratings_test, 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
 			predlist, mae, rmse = svd.test( input_file  = 'TwitterRatings/funkSVD/ratings_temp.test',
 			                                dlmchar     = b',',
 			                                header      = False,
