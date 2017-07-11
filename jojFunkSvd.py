@@ -7,11 +7,19 @@ from random import sample
 import gc
 from time import sleep
 import os
+from math import sqrt
 
 # Logging
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 #--------------------------------#
+
+def mean(lst):
+		return float(sum(lst)) / len(lst)
+
+def stddev(lst):
+    mean = mean(lst)
+    return sqrt(float(reduce(lambda x, y: x + y, map(lambda x: (x - mean) ** 2, lst))) / len(lst))
 
 
 def ratingsSampler(rats, fout, n):
@@ -218,12 +226,40 @@ def boosting(iterator, param, folds):
 
 
 def RMSEMAEdistr():
-	for param in os.listdir('TwitterRatings/funkSVD/params/'):
-		for value in os.listdir('TwitterRatings/funkSVD/params/'+param):
-			pass
+	path = "TwitterRatings/funkSVD/params/"
+	datos = {}
+
+	for param in os.listdir( path ):
+
+		datos[param] = {}
+		
+		for value in os.listdir( path + param ):
+			
+			rmses = []
+			maes  = []
+
+			with open(path + param + '/' + value, 'r') as f:
+
+				for line in f:
+					rmse, mae = line.strip().split('\t')
+					rmses.append( float(rmse) )
+					maes.append( float(mae) )
+
+			rmse_mean, rmse_stddev = mean( rmses ), stddev( rmses )
+			mae_mean, mae_stddev = mean( maes ), stddev( maes )
+
+			datos[param][value[:-4]] = [ [rmse_mean, rmse_stddev], [mae_mean, mae_stddev] ]
+
+	with open(path+"resumen.txt", 'w') as f:
+		for param in datos:
+			f.write("%s\n" % param)
+			for d in datos[param]:
+				for value in d:
+					f.write("%s\t%s,%s\t%s,%s\n" % (value, d[value][0][0], d[value][0][1], d[value][1][0], d[value][1][1]) )
+
 
 factores = range(300, 1025, 25) # [300, 325, .., 1000]
-max_iters = range(380, 520, 20) # [100, 120, .., 500]
+max_iters = range(460, 520, 20) # [100, 120, .., 500]
 lrn_rates = range(2, 21,1) # [2, 3, .., 20] / 200 = [0.01, 0.015, .., 0.1]
 reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
 
@@ -231,3 +267,4 @@ reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
 boosting(iterator=max_iters, param="maxiter", folds=15)
 boosting(iterator=lrn_rates, param="lr", folds=15)
 boosting(iterator=reg_params, param="lamb", folds=15)
+RMSEMAEdistr()
