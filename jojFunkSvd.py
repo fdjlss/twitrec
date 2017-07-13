@@ -233,7 +233,7 @@ def RMSEMAEdistr():
 		for value in os.listdir( path + param ):
 			
 			rmses = []
-			maes  = []
+			maes = []
 
 			with open(path + param + '/' + value, 'r') as f:
 
@@ -247,12 +247,11 @@ def RMSEMAEdistr():
 
 			datos[param][value[:-4]] = [ [rmse_mean, rmse_stddev], [mae_mean, mae_stddev] ]
 
-	with open(path+"resumen.txt", 'w') as f:
+	with open("TwitterRatings/funkSVD/resumen.txt", 'w') as f:
 		for param in datos:
 			f.write("%s\n" % param)
-			for d in datos[param]:
-				for value in d:
-					f.write("%s\t%s,%s\t%s,%s\n" % (value, d[value][0][0], d[value][0][1], d[value][1][0], d[value][1][1]) )
+			for value in datos[param]:
+				f.write("%s\t%s,%s\t%s,%s\n" % (value, datos[param][value][0][0], datos[param][value][0][1], datos[param][value][1][0], datos[param][value][1][1]) )
 
 
 factores = range(300, 1025, 25) # [300, 325, .., 1000]
