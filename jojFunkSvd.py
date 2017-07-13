@@ -18,8 +18,8 @@ def mean(lst):
 		return float(sum(lst)) / len(lst)
 
 def stddev(lst):
-    mean = mean(lst)
-    return sqrt(float(reduce(lambda x, y: x + y, map(lambda x: (x - mean) ** 2, lst))) / len(lst))
+    m = mean(lst)
+    return sqrt(float(reduce(lambda x, y: x + y, map(lambda x: (x - m) ** 2, lst))) / len(lst))
 
 
 def ratingsSampler(rats, fout, n):
@@ -176,14 +176,16 @@ def boosting(iterator, param, folds):
 		elif param=="lr":
 			f    = 1000
 			mi   = 100
-			lr   = i/200
+			lr   = i/200.0
+			i    = i/200.0
 			lamb = 0.1
 			fn   = 'metrics_lr'
 		elif param=="lamb":
 			f    = 1000
 			mi   = 100
 			lr   = 0.01
-			lamb = i/20
+			lamb = i/20.0
+			i    = i/20.0
 			fn   = 'metrics_lamb'
 		
 		for _ in range(0, folds):
@@ -217,11 +219,6 @@ def boosting(iterator, param, folds):
 		with open('TwitterRatings/funkSVD/params/'+param+'/'+str(i)+'.txt', 'w') as f:
 			for j in range(0, folds):
 				f.write( "%s\t%s\n" % (rmses[j], maes[j]) )
-
-		del rmses
-		del maes
-
-		gc.collect()
 
 
 
@@ -259,12 +256,12 @@ def RMSEMAEdistr():
 
 
 factores = range(300, 1025, 25) # [300, 325, .., 1000]
-max_iters = range(460, 520, 20) # [100, 120, .., 500]
-lrn_rates = range(2, 21,1) # [2, 3, .., 20] / 200 = [0.01, 0.015, .., 0.1]
+max_iters = range(100, 520, 20) # [100, 120, .., 500]
+lrn_rates = range(2, 21, 1) # [2, 3, .., 20] / 200 = [0.01, 0.015, .., 0.1]
 reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
 
 # boosting(iterator=factores, param="factors", folds=15)
-boosting(iterator=max_iters, param="maxiter", folds=15)
+# boosting(iterator=max_iters, param="maxiter", folds=15)
 boosting(iterator=lrn_rates, param="lr", folds=15)
 boosting(iterator=reg_params, param="lamb", folds=15)
 RMSEMAEdistr()
