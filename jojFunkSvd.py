@@ -247,10 +247,10 @@ def RMSEMAEdistr():
 
 			datos[param][value[:-4]] = [ [rmse_mean, rmse_stddev], [mae_mean, mae_stddev] ]
 
-	with open("TwitterRatings/funkSVD/resumen.txt", 'w') as f:
+	with open("TwitterRatings/funkSVD/resumen2.txt", 'w') as f:
 		for param in datos:
 			f.write("%s\n" % param)
-			for value in datos[param]:
+			for value in sorted(datos[param].items()):
 				f.write("%s\t%s,%s\t%s,%s\n" % (value, datos[param][value][0][0], datos[param][value][0][1], datos[param][value][1][0], datos[param][value][1][1]) )
 
 
@@ -261,6 +261,6 @@ reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
 
 # boosting(iterator=factores, param="factors", folds=15)
 # boosting(iterator=max_iters, param="maxiter", folds=15)
-boosting(iterator=lrn_rates, param="lr", folds=15)
-boosting(iterator=reg_params, param="lamb", folds=15)
+# boosting(iterator=lrn_rates, param="lr", folds=15)
+# boosting(iterator=reg_params, param="lamb", folds=15)
 RMSEMAEdistr()
