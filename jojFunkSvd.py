@@ -222,36 +222,37 @@ def boosting(iterator, param, folds):
 
 
 
-# def RMSEMAEdistr():
-path = "TwitterRatings/funkSVD/params/"
-datos = {}
+def RMSEMAEdistr():
+	path = "TwitterRatings/funkSVD/params/"
+	datos = {}
 
-for param in os.listdir( path ):
+	for param in os.listdir( path ):
 
-	datos[param] = {}
-	
-	for value in os.listdir( path + param ):
+		datos[param] = {}
 		
-		rmses = []
-		maes = []
+		for value in os.listdir( path + param ):
+			
+			rmses = []
+			maes = []
 
-		with open(path + param + '/' + value, 'r') as f:
+			with open(path + param + '/' + value, 'r') as f:
 
-			for line in f:
-				rmse, mae = line.strip().split('\t')
-				rmses.append( float(rmse) )
-				maes.append( float(mae) )
+				for line in f:
+					rmse, mae = line.strip().split('\t')
+					rmses.append( float(rmse) )
+					maes.append( float(mae) )
 
-		rmse_mean, rmse_stddev = mean( rmses ), stddev( rmses )
-		mae_mean, mae_stddev = mean( maes ), stddev( maes )
+			rmse_mean, rmse_stddev = mean( rmses ), stddev( rmses )
+			mae_mean, mae_stddev = mean( maes ), stddev( maes )
 
-		datos[param][value[:-4]] = [ [rmse_mean, rmse_stddev], [mae_mean, mae_stddev] ]
+			datos[param][value[:-4]] = [ [rmse_mean, rmse_stddev], [mae_mean, mae_stddev] ]
 
-	# with open("TwitterRatings/funkSVD/resumen2.txt", 'w') as f:
-	# 	for param in datos:
-	# 		f.write("%s\n" % param)
-	# 		for value in sorted(datos[param].items()):
-	# 			f.write("%s\t%s,%s\t%s,%s\n" % (value, datos[param][value][0][0], datos[param][value][0][1], datos[param][value][1][0], datos[param][value][1][1]) )
+	with open("TwitterRatings/funkSVD/resumen2.txt", 'w') as f:
+		for param in datos:
+			f.write("%s\n" % param)
+			for v in sorted(datos[param].items()):
+				#<value>  <RMSE_mean>,<RMSE_stddev>  <MAE_mean>,<MAE_stddev>
+				f.write("%s\t%s,%s\t%s,%s\n" % ( v[0], v[1][0][0], v[1][0][1], v[1][1][0], v[1][1][1] ) )
 
 
 factores = range(300, 1025, 25) # [300, 325, .., 1000]
@@ -263,4 +264,4 @@ reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
 # boosting(iterator=max_iters, param="maxiter", folds=15)
 # boosting(iterator=lrn_rates, param="lr", folds=15)
 # boosting(iterator=reg_params, param="lamb", folds=15)
-# RMSEMAEdistr()
+RMSEMAEdistr()
