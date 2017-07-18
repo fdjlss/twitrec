@@ -114,10 +114,10 @@ def SVDTesting():
 											itemcol   = 1,
 											ratingcol = 2 )
 
-	f    = 10000
-	mi   = 10
-	lr   = 0.0001
-	lamb = 0.001
+	f    = 425
+	mi   = 300
+	lr   = 0.02
+	lamb = 0.25
 
 	logging.info( "-> Entrenando modelo.." )
 	logging.info( "N° Factores: {0}; maxiter: {1}; learning rate: {2}; lambda: {3} ".format(f, mi, lr, lamb) )
@@ -264,4 +264,5 @@ reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
 # boosting(iterator=max_iters, param="maxiter", folds=15)
 # boosting(iterator=lrn_rates, param="lr", folds=15)
 # boosting(iterator=reg_params, param="lamb", folds=15)
-RMSEMAEdistr()
+# RMSEMAEdistr()
+SVDTesting()
