@@ -56,8 +56,11 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 					authorGoodreads = True
 				else:
 					authorRole = sibling_one.get_text().strip('()')
-			if sibling_two.name == 'span':
-				authorRole = sibling_one.get_text().strip('()')
+			try:
+				if sibling_two.name == 'span':
+					authorRole = sibling_one.get_text().strip('()')
+			except AttributeError as e:
+				pass
 
 			author = {'authorGoodreads' : authorGoodreads,
 								'authorName': authorName,
