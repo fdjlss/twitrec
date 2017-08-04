@@ -15,7 +15,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		print("Parseando libro {0}..".format(filename))
 		book_data = {}
 		
-		with open( os.listdir(os.path.join(DATA_PATH, BOOKS_PATH, filename)), 'r' ) as fp:
+		with open( os.path.join(DATA_PATH, BOOKS_PATH, filename), 'r' ) as fp:
 			soup = BeautifulSoup(fp, 'html.parser')
 
 		"""Title"""
