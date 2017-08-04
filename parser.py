@@ -58,7 +58,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 						authorRole = sibling_one.get_text().strip('()')
 			except AttributeError as e:
 				pass
-				
+
 			try:
 				sibling_two = el.find_next_sibling().find_next_sibling()
 				if sibling_two.name == 'span':
@@ -109,8 +109,11 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		print("viendo AEBR..", end=' ')
 		readersBookIds = []
 		readers_el = soup.find("div", {"id" : re.compile("relatedWorks-*")} )
-		for el in related_el.find("div", class_="carouselRow").find("ul").find_all("li", class_="cover"):
-			readersBookIds.append( re.search("\d+", el.get("id")).group(0) ) # array of strings
+		try:		
+			for el in related_el.find("div", class_="carouselRow").find("ul").find_all("li", class_="cover"):
+				readersBookIds.append( re.search("\d+", el.get("id")).group(0) ) # array of strings
+		except NameError as e:
+			pass
 
 		"""Books By Same Author"""
 		print("viendo BBSA..", end=' ')
