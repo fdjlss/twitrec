@@ -86,8 +86,8 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		ratingNum = int( soup.find("span", class_="value-title", itemprop="ratingCount").get("title")) # int
 		ratingRevNum = int( soup.find_all("span", class_="value-title")[-1].get("title") ) # int
 		ratingAvg = float( soup.find("span", class_="average", itemprop="ratingValue").get_text() ) # float
-		data = soup.find("span", id="rating_graph").get_text()
-		rating5, rating4, rating3, rating2, rating1 = list( map(int, data[data.find("[")+1 : data.find("]")].split(',')) ) # int x 5
+		graph_data = soup.find("span", id="rating_graph").get_text()
+		rating5, rating4, rating3, rating2, rating1 = list( map(int, graph_data[graph_data.find("[")+1 : graph_data.find("]")].split(',')) ) # int x 5
 		s = soup.find("a", id="rating_details_tip").find_next_sibling("script").string
 		ratingPctPplLiked = int ( re.search(r"(\d+)<\\/span>% of people liked it", s).group(1) )
 		
@@ -197,7 +197,6 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			book_data['authorBio'] = authorBio
 		except NameError as e:
 			pass
-		data.append(book_data)
 
 		try:
 			book_data['readersPreferences'] = readersBookIds
@@ -209,6 +208,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		except NameError as e:
 			pass
 
+		data.append(book_data)
 
 
 	# endfor
