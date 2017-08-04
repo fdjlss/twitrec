@@ -21,7 +21,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			soup = BeautifulSoup(fp, 'html.parser')
 
 		"""Title"""
-		print("viendo título..")
+		print("viendo título..", end=' ')
 		href = soup.find('link', rel="canonical").get('href') # string
 		goodreadsId = soup.find('input', id="book_id").get('value') # string
 		titleOfficial = soup.find('h1', id="bookTitle").get_text().strip().split('\n')[0] # string
@@ -30,7 +30,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		titleOg = soup.find('meta', {"property":'og:title'}).get('content') # string
 
 		"""Authors"""
-		print("viendo autores..")
+		print("viendo autores..", end=' ')
 		authors_element = soup.find_all("a", class_="authorName")
 		nAuthors = len( authors_element ) # int
 		authorMulti = False # bool
@@ -63,7 +63,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			authors.append(author) # array
 
 		"""Ratings"""
-		print("viendo ratings..")
+		print("viendo ratings..", end=' ')
 		ratingStarscore = 0 # int
 		for el in soup.find("span", class_="stars staticStars").contents:
 			ratingStarscore += int( el.get("class")[1].strip('p') )
@@ -76,7 +76,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		ratingPctPplLiked = int ( re.search(r"(\d+)<\\/span>% of people liked it", s).group(1) )
 		
 		"""Description"""
-		print("viendo descripción..")
+		print("viendo descripción..", end=' ')
 		descr_el = soup.find("div", id="description")
 		if descr_el.find("a") != None:
 			descriptionText = descr_el.find("span", style="display:none").get_text().strip() # TEXT
@@ -84,26 +84,26 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			descriptionText = descr_el.find("span").get_text().strip()
 
 		"""Details"""
-		print("viendo detalles..")
+		print("viendo detalles..", end=' ')
 		detailBookFormatType = soup.find("span", itemprop="bookFormatType").get_text() # string
 		s = soup.find("span", itemprop="numberOfPages").get_text()
 		detailNoOfPages = int( re.search(r'\d+', s).group(0) ) # int
 
 		"""Also Enjoyed By Readers"""
-		print("viendo AEBR..")
+		print("viendo AEBR..", end=' ')
 		readersBookIds = []
 		readers_el = soup.find("div", {"id" : re.compile("relatedWorks-*")} )
 		for el in related_el.find("div", class_="carouselRow").find("ul").find_all("li", class_="cover"):
 			readersBookIds.append( re.search("\d+", el.get("id")).group(0) ) # array of strings
 
 		"""Books By Same Author"""
-		print("viendo BBSA..")
+		print("viendo BBSA..", end=' ')
 		booksBySameAuthor = []
 		for el in soup.find_all("div", class_="tooltipTrigger"):
 			booksBySameAuthor.append( el.get("data-resource-id") ) # array of strings
 
 		"""Genres"""
-		print("viendo géneros..")
+		print("viendo géneros..", end=' ')
 		genres = []
 		genres_el = soup.find("div", class_="h2Container", text=re.compile("Genres")).find_next_sibling(class_="bigBoxBody")
 		for el in genres_el.find("div", class_="bigBoxContent").find_all("div", class_="elementList"):
