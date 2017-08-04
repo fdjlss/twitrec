@@ -61,8 +61,14 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 
 			author = {'authorGoodreads' : authorGoodreads,
 								'authorName': authorName,
-								'authorRole': authorRole,
+								# 'authorRole': authorRole,
 								'authorHref': authorHref}
+
+			try:
+				author['authorRole'] = authorRole
+			except NameError as e:
+				pass
+
 			authors.append(author) # array
 
 		"""Ratings"""
@@ -174,9 +180,10 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			'quotes': quotes
 		}
 
-		if 'authorBio' not in book_data['author']:
+		try:
 			book_data['authorBio'] = authorBio
-
+		except NameError as e:
+			pass
 		data.append(book_data)
 
 	# endfor
