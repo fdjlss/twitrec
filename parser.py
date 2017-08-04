@@ -34,12 +34,15 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		authors_element = soup.find_all("a", class_="authorName")
 		nAuthors = len( authors_element ) # int
 		authorMulti = False # bool
-		auth_el = soup.find("div", id="aboutAuthor").find("div", class_="readable")
-		if auth_el.find("a") != None:#"more".lower() in auth_el.find("a").get_text().lower():
-			authorBio = auth_el.find("span", style="display:none").get_text().strip() # string (text)
-		else:
-			authorBio = auth_el.get_text().strip()
 		if nAuthors > 1: authorMulti = True
+		try:
+			auth_el = soup.find("div", id="aboutAuthor").find("div", class_="readable")
+			if auth_el.find("a") != None:#"more".lower() in auth_el.find("a").get_text().lower():
+				authorBio = auth_el.find("span", style="display:none").get_text().strip() # string (text)
+			else:
+				authorBio = auth_el.get_text().strip()
+		except Exception as e:
+			pass
 
 		authors = []
 		for el in authors_element:
@@ -144,7 +147,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			'author': {
 				'authorMulti': authorMulti,
 				'authorNum': nAuthors,
-				'authorBio': authorBio,
+				#'authorBio': authorBio,
 				'authors': authors
 			},
 			'rating': {
@@ -171,6 +174,9 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			'quotes': quotes
 		}
 
+		if 'authorBio' not in book_data['author']:
+			book_data['authorBio'] = authorBio
+
 		data.append(book_data)
 
 	# endfor
@@ -191,7 +197,7 @@ books_parse(os.path.join(DATA_PATH, "books_data_parsed"), DATA_PATH, BOOKS_PATH)
 # url = 'https://www.goodreads.com/book/show/77232.Legends'
 # page = requests.get(url).text
 # soup2 = BeautifulSoup(page, 'html.parser')
-# url = "https://www.goodreads.com/book/show/35200635"
+# url = "https://www.goodreads.com/book/show/3262719-more-than-meets-the-eye-official-guidebook-volume-2.html"
 # page = requests.get(url).text
 # soup3 = BeautifulSoup(page, 'html.parser')
 
