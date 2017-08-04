@@ -49,14 +49,18 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			authorHref = el.get("href") # string (href)
 			authorName = el.get_text() # string
 			authorGoodreads = False
-			sibling_one = el.find_next_sibling()
-			sibling_two = el.find_next_sibling().find_next_sibling()
-			if sibling_one.name == 'span':
-				if "goodreads author" in sibling_one.get_text().lower():
-					authorGoodreads = True
-				else:
-					authorRole = sibling_one.get_text().strip('()')
+			try:			
+				sibling_one = el.find_next_sibling()
+				if sibling_one.name == 'span':
+					if "goodreads author" in sibling_one.get_text().lower():
+						authorGoodreads = True
+					else:
+						authorRole = sibling_one.get_text().strip('()')
+			except AttributeError as e:
+				pass
+				
 			try:
+				sibling_two = el.find_next_sibling().find_next_sibling()
 				if sibling_two.name == 'span':
 					authorRole = sibling_one.get_text().strip('()')
 			except AttributeError as e:
