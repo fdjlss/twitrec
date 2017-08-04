@@ -143,12 +143,12 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		try:
 			quotes_el = soup.find("div", class_="h2Container", text=re.compile("Quotes")).find_next_sibling(class_="bigBoxBody")
 			for el in quotes_el.find("div", class_="bigBoxContent").find_all("div", class_="stacked"):
-			quoteText = el.find("span", class_="readable").get_text() # text
-			s = el.find("nobr").find("a", class_="actionLinkLite").get_text()
-			quoteVotes = int( re.search("\d+", s).group(0) ) # int
-			quote = {'quoteText': quoteText,
-							 'quoteVotes': quoteVotes}
-			quotes.append(quote) # array 
+				quoteText = el.find("span", class_="readable").get_text() # text
+				s = el.find("nobr").find("a", class_="actionLinkLite").get_text()
+				quoteVotes = int( re.search("\d+", s).group(0) ) # int
+				quote = {'quoteText': quoteText,
+								 'quoteVotes': quoteVotes}
+				quotes.append(quote) # array 
 		except AttributeError as e:
 			pass
 
