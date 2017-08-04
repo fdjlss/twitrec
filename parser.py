@@ -106,7 +106,10 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		print("viendo detalles..", end=' ')
 		detailBookFormatType = soup.find("span", itemprop="bookFormatType").get_text() # string
 		s = soup.find("span", itemprop="numberOfPages").get_text()
-		detailNoOfPages = int( re.search(r'\d+', s).group(0) ) # int
+		try:
+			detailNoOfPages = int( re.search(r'\d+', s).group(0) ) # int
+		except AttributeError as e:
+			pass
 
 		"""Also Enjoyed By Readers"""
 		print("viendo AEBR..", end=' ')
@@ -191,7 +194,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			},
 			'detail': {
 				'detailBookFormatType': detailBookFormatType,
-				'detailNoOfPages': detailNoOfPages
+				# 'detailNoOfPages': detailNoOfPages
 			},
 			# 'readersPreferences': readersBookIds,
 			'booksBySameAuthor': booksBySameAuthor
@@ -205,12 +208,17 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			pass
 
 		try:
-			book_data['authorBio'] = authorBio
+			book_data['author']['authorBio'] = authorBio
 		except NameError as e:
 			pass
 
 		try:
 			book_data['readersPreferences'] = readersBookIds
+		except NameError as e:
+			pass
+
+		try:
+			book_data['detail']['detailNoOfPages'] = detailNoOfPages
 		except NameError as e:
 			pass
 
