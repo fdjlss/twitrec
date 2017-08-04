@@ -140,14 +140,17 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		"""Quotes"""
 		print("viendo quotes..")
 		quotes = []
-		quotes_el = soup.find("div", class_="h2Container", text=re.compile("Quotes")).find_next_sibling(class_="bigBoxBody")
-		for el in quotes_el.find("div", class_="bigBoxContent").find_all("div", class_="stacked"):
+		try:
+			quotes_el = soup.find("div", class_="h2Container", text=re.compile("Quotes")).find_next_sibling(class_="bigBoxBody")
+			for el in quotes_el.find("div", class_="bigBoxContent").find_all("div", class_="stacked"):
 			quoteText = el.find("span", class_="readable").get_text() # text
 			s = el.find("nobr").find("a", class_="actionLinkLite").get_text()
 			quoteVotes = int( re.search("\d+", s).group(0) ) # int
 			quote = {'quoteText': quoteText,
 							 'quoteVotes': quoteVotes}
 			quotes.append(quote) # array 
+		except AttributeError as e:
+			pass
 
 		print("GENERANDO DICT..")
 		book_data = {
@@ -184,10 +187,10 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 				'detailBookFormatType': detailBookFormatType,
 				'detailNoOfPages': detailNoOfPages
 			},
-			'readersPreferences': readersBookIds,
+			# 'readersPreferences': readersBookIds,
 			'booksBySameAuthor': booksBySameAuthor,
-			'genres': genres,
-			'quotes': quotes
+			'genres': genres
+			# 'quotes': quotes
 		}
 
 		try:
@@ -195,6 +198,18 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		except NameError as e:
 			pass
 		data.append(book_data)
+
+		try:
+			book_data['readersPreferences'] = readersBookIds
+		except NameError as e:
+			pass
+
+		try:
+			book_data['quotes'] = quotes
+		except NameError as e:
+			pass
+
+
 
 	# endfor
 	print("DUMPEANDO JSON..")
