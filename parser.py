@@ -1,3 +1,5 @@
+# coding=utf-8
+
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 import json
@@ -15,7 +17,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		print("Parseando libro {0}..".format(filename))
 		book_data = {}
 		
-		with open( os.path.join(DATA_PATH, BOOKS_PATH, filename), 'r' ) as fp:
+		with open( os.path.join(DATA_PATH, BOOKS_PATH, filename), 'r' , encoding="utf-8") as fp:
 			soup = BeautifulSoup(fp, 'html.parser')
 
 		"""Title"""
@@ -117,7 +119,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			genres.append(genre) # array
 
 		"""Quotes"""
-		print("viendo quotes..", end=' ')
+		print("viendo quotes..")
 		quotes = []
 		quotes_el = soup.find("div", class_="h2Container", text=re.compile("Quotes")).find_next_sibling(class_="bigBoxBody")
 		for el in quotes_el.find("div", class_="bigBoxContent").find_all("div", class_="stacked"):
@@ -128,7 +130,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 							 'quoteVotes': quoteVotes}
 			quotes.append(quote) # array 
 
-		print("GENERANDO DICT..", end=' ')
+		print("GENERANDO DICT..")
 		book_data = {
 			'href': href,
 			'goodreadsId': goodreadsId,
@@ -172,7 +174,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		data.append(book_data)
 
 	# endfor
-	print("DUMPEANDO JSON..", end=' ')
+	print("DUMPEANDO JSON..")
 	json.dump( data, os.path.join(save_path, "books.json" ) )
 
 
