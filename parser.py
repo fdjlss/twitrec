@@ -94,10 +94,13 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		"""Description"""
 		print("viendo descripción..", end=' ')
 		descr_el = soup.find("div", id="description")
-		if descr_el.find("a") != None:
-			descriptionText = descr_el.find("span", style="display:none").get_text().strip() # TEXT
-		else:
-			descriptionText = descr_el.find("span").get_text().strip()
+		try:
+			if descr_el.find("a") != None:
+				descriptionText = descr_el.find("span", style="display:none").get_text().strip() # TEXT
+			else:
+				descriptionText = descr_el.find("span").get_text().strip()
+		except AttributeError as e:
+			pass
 
 		"""Details"""
 		print("viendo detalles..", end=' ')
@@ -159,7 +162,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		book_data = {
 			'href': href,
 			'goodreadsId': goodreadsId,
-			'description': descriptionText,
+			# 'description': descriptionText,
 			'title': {
 				'titleOfficial': titleOfficial,
 				'titleGreytext': titleGreytext,
@@ -195,6 +198,11 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			# 'genres': genres
 			# 'quotes': quotes
 		}
+
+		try:
+			book_data['description'] = descriptionText
+		except NameError as e:
+			pass
 
 		try:
 			book_data['authorBio'] = authorBio
