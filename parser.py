@@ -21,7 +21,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			soup = BeautifulSoup(fp, 'html.parser')
 
 		"""Title"""
-		print("viendo título..", end="")
+		print("viendo título..")
 		href = soup.find('link', rel="canonical").get('href') # string
 		goodreadsId = soup.find('input', id="book_id").get('value') # string
 		titleOfficial = soup.find('h1', id="bookTitle").get_text().strip().split('\n')[0] # string
