@@ -124,18 +124,21 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		"""Genres"""
 		print("viendo géneros..", end=' ')
 		genres = []
-		genres_el = soup.find("div", class_="h2Container", text=re.compile("Genres")).find_next_sibling(class_="bigBoxBody")
-		for el in genres_el.find("div", class_="bigBoxContent").find_all("div", class_="elementList"):
-			if ">" in el.find("div", class_="left").get_text():
-				genreName = el.find_all("a", class_="actionLinkLite bookPageGenreLink")[1].get_text() # string
-			else:
-				genreName = el.find("a", class_="actionLinkLite bookPageGenreLink").get_text()
-			s = el.find("div", class_="right").get_text()
-			genreVotes = int( re.search(r"\d+", s).group(0) ) # int
+		try:
+			genres_el = soup.find("div", class_="h2Container", text=re.compile("Genres")).find_next_sibling(class_="bigBoxBody")
+			for el in genres_el.find("div", class_="bigBoxContent").find_all("div", class_="elementList"):
+				if ">" in el.find("div", class_="left").get_text():
+					genreName = el.find_all("a", class_="actionLinkLite bookPageGenreLink")[1].get_text() # string
+				else:
+					genreName = el.find("a", class_="actionLinkLite bookPageGenreLink").get_text()
+				s = el.find("div", class_="right").get_text()
+				genreVotes = int( re.search(r"\d+", s).group(0) ) # int
 
-			genre = {'genreName': genreName,
-							 'genreVotes': genreVotes}
-			genres.append(genre) # array
+				genre = {'genreName': genreName,
+								 'genreVotes': genreVotes}
+				genres.append(genre) # array
+		except AttributeError as e:
+			pass
 
 		"""Quotes"""
 		print("viendo quotes..")
@@ -188,8 +191,8 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 				'detailNoOfPages': detailNoOfPages
 			},
 			# 'readersPreferences': readersBookIds,
-			'booksBySameAuthor': booksBySameAuthor,
-			'genres': genres
+			'booksBySameAuthor': booksBySameAuthor
+			# 'genres': genres
 			# 'quotes': quotes
 		}
 
@@ -205,6 +208,11 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 
 		try:
 			book_data['quotes'] = quotes
+		except NameError as e:
+			pass
+
+		try:
+			book_data['genres'] = genres
 		except NameError as e:
 			pass
 
