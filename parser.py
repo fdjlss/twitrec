@@ -1,6 +1,5 @@
 # coding=utf-8
-import sys
-print(sys.version)
+
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 import json
