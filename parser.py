@@ -105,8 +105,8 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		"""Details"""
 		print("viendo detalles..", end=' ')
 		detailBookFormatType = soup.find("span", itemprop="bookFormatType").get_text() # string
-		s = soup.find("span", itemprop="numberOfPages").get_text()
 		try:
+			s = soup.find("span", itemprop="numberOfPages").get_text()
 			detailNoOfPages = int( re.search(r'\d+', s).group(0) ) # int
 		except AttributeError as e:
 			pass
