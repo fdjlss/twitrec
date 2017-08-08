@@ -86,8 +86,20 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		ratingNum = int( soup.find("span", class_="value-title", itemprop="ratingCount").get("title")) # int
 		ratingRevNum = int( soup.find_all("span", class_="value-title")[-1].get("title") ) # int
 		ratingAvg = float( soup.find("span", class_="average", itemprop="ratingValue").get_text() ) # float
-		graph_data = soup.find("span", id="rating_graph").get_text()
-		rating5, rating4, rating3, rating2, rating1 = list( map(int, graph_data[graph_data.find("[")+1 : graph_data.find("]")].split(',')) ) # int x 5
+		
+		try:
+			graph_data = soup.find("span", id="rating_graph").get_text()
+			rating5, rating4, rating3, rating2, rating1 = list( map(int, graph_data[graph_data.find("[")+1 : graph_data.find("]")].split(',')) ) # int x 5
+		except AttributeError as e:
+			s = soup.find("a", id="rating_details").find_next_sibling("script").string
+			s1 = re.search(r"new Tip\(\$\('rating_details'\), \"\\n(.+)\\n\\n\", { style: 'goodreads'", s).group(1)
+			soup_temp = BeautifulSoup(s1.replace("\\n","").replace("\\",""), 'html.parser')
+			rats = []
+			for tr_el in soup_temp.find("table", id="rating_distribution").find_all("tr"):
+				title = tr_el.find("div").get("title")
+				rats.append( int(re.search(r"\d+", title).group(1)) )
+			rating5, rating4, rating3, rating2, rating1 = rats
+
 		s = soup.find("a", id="rating_details_tip").find_next_sibling("script").string
 		ratingPctPplLiked = int ( re.search(r"(\d+)<\\/span>% of people liked it", s).group(1) )
 		
@@ -117,7 +129,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		readers_el = soup.find("div", {"id" : re.compile("relatedWorks-*")} )
 		try:		
 			for el in related_el.find("div", class_="carouselRow").find("ul").find_all("li", class_="cover"):
-				readersBookIds.append( re.search("\d+", el.get("id")).group(0) ) # array of strings
+				readersBookIds.append( re.search(r"\d+", el.get("id")).group(0) ) # array of strings
 		except NameError as e:
 			pass
 
@@ -154,7 +166,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			for el in quotes_el.find("div", class_="bigBoxContent").find_all("div", class_="stacked"):
 				quoteText = el.find("span", class_="readable").get_text() # text
 				s = el.find("nobr").find("a", class_="actionLinkLite").get_text()
-				quoteVotes = int( re.search("\d+", s).group(0) ) # int
+				quoteVotes = int( re.search(r"\d+", s).group(0) ) # int
 				quote = {'quoteText': quoteText,
 								 'quoteVotes': quoteVotes}
 				quotes.append(quote) # array 
@@ -253,7 +265,7 @@ books_parse(os.path.join(DATA_PATH, "books_data_parsed"), DATA_PATH, BOOKS_PATH)
 # url = 'https://www.goodreads.com/book/show/77232.Legends'
 # page = requests.get(url).text
 # soup2 = BeautifulSoup(page, 'html.parser')
-# url = "https://www.goodreads.com/book/show/3262719-more-than-meets-the-eye-official-guidebook-volume-2.html"
+# url = "https://www.goodreads.com/book/show/20960153-entre-las-sectas-y-el-fin-del-mundo-una-noche-que-murmura-esperanzas"
 # page = requests.get(url).text
 # soup3 = BeautifulSoup(page, 'html.parser')
 
