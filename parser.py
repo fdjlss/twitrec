@@ -14,9 +14,10 @@ REVIEWS_PATH = "user_reviews/"
 def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 	data = []
 	i=0
+	leng=len(os.listdir(os.path.join(DATA_PATH, BOOKS_PATH)) )
 	for filename in os.listdir( os.path.join(DATA_PATH, BOOKS_PATH) ):
 		i+=1
-		print("{0} de {1}. Parseando libro {2}..".format(i, os.listdir( os.path.join(DATA_PATH, BOOKS_PATH) ), filename))
+		print("{0} de {1}. Parseando libro {2}..".format(i, leng, filename))
 		book_data = {}
 		
 		with open( os.path.join(DATA_PATH, BOOKS_PATH, filename), 'r' , encoding="utf-8") as fp:
