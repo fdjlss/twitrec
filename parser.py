@@ -97,7 +97,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			rats = []
 			for tr_el in soup_temp.find("table", id="rating_distribution").find_all("tr"):
 				title = tr_el.find("div").get("title")
-				rats.append( int(re.search(r"\d+", title).group(1)) )
+				rats.append( int(re.search(r"\d+", title).group(0)) )
 			rating5, rating4, rating3, rating2, rating1 = rats
 
 		s = soup.find("a", id="rating_details_tip").find_next_sibling("script").string
