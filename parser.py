@@ -92,8 +92,12 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		ratingStarscore = 0 # int
 		for el in soup.find("span", class_="stars staticStars").contents:
 			ratingStarscore += int( el.get("class")[1].strip('p') )
-		ratingNum = int( soup.find("span", class_="value-title", itemprop="ratingCount").get("title")) # int
-		ratingRevNum = int( soup.find_all("span", class_="value-title")[-1].get("title") ) # int
+		try:
+			ratingNum = int( soup.find("span", class_="value-title", itemprop="ratingCount").get("title") ) # int
+			ratingRevNum = int( soup.find_all("span", class_="value-title")[-1].get("title") ) # int
+		except AttributeError as e:
+			ratingNum = int( soup.find_all("span", class_="value-title")[0].get("title") )
+			ratingRevNum = int( soup.find_all("span", class_="value-title")[1].get("title") )
 		ratingAvg = float( soup.find("span", class_="average", itemprop="ratingValue").get_text() ) # float
 		
 		try:
@@ -233,10 +237,6 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 
 		try:
 			book_data['title']['titleGreytext'] = titleGreytext
-		except Exception as e:
-			pass
-
-		try:
 			book_data['title']['titleGreytextHref'] = titleGreytextHref
 		except Exception as e:
 			pass
@@ -292,9 +292,9 @@ books_parse(os.path.join(DATA_PATH, "books_data_parsed"), DATA_PATH, BOOKS_PATH)
 # url = 'https://www.goodreads.com/book/show/77232.Legends'
 # page = requests.get(url).text
 # soup2 = BeautifulSoup(page, 'html.parser')
-# url = "https://www.goodreads.com/book/show/1028284.The_Servant_of_Two_Masters.html"
-# page = requests.get(url).text
-# soup3 = BeautifulSoup(page, 'html.parser')
+
+# filename='/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/books_data/1028284.The_Servant_of_Two_Masters.html'
+# with open(filename, 'r') as fp: soup3 = BeautifulSoup(fp, 'html.parser')
 
 
 # [...]
