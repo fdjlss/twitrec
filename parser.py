@@ -23,13 +23,19 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		with open( os.path.join(DATA_PATH, BOOKS_PATH, filename), 'r' , encoding="utf-8") as fp:
 			soup = BeautifulSoup(fp, 'html.parser')
 
-		"""Title"""
-		print("viendo título..", end=' ')
+		"""Book ID"""
 		href = soup.find('link', rel="canonical").get('href') # string
 		goodreadsId = soup.find('input', id="book_id").get('value') # string
-		titleOfficial = soup.find('h1', id="bookTitle").get_text().strip().split('\n')[0] # string
-		titleGreytext = soup.find('a', class_="greyText").get_text().strip() # string
-		titleGreytextHref = soup.find('a', class_="greyText").get('href') # string (href)
+		
+		"""Title"""
+		print("viendo título..", end=' ')
+		title_el = soup.find('h1', id="bookTitle")
+		titleOfficial = title_el.get_text().strip().split('\n')[0] # string
+		try:
+			titleGreytext = title_el.find('a', class_="greyText").get_text().strip()[1:-1] # string
+			titleGreytextHref = title_el.find('a', class_="greyText").get('href') # string (href)
+		except AttributeError as e:
+			pass
 		titleOg = soup.find('meta', {"property":'og:title'}).get('content') # string
 
 		"""Authors"""
@@ -186,8 +192,8 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			# 'description': descriptionText,
 			'title': {
 				'titleOfficial': titleOfficial,
-				'titleGreytext': titleGreytext,
-				'titleGreytextHref': titleGreytextHref,
+				# 'titleGreytext': titleGreytext,
+				# 'titleGreytextHref': titleGreytextHref,
 				'titleOg': titleOg
 			},
 			'author': {
@@ -223,6 +229,16 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		try:
 			book_data['description'] = descriptionText
 		except NameError as e:
+			pass
+
+		try:
+			book_data['title']['titleGreytext'] = titleGreytext
+		except Exception as e:
+			pass
+
+		try:
+			book_data['title']['titleGreytextHref'] = titleGreytextHref
+		except Exception as e:
 			pass
 
 		try:
@@ -276,7 +292,7 @@ books_parse(os.path.join(DATA_PATH, "books_data_parsed"), DATA_PATH, BOOKS_PATH)
 # url = 'https://www.goodreads.com/book/show/77232.Legends'
 # page = requests.get(url).text
 # soup2 = BeautifulSoup(page, 'html.parser')
-# url = "https://www.goodreads.com/book/show/20960153-entre-las-sectas-y-el-fin-del-mundo-una-noche-que-murmura-esperanzas"
+# url = "https://www.goodreads.com/book/show/1028284.The_Servant_of_Two_Masters.html"
 # page = requests.get(url).text
 # soup3 = BeautifulSoup(page, 'html.parser')
 
