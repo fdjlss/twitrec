@@ -15,9 +15,10 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 	data = []
 	i=0
 	leng=len(os.listdir(os.path.join(DATA_PATH, BOOKS_PATH)) )
-	# FOR DEBUGGING PURPOSES:
+	"""FOR DEBUGGING PURPOSES:"""
 	for j in range(23084, len( os.listdir(os.path.join(DATA_PATH, BOOKS_PATH )) )):
 		filename = os.listdir(os.path.join(DATA_PATH, BOOKS_PATH ))[j]
+	""""""
 	# for filename in os.listdir( os.path.join(DATA_PATH, BOOKS_PATH) ):
 		i+=1
 		print("{0} de {1}. Parseando libro {2}..".format(i, leng, filename))
@@ -119,8 +120,11 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			rating5, rating4, rating3, rating2, rating1 = rats
 
 		s = soup.find("a", id="rating_details_tip").find_next_sibling("script").string
-		ratingPctPplLiked = int ( re.search(r"(\d+)<\\/span>% of people liked it", s).group(1) )
-		
+		try:
+			ratingPctPplLiked = int ( re.search(r"(\d+)<\\/span>% of people liked it", s).group(1) )
+		except AttributeError as e:
+			pass
+
 		"""Description"""
 		print("viendo descripción..", end=' ')
 		descr_el = soup.find("div", id="description")
@@ -222,7 +226,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 					'rating3': rating3,
 					'rating2': rating2,
 					'rating1': rating1,
-					'ratingPctPplLiked': ratingPctPplLiked
+					# 'ratingPctPplLiked': ratingPctPplLiked
 				}
 			},
 			'detail': {
@@ -255,6 +259,12 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			book_data['readersPreferences'] = readersBookIds
 		except NameError as e:
 			pass
+
+		try:
+			book_data['rating']['ratingPctPplLiked'] = ratingPctPplLiked
+		except NameError as e:
+			pass
+
 
 		try:
 			book_data['detail']['detailNoOfPages'] = detailNoOfPages
