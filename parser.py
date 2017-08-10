@@ -109,6 +109,8 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			soup_temp = BeautifulSoup(s1.replace("\\n","").replace("\\",""), 'html.parser')
 			rats = []
 			for tr_el in soup_temp.find("table", id="rating_distribution").find_all("tr"):
+				if tr_el.find("div") is None:
+					continue
 				title = tr_el.find("div").get("title")
 				rats.append( int(re.search(r"\d+", title).group(0)) )
 			rating5, rating4, rating3, rating2, rating1 = rats
@@ -290,6 +292,7 @@ books_parse(os.path.join(DATA_PATH, "books_data_parsed"), DATA_PATH, BOOKS_PATH)
 
 # import requests
 # url = 'https://www.goodreads.com/book/show/77232.Legends'
+# url = 'https://www.goodreads.com/book/show/20931395-xocal-soyg-r-m.html'
 # page = requests.get(url).text
 # soup2 = BeautifulSoup(page, 'html.parser')
 
