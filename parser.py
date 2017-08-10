@@ -18,7 +18,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 	"""FOR DEBUGGING PURPOSES:"""
 	for j in range(23084, len( os.listdir(os.path.join(DATA_PATH, BOOKS_PATH )) )):
 		filename = os.listdir(os.path.join(DATA_PATH, BOOKS_PATH ))[j]
-	""""""
+		
 	# for filename in os.listdir( os.path.join(DATA_PATH, BOOKS_PATH) ):
 		i+=1
 		print("{0} de {1}. Parseando libro {2}..".format(i, leng, filename))
