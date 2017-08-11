@@ -16,7 +16,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 	i=0
 	leng=len(os.listdir(os.path.join(DATA_PATH, BOOKS_PATH)) )
 	"""FOR DEBUGGING PURPOSES:"""
-	for j in range(23084, len( os.listdir(os.path.join(DATA_PATH, BOOKS_PATH )) )):
+	for j in range(len( os.listdir(os.path.join(DATA_PATH, BOOKS_PATH )) )-10, len( os.listdir(os.path.join(DATA_PATH, BOOKS_PATH )) )):
 		filename = os.listdir(os.path.join(DATA_PATH, BOOKS_PATH ))[j]
 
 	# for filename in os.listdir( os.path.join(DATA_PATH, BOOKS_PATH) ):
@@ -291,7 +291,8 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 
 	# endfor
 	print("DUMPEANDO JSON..")
-	json.dump( data, os.path.join(save_path, "books.json" ) )
+	with open( os.path.join(save_path, "books.json" ), 'w' ) as outfile
+		json.dump( data, outfile )
 
 
 books_parse(os.path.join(DATA_PATH, "books_data_parsed"), DATA_PATH, BOOKS_PATH)
