@@ -59,7 +59,6 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 				authorBio = auth_el.get_text().strip()
 		except Exception as e:
 			try:
-				del auth_el
 				del authorBio
 			except Exception as e2:
 				pass
@@ -238,7 +237,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 				'authorMulti': authorMulti,
 				'authorNum': nAuthors,
 				#'authorBio': authorBio,
-				'authors': [{authors}]
+				'authors': authors
 			},
 			'rating': {
 				'ratingStarscore': ratingStarscore,
