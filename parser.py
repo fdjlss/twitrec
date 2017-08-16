@@ -38,7 +38,11 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			titleGreytext = title_el.find('a', class_="greyText").get_text().strip()[1:-1] # string
 			titleGreytextHref = title_el.find('a', class_="greyText").get('href') # string (href)
 		except AttributeError as e:
-			pass
+			try:
+				del titleGreytext
+				del titleGreytextHref
+			except Exception as e2:
+				pass
 		titleOg = soup.find('meta', {"property":'og:title'}).get('content') # string
 
 		"""Authors"""
@@ -54,7 +58,11 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			else:
 				authorBio = auth_el.get_text().strip()
 		except Exception as e:
-			pass
+			try:
+				del auth_el
+				del authorBio
+			except Exception as e2:
+				pass
 
 		authors = []
 		for el in authors_element:
@@ -69,14 +77,20 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 					else:
 						authorRole = sibling_one.get_text().strip('()')
 			except AttributeError as e:
-				pass
+				try:
+					del authorRole
+				except Exception as e2:
+					pass
 
 			try:
 				sibling_two = el.find_next_sibling().find_next_sibling()
 				if sibling_two.name == 'span':
 					authorRole = sibling_one.get_text().strip('()')
 			except AttributeError as e:
-				pass
+				try:
+					del authorRole
+				except Exception as e2:
+					pass
 
 			author = {'authorGoodreads' : authorGoodreads,
 								'authorName': authorName,
@@ -122,7 +136,10 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		try:
 			ratingPctPplLiked = int ( re.search(r"(\d+)<\\/span>% of people liked it", s).group(1) )
 		except AttributeError as e:
-			pass
+			try:
+				del ratingPctPplLiked
+			except Exception as e2:
+				pass
 
 		"""Description"""
 		print("viendo descripción..", end=' ')
@@ -133,19 +150,28 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			else:
 				descriptionText = descr_el.find("span").get_text().strip()
 		except AttributeError as e:
-			pass
+			try:
+				del descriptionText
+			except Exception as e2:
+				pass
 
 		"""Details"""
 		print("viendo detalles..", end=' ')
 		try:
 			detailBookFormatType = soup.find("span", itemprop="bookFormatType").get_text() # string
 		except AttributeError as e:
-			pass
+			try:
+				del detailBookFormatType
+			except Exception as e2:
+				pass
 		try:
 			s = soup.find("span", itemprop="numberOfPages").get_text()
 			detailNoOfPages = int( re.search(r'\d+', s).group(0) ) # int
 		except AttributeError as e:
-			pass
+			try:
+				del detailNoOfPages
+			except Exception as e2:
+				pass
 
 		"""Also Enjoyed By Readers"""
 		print("viendo AEBR..", end=' ')
@@ -212,7 +238,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 				'authorMulti': authorMulti,
 				'authorNum': nAuthors,
 				#'authorBio': authorBio,
-				'authors': authors
+				'authors': [{authors}]
 			},
 			'rating': {
 				'ratingStarscore': ratingStarscore,
@@ -235,7 +261,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			# 'readersPreferences': readersBookIds,
 			'booksBySameAuthor': booksBySameAuthor
 			# 'genres': genres
-			# 'quotes': quotes
+			# 'quotes': [{quotes}]
 		}
 
 		try:
