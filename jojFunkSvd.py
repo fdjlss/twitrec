@@ -105,7 +105,7 @@ def SVDJob(iterator=[], param=""):
 		for i in range(0, len(iterator)):
 			f.write( "%s\t%s\t%s\n" % (iterator[i], rmses[i], maes[i] ) )
 
-def SVDTesting():
+def generate_recommends():
 
 	svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.train',
 											dlmchar   = b',',
@@ -265,4 +265,4 @@ reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
 # boosting(iterator=lrn_rates, param="lr", folds=15)
 # boosting(iterator=reg_params, param="lamb", folds=15)
 # RMSEMAEdistr()
-SVDTesting()
+generate_recommends()
