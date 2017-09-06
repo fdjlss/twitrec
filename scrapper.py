@@ -1,5 +1,14 @@
 # coding=utf-8
 
+"""
+1) Descarga los reviews (HTML) dado los datos de Hamid (JSON)
+2) Descarga los libros (HTML) dado los reviews
+3) Crea set de training y de test para el CF
+
+X) Mientras hace todo, crea y guarda en DB (SQLite) todo
+"""
+
+
 #--------------------------------#
 # Parsear los JSON (dataset de Hamid)
 import json
@@ -9,7 +18,7 @@ from os import listdir
 from os.path import isfile, join
 
 # Para scrapping
-import urllib
+import urllib.request
 # import urlparse
 # import httplib
 
@@ -107,7 +116,7 @@ def reviews_wgetter(path_jsons, db_conn):
 			# sigue con el próximo tweet
 			if "goodreads.com/review" in url_review:
 				try:
-					urllib.urlretrieve( url_review, save_path )
+					urllib.request.urlretrieve( url_review, save_path )
 				except Exception as e:
 					logging.info("No se pudo ingresar al sitio!")
 					continue
@@ -236,7 +245,7 @@ def books_wgetter(db_conn):
 		try:
 			file_name = book_url.split('/')[-1] 
 			save_file = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/books_data/" + file_name + ".html"
-			urllib.urlretrieve( url, save_file )
+			urllib.request.urlretrieve( url, save_file )
 		except Exception as e:
 			logging.info( "NO PUDO ACCEDERSE A LIBRO {0}, Error: {1}".format(book_url, e) )
 			continue
@@ -326,8 +335,6 @@ def ratings_maker(db_conn, frac_train, output_train, output_test):
 			if randday==1: randday = "0" + randday 
 			timestamp = int( "201401" + randday )
 
-
-
 		interactions.append( (user_id, book_id, rating, int(timestamp)) )
 	
 	# Sort con timestamp ascendientes
@@ -338,9 +345,9 @@ def ratings_maker(db_conn, frac_train, output_train, output_test):
 
 	rows_train = interactions[:num_train]
 	rows_test  = interactions[num_train:]
+	rows_total = interactions
 
 	logging.info("Guardando archivo de training..")
-
 	with open(output_train, 'w') as f:
 		# x[:-1] : no guardamos el timestamp
 		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in rows_train) )
@@ -348,6 +355,10 @@ def ratings_maker(db_conn, frac_train, output_train, output_test):
 	logging.info("Guardando archivo de testing..")
 	with open(output_test, 'w') as f:
 		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in rows_test) )	
+
+	logging.info("Guardando archivo total de ratings..")
+	with open(output_total, 'w') as f:
+		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in rows_total) )
 
 
 
@@ -371,7 +382,7 @@ path_jsons = 'TwitterRatings/goodreads_renamed/'
 # 4)
 # add_column_timestamp(db_conn= conn, alter_table= True)
 # 5)
-ratings_maker(db_conn= conn, frac_train= 0.8, output_train= 'TwitterRatings/funkSVD/ratings.train', output_test= 'TwitterRatings/funkSVD/ratings.test')
+ratings_maker(db_conn= conn, frac_train= 0.8, output_train= 'TwitterRatings/funkSVD/ratings.train', output_test= 'TwitterRatings/funkSVD/ratings.test', output_total= 'TwitterRatings/funkSVD/ratings.total')
 
 
 # Cerramos la conexion a la BD
