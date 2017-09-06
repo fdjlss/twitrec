@@ -301,7 +301,7 @@ def add_column_timestamp(db_conn, alter_table=False):
 
 
 
-def ratings_maker(db_conn, frac_train, output_train, output_test):
+def ratings_maker(db_conn, frac_train, output_train, output_test, output_total):
 	"""
 	Guarda un set de entrenamiento y un set de test a partir
 	de datos de la DB
