@@ -206,8 +206,8 @@ def boosting(iterator, param, folds):
 			                                header      = False,
 			                                usercol     = 0,
 			                                itemcol     = 1,
-			                                ratingcol   = 2,
-																			output_file = 'TwitterRatings/funkSVD/predictions_'+str(f)+'.csv' )
+			                                ratingcol   = 2)
+																			# output_file = 'TwitterRatings/funkSVD/predictions_'+str(f)+'.csv' )
 			
 			rmses.append(rmse)
 			maes.append(mae)
@@ -255,6 +255,79 @@ def RMSEMAEdistr():
 				f.write("%s\t%s,%s\t%s,%s\n" % ( v[0], v[1][0][0], v[1][0][1], v[1][1][0], v[1][1][1] ) )
 
 
+def PRF_calculator(folds, topN):
+
+	ratings_train, ratings_test = [], []
+
+	with open('TwitterRatings/funkSVD/ratings.train', 'r') as f:
+		for line in f:
+			ratings_train.append( line.strip() )
+
+	with open('TwitterRatings/funkSVD/ratings.test', 'r') as f:
+		for line in f:
+			ratings_test.append( line.strip() )
+
+	for n in topN: 
+		precision_folds, recall_folds = [], []
+		for _ in range(0, folds):
+			ratingsSampler(ratings_train, 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
+			ratingsSampler(ratings_test, 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
+
+			svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings_temp.train',
+													dlmchar   = b',',
+													header    = False,
+													usercol   = 0,
+													itemcol   = 1,
+													ratingcol = 2 )
+
+			f    = 425
+			mi   = 300
+			lr   = 0.02
+			lamb = 0.25
+
+			svd.train( factors= f, maxiter= mi, lr= lr, lamb= lamb )
+
+			recommendationList = svd.testrec( input_file    = 'TwitterRatings/funkSVD/ratings_temp.test',
+			                                    dlmchar     = b',',
+			                                    header      = False,
+			                                    usercol     = 0,
+			                                    itemcol     = 1,
+			                                    ratingcol   = 2,
+			                                    topn        = n,
+			                                    output_file = 'TwitterRatings/funkSVD/ranking_temp.json' )
+
+			real_consumption = {}
+			with open('TwitterRatings/funkSVD/ratings_temp.test', 'r') as f:
+				for line in f:
+					userId, itemId, rating = line.strip().split(',')
+					if userId not in consumpt_test:
+						real_consumption[userId] = []
+					real_consumption[userId].append(itemId)
+
+			users_precisions, users_recalls = [], []
+			for userId in recommendationList[0]:
+				recs = set(recommendationList[0][userId])
+				cons = set(real_consumption[userId])
+				tp = len(recs & cons)
+				fp = len(recs - cons)
+				fn = len(cons - recs)
+				users_precisions.append( float(tp) / (tp + fp) )
+				users_recalls.append( float(tp) / (tp + fn) )
+
+			precision_folds.append( mean(users_precisions) )
+			recall_folds.append( mean(users_recalls) )
+
+		p = mean( precision_folds )
+		r = mean( recall_folds )
+		f = 2*p*r / (p + r)
+
+		with open('TwitterRatings/funkSVD/recall.txt', 'a') as f:
+			f.write( "%s,%s,%s,%s\n" % (n, p, r, f) )
+
+
+
+
+
 factores = range(300, 1025, 25) # [300, 325, .., 1000]
 max_iters = range(100, 520, 20) # [100, 120, .., 500]
 lrn_rates = range(2, 21, 1) # [2, 3, .., 20] / 200 = [0.01, 0.015, .., 0.1]
@@ -265,4 +338,5 @@ reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
 # boosting(iterator=lrn_rates, param="lr", folds=15)
 # boosting(iterator=reg_params, param="lamb", folds=15)
 # RMSEMAEdistr()
-generate_recommends()
+# generate_recommends()
+PRF_calculator(folds=5, topN=[3, 5])
