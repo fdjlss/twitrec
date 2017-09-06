@@ -300,7 +300,7 @@ def PRF_calculator(folds, topN):
 			with open('TwitterRatings/funkSVD/ratings_temp.test', 'r') as f:
 				for line in f:
 					userId, itemId, rating = line.strip().split(',')
-					if userId not in consumpt_test:
+					if userId not in real_consumption:
 						real_consumption[userId] = []
 					real_consumption[userId].append(itemId)
 
