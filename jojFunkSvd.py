@@ -293,8 +293,8 @@ def PRF_calculator(folds, topN):
 			                                    usercol     = 0,
 			                                    itemcol     = 1,
 			                                    ratingcol   = 2,
-			                                    topn        = n,
-			                                    output_file = 'TwitterRatings/funkSVD/ranking_temp.json' )
+			                                    topn        = n)
+			                                    # output_file = 'TwitterRatings/funkSVD/ranking_temp.json' )
 
 			real_consumption = {}
 			with open('TwitterRatings/funkSVD/ratings_temp.test', 'r') as f:
@@ -339,4 +339,4 @@ reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
 # boosting(iterator=reg_params, param="lamb", folds=15)
 # RMSEMAEdistr()
 # generate_recommends()
-PRF_calculator(folds=5, topN=[3, 5])
+PRF_calculator(folds=5, topN=[20, 50])
