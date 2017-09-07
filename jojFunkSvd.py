@@ -298,7 +298,7 @@ def PRF_calculator(folds, topN):
 			                                    # output_file = 'TwitterRatings/funkSVD/ranking_temp.json' )
 
 			real_consumption = {}
-			with open('TwitterRatings/funkSVD/ratings_temp.test', 'r') as f:
+			with open('TwitterRatings/funkSVD/ratings.test', 'r') as f:
 				for line in f:
 					userId, itemId, rating = line.strip().split(',')
 					if userId not in real_consumption:
