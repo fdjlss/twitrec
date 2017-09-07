@@ -273,7 +273,7 @@ def PRF_calculator(folds, topN):
 			ratingsSampler(ratings_train, 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
 			ratingsSampler(ratings_test, 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
 
-			svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.all', #o ratings_temp.train
+			svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.total', #o ratings_temp.train
 													dlmchar   = b',',
 													header    = False,
 													usercol   = 0,
