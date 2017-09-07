@@ -273,7 +273,7 @@ def PRF_calculator(folds, topN):
 			ratingsSampler(ratings_train, 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
 			ratingsSampler(ratings_test, 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
 
-			svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings_temp.train',
+			svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.all', #o ratings_temp.train
 													dlmchar   = b',',
 													header    = False,
 													usercol   = 0,
@@ -287,13 +287,14 @@ def PRF_calculator(folds, topN):
 
 			svd.train( factors= f, maxiter= mi, lr= lr, lamb= lamb )
 
-			recommendationList = svd.testrec( input_file    = 'TwitterRatings/funkSVD/ratings_temp.test',
+			recommendationList = svd.testrec( input_file    = 'TwitterRatings/funkSVD/ratings.test', #o ratings_temp.test
 			                                    dlmchar     = b',',
 			                                    header      = False,
 			                                    usercol     = 0,
 			                                    itemcol     = 1,
 			                                    ratingcol   = 2,
-			                                    topn        = n)
+			                                    topn        = n,
+			                                    includeRated= True)
 			                                    # output_file = 'TwitterRatings/funkSVD/ranking_temp.json' )
 
 			real_consumption = {}
