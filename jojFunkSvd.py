@@ -340,4 +340,4 @@ reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
 # boosting(iterator=reg_params, param="lamb", folds=15)
 # RMSEMAEdistr()
 # generate_recommends()
-PRF_calculator(folds=5, topN=[20, 50, 100])
+PRF_calculator(folds=5, topN=[10, 20, 50, 100])
