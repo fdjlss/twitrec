@@ -108,7 +108,7 @@ def books_distribution(conn):
 	d = c.execute("SELECT COUNT(*) FROM user_reviews GROUP BY user_id").fetchall()
 	d.sort()
 	d = list(enumerate(d))
-	plt.plot(*list(zip(*d)), color=plot_color)
+	plt.plot(*zip(*d), color=plot_color)
 	axes = plt.gca()
 	axes.set_xlim([0, 4000])
 	plt.title("Distribución de libros por usuario")
