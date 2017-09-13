@@ -372,18 +372,19 @@ def PRF_calculator(params, folds, topN):
 			                                    includeRated= True)
 			                                    # output_file = 'TwitterRatings/funkSVD/ranking_temp.json' )
 
-			real_consumption = {}
+			preferred_consumption = {}
 			with open('TwitterRatings/funkSVD/ratings.test', 'r') as f:
 				for line in f:
 					userId, itemId, rating = line.strip().split(',')
-					if userId not in real_consumption:
-						real_consumption[userId] = []
-					real_consumption[userId].append(itemId)
+					if userId not in preferred_consumption:
+						preferred_consumption[userId] = []
+					if int( rating ) >= 4: # preferencia: los que leyó y marcó con rating >= 4
+						preferred_consumption[userId].append(itemId) 
 
 			users_precisions, users_recalls = [], []
 			for userId in recommendationList[0]:
 				recs = set(recommendationList[0][userId])
-				cons = set(real_consumption[userId])
+				cons = set(preferred_consumption[userId])
 				tp = len(recs & cons)
 				fp = len(recs - cons)
 				fn = len(cons - recs)
