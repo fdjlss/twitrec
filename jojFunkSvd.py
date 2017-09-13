@@ -350,8 +350,8 @@ def PRF_calculator(params, folds, topN):
 	for n in topN: 
 		precision_folds, recall_folds = [], []
 		for _ in range(0, folds):
-			ratingsSampler(ratings_train, 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
-			ratingsSampler(ratings_test, 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
+			# ratingsSampler(ratings_train, 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
+			# ratingsSampler(ratings_test, 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
 
 			svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.total', #o ratings_temp.train
 													dlmchar   = b',',
