@@ -53,7 +53,7 @@ def tweets_histogram_hamed(path):
 	plt.plot(json_counter, color=plot_color)
 	axes = plt.gca()
 	axes.set_xlim([min(json_counter), len(json_counter)])
-	plt.title("Histograma de tuits por usuario (dataset Hamed et al.)")
+	plt.title("Histograma de tuits por usuario (dataset Zamani et al.)")
 	plt.ylabel("#tweets")
 	plt.xlabel("")
 	plt.show()
@@ -127,5 +127,6 @@ path_json = "TwitterRatings/goodreads_renamed/"
 # tweets_histogram_all(path=path)
 # tweets_histogram_hamed(path=path_json)
 # rating_distribution(conn=conn)
+# books_distribution(conn=conn)
 
 conn.close()

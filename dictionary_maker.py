@@ -79,3 +79,4 @@ print(dictionary)
 print("Guardando en disco..")
 dictionary.save('./tmp/books_and_tweets.dict')
 ######################################
+# 587,045 unique tokens
