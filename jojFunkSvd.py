@@ -38,109 +38,21 @@ def ratingsSampler(rats, fout, n):
 
 	del ratings_sampled
 
-def SVDJob(iterator=[], param=""):
-
-	rmses = []
-	maes  = []
-
-	for i in iterator:
-
-		svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.train',
-												dlmchar   = b',',
-												header    = False,
-												usercol   = 0,
-												itemcol   = 1,
-												ratingcol = 2 )
-
-		# Pésima decisión de diseño, sí sé, pero bueno..
-		
-		if param=="factors":
-			f    = i
-			mi   = 100
-			lr   = 0.01
-			lamb = 0.1
-			fn   = 'metrics_f'
-		elif param=="maxiter":
-			f    = 1000
-			mi   = i
-			lr   = 0.01
-			lamb = 0.1
-			fn   = 'metrics_mi'
-		elif param=="lr":
-			f    = 1000
-			mi   = 100
-			lr   = i/200
-			lamb = 0.1
-			fn   = 'metrics_lr'
-		elif param=="lamb":
-			f    = 1000
-			mi   = 100
-			lr   = 0.01
-			lamb = i/20
-			fn   = 'metrics_lamb'
-
-		logging.info( "-> Entrenando modelo.." )
-		logging.info( "N° Factores: {0}; maxiter: {1}; learning rate: {2}; lambda: {3} ".format(f, mi, lr, lamb) )
-
-		start = time.clock()
-		svd.train( factors= f, maxiter= mi, lr= lr, lamb= lamb )
-		end = time.clock()
-
-		logging.info( "training time: " + str(end - start) )
-
-		logging.info( "-> Test de Predicción.." )
-		start = time.clock()
-		predlist, mae, rmse = svd.test( input_file  = 'TwitterRatings/funkSVD/ratings.test',
-		                                dlmchar     = b',',
-		                                header      = False,
-		                                usercol     = 0,
-		                                itemcol     = 1,
-		                                ratingcol   = 2,
-																		output_file = 'TwitterRatings/funkSVD/predictions_'+str(f)+'.csv' )
-		end = time.clock()
-		logging.info( "prediction time: " + str(end - start) )
-
-		logging.info( 'MAE: ' + str(mae) )
-		logging.info( 'RMSE: ' + str(rmse) )
-
-		rmses.append(rmse)
-		maes.append(mae)
-
-	with open('TwitterRatings/funkSVD/'+fn+'.txt', 'w') as f:
-		for i in range(0, len(iterator)):
-			f.write( "%s\t%s\t%s\n" % (iterator[i], rmses[i], maes[i] ) )
-
-def generate_recommends(params):
-
-	svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.train',
+def SVDJob(train_path, test_path, f, mi, lr, lamb):
+	svd = pyreclab.SVD( dataset   = train_path,
 											dlmchar   = b',',
 											header    = False,
 											usercol   = 0,
 											itemcol   = 1,
 											ratingcol = 2 )
-
-	logging.info( "-> Entrenando modelo.." )
-	logging.info( "N° Factores: {0}; maxiter: {1}; learning rate: {2}; lambda: {3} ".format(f, mi, lr, lamb) )
-
-	start = time.clock()
-	svd.train( factors= params['f'], maxiter= params['mi'], lr= params['lr'], lamb= params['lamb'] )
-	end = time.clock()
-
-	logging.info( "training time: " + str(end - start) )
-
-	logging.info( "-> Test de Recomendación.." )
-	start = time.clock()
-	recommendationList = svd.testrec( input_file    = 'TwitterRatings/funkSVD/ratings.test',
-                                      dlmchar     = b',',
-                                      header      = False,
-                                      usercol     = 0,
-                                      itemcol     = 1,
-                                      ratingcol   = 2,
-                                      topn        = 10,
-                                      output_file = 'TwitterRatings/funkSVD/ranking.json' )
-	end = time.clock()
-	logging.info( 'recommendation time: ' + str( end - start ) )
-
+	svd.train( factors= f, maxiter= mi, lr= lr, lamb= lamb )
+	predlist, mae, rmse = svd.test( input_file  = test_path,
+	                                dlmchar     = b',',
+	                                header      = False,
+	                                usercol     = 0,
+	                                itemcol     = 1,
+	                                ratingcol   = 2)
+	return predlist, mae, rmse
 
 def boosting(folds):
 
@@ -156,6 +68,8 @@ def boosting(folds):
 
 	defaults = {'f': 1000, 'mi': 100, 'lr': 0.01, 'lamb': 0.1}
 	results = {'f': {}, 'mi': {}, 'lr': {}, 'lamb': {}}
+	train_path = 'TwitterRatings/funkSVD/ratings_temp.train'
+	test_path = 'TwitterRatings/funkSVD/ratings_temp.test'
 
 	for param in defaults:
 
@@ -167,21 +81,9 @@ def boosting(folds):
 				rmses = []
 				maes  = []
 				for _ in range(0, folds):
-					ratingsSampler(ratings_train, 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
-					svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings_temp.train',
-															dlmchar   = b',',
-															header    = False,
-															usercol   = 0,
-															itemcol   = 1,
-															ratingcol = 2 )
-					svd.train( factors= i, maxiter= defaults['mi'], lr= defaults['lr'], lamb= defaults['lamb'] )
-					ratingsSampler(ratings_test, 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
-					predlist, mae, rmse = svd.test( input_file  = 'TwitterRatings/funkSVD/ratings_temp.test',
-					                                dlmchar     = b',',
-					                                header      = False,
-					                                usercol     = 0,
-					                                itemcol     = 1,
-					                                ratingcol   = 2)
+					ratingsSampler(ratings_train, train_path, 0.8)
+					ratingsSampler(ratings_test, test_path, 0.8)
+					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= i, mi= defaults['mi'], lr= defaults['lr'], lamb= defaults['lamb'])
 					rmses.append(rmse)
 					maes.append(mae)
 
@@ -202,21 +104,9 @@ def boosting(folds):
 				rmses = []
 				maes  = []
 				for _ in range(0, folds):
-					ratingsSampler(ratings_train, 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
-					svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings_temp.train',
-															dlmchar   = b',',
-															header    = False,
-															usercol   = 0,
-															itemcol   = 1,
-															ratingcol = 2 )
-					svd.train( factors= defaults['f'], maxiter= defaults['mi'], lr= defaults['lr'], lamb= i )
-					ratingsSampler(ratings_test, 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
-					predlist, mae, rmse = svd.test( input_file  = 'TwitterRatings/funkSVD/ratings_temp.test',
-					                                dlmchar     = b',',
-					                                header      = False,
-					                                usercol     = 0,
-					                                itemcol     = 1,
-					                                ratingcol   = 2)
+					ratingsSampler(ratings_train, train_path, 0.8)
+					ratingsSampler(ratings_test, test_path, 0.8)
+					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= defaults['f'], mi= defaults['mi'], lr= defaults['lr'], lamb= i)
 					rmses.append(rmse)
 					maes.append(mae)
 
@@ -237,21 +127,9 @@ def boosting(folds):
 				rmses = []
 				maes  = []
 				for _ in range(0, folds):
-					ratingsSampler(ratings_train, 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
-					svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings_temp.train',
-															dlmchar   = b',',
-															header    = False,
-															usercol   = 0,
-															itemcol   = 1,
-															ratingcol = 2 )
-					svd.train( factors= defaults['f'], maxiter= defaults['mi'], lr= i, lamb= defaults['lamb'] )
-					ratingsSampler(ratings_test, 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
-					predlist, mae, rmse = svd.test( input_file  = 'TwitterRatings/funkSVD/ratings_temp.test',
-					                                dlmchar     = b',',
-					                                header      = False,
-					                                usercol     = 0,
-					                                itemcol     = 1,
-					                                ratingcol   = 2)
+					ratingsSampler(ratings_train, train_path, 0.8)
+					ratingsSampler(ratings_test, test_path, 0.8)
+					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= defaults['f'], mi= defaults['mi'], lr= i, lamb= defaults['lamb'])
 					rmses.append(rmse)
 					maes.append(mae)
 
@@ -272,21 +150,9 @@ def boosting(folds):
 				rmses = []
 				maes  = []
 				for _ in range(0, folds):
-					ratingsSampler(ratings_train, 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
-					svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings_temp.train',
-															dlmchar   = b',',
-															header    = False,
-															usercol   = 0,
-															itemcol   = 1,
-															ratingcol = 2 )
-					svd.train( factors= defaults['f'], maxiter= i, lr= defaults['lr'], lamb= defaults['lamb'] )
-					ratingsSampler(ratings_test, 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
-					predlist, mae, rmse = svd.test( input_file  = 'TwitterRatings/funkSVD/ratings_temp.test',
-					                                dlmchar     = b',',
-					                                header      = False,
-					                                usercol     = 0,
-					                                itemcol     = 1,
-					                                ratingcol   = 2)
+					ratingsSampler(ratings_train, train_path, 0.8)
+					ratingsSampler(ratings_test, test_path, 0.8)
+					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= defaults['f'], mi= i, lr= defaults['lr'], lamb= defaults['lamb'])
 					rmses.append(rmse)
 					maes.append(mae)
 
@@ -370,7 +236,6 @@ def PRF_calculator(params, folds, topN):
 			                                    ratingcol   = 2,
 			                                    topn        = n,
 			                                    includeRated= True)
-			                                    # output_file = 'TwitterRatings/funkSVD/ranking_temp.json' )
 
 			preferred_consumption = {}
 			with open('TwitterRatings/funkSVD/ratings.test', 'r') as f:
@@ -401,6 +266,37 @@ def PRF_calculator(params, folds, topN):
 		with open('TwitterRatings/funkSVD/recall.txt', 'a') as file:
 			file.write( "%s,%s,%s,%s\n" % (n, p, r, f) )
 
+def generate_recommends(params):
+
+	svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.train',
+											dlmchar   = b',',
+											header    = False,
+											usercol   = 0,
+											itemcol   = 1,
+											ratingcol = 2 )
+
+	logging.info( "-> Entrenando modelo.." )
+	logging.info( "N° Factores: {0}; maxiter: {1}; learning rate: {2}; lambda: {3} ".format(f, mi, lr, lamb) )
+
+	start = time.clock()
+	svd.train( factors= params['f'], maxiter= params['mi'], lr= params['lr'], lamb= params['lamb'] )
+	end = time.clock()
+
+	logging.info( "training time: " + str(end - start) )
+
+	logging.info( "-> Test de Recomendación.." )
+	start = time.clock()
+	recommendationList = svd.testrec( input_file    = 'TwitterRatings/funkSVD/ratings.test',
+                                      dlmchar     = b',',
+                                      header      = False,
+                                      usercol     = 0,
+                                      itemcol     = 1,
+                                      ratingcol   = 2,
+                                      topn        = 10,
+                                      output_file = 'TwitterRatings/funkSVD/ranking.json' )
+	end = time.clock()
+	logging.info( 'recommendation time: ' + str( end - start ) )
+
 
 
 
@@ -412,5 +308,5 @@ reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
 
 opt_params = boosting(folds=15)
 RMSEMAE_distr()
-# generate_recommends(params=opt_params)
 PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
+# generate_recommends(params=opt_params)
