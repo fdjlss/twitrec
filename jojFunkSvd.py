@@ -1,34 +1,30 @@
 # coding=utf-8
 
-#--------------------------------#
 import time
 import pyreclab
 from random import sample
 import gc
 from time import sleep
 import os
-from math import sqrt
-
-# Logging
+from math import sqrt, log
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-#--------------------------------#
 
+
+#-----"PRIVATE" METHODS----------#
 def mean(lst):
-		return float(sum(lst)) / len(lst)
-
+	return float(sum(lst)) / len(lst)
 def stddev(lst):
     m = mean(lst)
     return sqrt(float(reduce(lambda x, y: x + y, map(lambda x: (x - m) ** 2, lst))) / len(lst))
-
 def opt_value(results):
 	for val in results:
 		if results[val] == min( list(results.values()) ): 
 			opt_value = val
 	return opt_value
 
-def ratingsSampler(rats, fout, n):
 
+def ratingsSampler(rats, fout, n):
 	l = len(rats)
 	K = l*n
 	ratings_sampled = sample(rats, k=int(K))
@@ -37,6 +33,51 @@ def ratingsSampler(rats, fout, n):
 		f.write( '\n'.join('%s' % x for x in ratings_sampled) )
 
 	del ratings_sampled
+
+
+def rel_div(relevance_i, i):
+	return (2.0**relevance_i - 1) / log(1 + i, 2)
+def DCG(recs):
+	s = 0.0
+	for place, relevance in recs:
+		s += rel_div(relevance, place)
+	return s
+def iDCG(recs):
+	place = 0
+	i_recs = {}
+	for relevance in sorted( recs.values(), reverse=True ):
+		place += 1
+		i_recs[i] = relevance
+	return DCG(i_recs)
+def nDCG(recs):
+	return DCG(recs) / iDCG(recs)
+
+def P_at_N(n, recs, rel_thresh):
+	s = 0.0
+	for place, relevance in recs:
+		while place <= n:
+			if relevance >= rel_thresh:
+				s += 1
+	return s / n
+
+def AP_at_N(n, recs, rel_thresh):
+	s = 0.0
+	relevants_count = 0
+	for place, relevance in recs:
+
+		if relevance >= rel_thresh:
+			rel_k = 1
+			relevants_count += 1
+		else:
+			rel_k = 0
+		s += P_at_N(place, recs, rel_thresh) * rel_k
+
+	try:
+		return s / min(n, relevants_count) 
+	except ZeroDivisionError as e:
+		return 0.0
+#--------------------------------#
+
 
 def SVDJob(train_path, test_path, f, mi, lr, lamb):
 	svd = pyreclab.SVD( dataset   = train_path,
@@ -57,12 +98,11 @@ def SVDJob(train_path, test_path, f, mi, lr, lamb):
 def boosting(folds):
 
 	ratings_train, ratings_test = [], []
-	ratings_train_path, ratings_test_path = 'TwitterRatings/funkSVD/ratings.train', 'TwitterRatings/funkSVD/ratings.test'
-	with open(ratings_train_path, 'r') as f:
+	with open('TwitterRatings/funkSVD/ratings.train', 'r') as f:
 		for line in f:
 			ratings_train.append( line.strip() )
 
-	with open(ratings_test_path, 'r') as f:
+	with open('TwitterRatings/funkSVD/ratings.test', 'r') as f:
 		for line in f:
 			ratings_test.append( line.strip() )
 
@@ -204,7 +244,6 @@ def RMSEMAE_distr():
 def PRF_calculator(params, folds, topN):
 
 	ratings_train, ratings_test = [], []
-
 	with open('TwitterRatings/funkSVD/ratings.train', 'r') as f:
 		for line in f:
 			ratings_train.append( line.strip() )
@@ -228,14 +267,14 @@ def PRF_calculator(params, folds, topN):
 
 			svd.train( factors= params['f'], maxiter= params['mi'], lr= params['lr'], lamb= params['lamb'] )
 
-			recommendationList = svd.testrec( input_file    = 'TwitterRatings/funkSVD/ratings.test', #o ratings_temp.test
-			                                    dlmchar     = b',',
-			                                    header      = False,
-			                                    usercol     = 0,
-			                                    itemcol     = 1,
-			                                    ratingcol   = 2,
-			                                    topn        = n,
-			                                    includeRated= True)
+			recommendationList = svd.testrec( input_file  = 'TwitterRatings/funkSVD/ratings.test', #o ratings_temp.test
+		                                    dlmchar     = b',',
+		                                    header      = False,
+		                                    usercol     = 0,
+		                                    itemcol     = 1,
+		                                    ratingcol   = 2,
+		                                    topn        = n,
+		                                    includeRated= True)
 
 			preferred_consumption = {}
 			with open('TwitterRatings/funkSVD/ratings.test', 'r') as f:
@@ -265,6 +304,37 @@ def PRF_calculator(params, folds, topN):
 
 		with open('TwitterRatings/funkSVD/recall.txt', 'a') as file:
 			file.write( "%s,%s,%s,%s\n" % (n, p, r, f) )
+
+def nDCGMAP_calculator(params, folds, topN):
+	pass
+	# for n in topN:
+
+	# 	svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.train',
+	# 											dlmchar   = b',',
+	# 											header    = False,
+	# 											usercol   = 0,
+	# 											itemcol   = 1,
+	# 											ratingcol = 2 )
+	# 	svd.train( factors= params['f'], maxiter= params['mi'], lr= params['lr'], lamb= params['lamb'] )
+	# 	recommendationList = svd.testrec( input_file    = 'TwitterRatings/funkSVD/ratings.test',
+	#                                       dlmchar     = b',',
+	#                                       header      = False,
+	#                                       usercol     = 0,
+	#                                       itemcol     = 1,
+	#                                       ratingcol   = 2,
+	#                                       topn        = n,
+	#                                       includeRated= True )
+	# 	# quiero..
+	# 	nDCGs = []
+	# 	APs = []
+	# 	for user in users:
+	# 		nDCGs.append( nDCG(recs(user)) )
+	# 		APs.append( AP_at_N(n, recs(user), 4) )
+
+
+
+
+
 
 def generate_recommends(params):
 
