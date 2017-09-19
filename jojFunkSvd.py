@@ -36,7 +36,7 @@ def ratingsSampler(rats, fout, n):
 
 
 def rel_div(relevance_i, i):
-	return (2.0**relevance_i - 1) / log(1 + i, 2)
+	return relevance_i / log(1.0 + i, 2)
 def DCG(recs):
 	s = 0.0
 	for place, relevance in recs:
@@ -121,8 +121,8 @@ def boosting(folds):
 				rmses = []
 				maes  = []
 				for _ in range(0, folds):
-					ratingsSampler(ratings_train, train_path, 0.8)
-					ratingsSampler(ratings_test, test_path, 0.8)
+					ratingsSampler(ratings_train, train_path, 0.9)
+					ratingsSampler(ratings_test, test_path, 0.9)
 					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= i, mi= defaults['mi'], lr= defaults['lr'], lamb= defaults['lamb'])
 					rmses.append(rmse)
 					maes.append(mae)
@@ -144,8 +144,8 @@ def boosting(folds):
 				rmses = []
 				maes  = []
 				for _ in range(0, folds):
-					ratingsSampler(ratings_train, train_path, 0.8)
-					ratingsSampler(ratings_test, test_path, 0.8)
+					ratingsSampler(ratings_train, train_path, 0.9)
+					ratingsSampler(ratings_test, test_path, 0.9)
 					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= defaults['f'], mi= defaults['mi'], lr= defaults['lr'], lamb= i)
 					rmses.append(rmse)
 					maes.append(mae)
@@ -167,8 +167,8 @@ def boosting(folds):
 				rmses = []
 				maes  = []
 				for _ in range(0, folds):
-					ratingsSampler(ratings_train, train_path, 0.8)
-					ratingsSampler(ratings_test, test_path, 0.8)
+					ratingsSampler(ratings_train, train_path, 0.9)
+					ratingsSampler(ratings_test, test_path, 0.9)
 					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= defaults['f'], mi= defaults['mi'], lr= i, lamb= defaults['lamb'])
 					rmses.append(rmse)
 					maes.append(mae)
@@ -190,8 +190,8 @@ def boosting(folds):
 				rmses = []
 				maes  = []
 				for _ in range(0, folds):
-					ratingsSampler(ratings_train, train_path, 0.8)
-					ratingsSampler(ratings_test, test_path, 0.8)
+					ratingsSampler(ratings_train, train_path, 0.9)
+					ratingsSampler(ratings_test, test_path, 0.9)
 					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= defaults['f'], mi= i, lr= defaults['lr'], lamb= defaults['lamb'])
 					rmses.append(rmse)
 					maes.append(mae)
@@ -252,84 +252,103 @@ def PRF_calculator(params, folds, topN):
 		for line in f:
 			ratings_test.append( line.strip() )
 
+	preferred_consumption = {}
+	with open('TwitterRatings/funkSVD/ratings.test', 'r') as f:
+		for line in f:
+			userId, itemId, rating = line.strip().split(',')
+			if userId not in preferred_consumption:
+				preferred_consumption[userId] = []
+			if int( rating ) >= 4: # preferencia: los que leyó y marcó con rating >= 4
+				preferred_consumption[userId].append(itemId) 
+
 	for n in topN: 
 		precision_folds, recall_folds = [], []
-		for _ in range(0, folds):
-			# ratingsSampler(ratings_train, 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
-			# ratingsSampler(ratings_test, 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
+	# for _ in range(0, folds):
+		# ratingsSampler(ratings_train, 'TwitterRatings/funkSVD/ratings_temp.train', 0.8)
+		# ratingsSampler(ratings_test, 'TwitterRatings/funkSVD/ratings_temp.test', 0.8)
 
-			svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.total', #o ratings_temp.train
-													dlmchar   = b',',
-													header    = False,
-													usercol   = 0,
-													itemcol   = 1,
-													ratingcol = 2 )
+		svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.train', #o ratings_temp.train
+												dlmchar   = b',',
+												header    = False,
+												usercol   = 0,
+												itemcol   = 1,
+												ratingcol = 2 )
 
-			svd.train( factors= params['f'], maxiter= params['mi'], lr= params['lr'], lamb= params['lamb'] )
+		svd.train( factors= params['f'], maxiter= params['mi'], lr= params['lr'], lamb= params['lamb'] )
 
-			recommendationList = svd.testrec( input_file  = 'TwitterRatings/funkSVD/ratings.test', #o ratings_temp.test
-		                                    dlmchar     = b',',
-		                                    header      = False,
-		                                    usercol     = 0,
-		                                    itemcol     = 1,
-		                                    ratingcol   = 2,
-		                                    topn        = n,
-		                                    includeRated= True)
+		recommendationList = svd.testrec( input_file  = 'TwitterRatings/funkSVD/ratings.test', #o ratings_temp.test
+	                                    dlmchar     = b',',
+	                                    header      = False,
+	                                    usercol     = 0,
+	                                    itemcol     = 1,
+	                                    ratingcol   = 2,
+	                                    topn        = n,
+	                                    includeRated= False)
 
-			preferred_consumption = {}
-			with open('TwitterRatings/funkSVD/ratings.test', 'r') as f:
-				for line in f:
-					userId, itemId, rating = line.strip().split(',')
-					if userId not in preferred_consumption:
-						preferred_consumption[userId] = []
-					if int( rating ) >= 4: # preferencia: los que leyó y marcó con rating >= 4
-						preferred_consumption[userId].append(itemId) 
+		users_precisions, users_recalls = [], []
+		for userId in recommendationList[0]:
+			recs = set(recommendationList[0][userId])
+			cons = set(preferred_consumption[userId])
+			tp = len(recs & cons)
+			fp = len(recs - cons)
+			fn = len(cons - recs)
+			users_precisions.append( float(tp) / (tp + fp) )
+			users_recalls.append( float(tp) / (tp + fn) )
 
-			users_precisions, users_recalls = [], []
-			for userId in recommendationList[0]:
-				recs = set(recommendationList[0][userId])
-				cons = set(preferred_consumption[userId])
-				tp = len(recs & cons)
-				fp = len(recs - cons)
-				fn = len(cons - recs)
-				users_precisions.append( float(tp) / (tp + fp) )
-				users_recalls.append( float(tp) / (tp + fn) )
-
-			precision_folds.append( mean(users_precisions) )
-			recall_folds.append( mean(users_recalls) )
+		precision_folds.append( mean(users_precisions) )
+		recall_folds.append( mean(users_recalls) )
 
 		p = mean( precision_folds )
 		r = mean( recall_folds )
 		f = 2*p*r / (p + r)
 
 		with open('TwitterRatings/funkSVD/recall.txt', 'a') as file:
-			file.write( "%s,%s,%s,%s\n" % (n, p, r, f) )
+			file.write( "N=%s, P=%s, R=%s, F=%s\n" % (n, p, r, f) )
 
 def nDCGMAP_calculator(params, folds, topN):
-	pass
-	# for n in topN:
 
-	# 	svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.train',
-	# 											dlmchar   = b',',
-	# 											header    = False,
-	# 											usercol   = 0,
-	# 											itemcol   = 1,
-	# 											ratingcol = 2 )
-	# 	svd.train( factors= params['f'], maxiter= params['mi'], lr= params['lr'], lamb= params['lamb'] )
-	# 	recommendationList = svd.testrec( input_file    = 'TwitterRatings/funkSVD/ratings.test',
-	#                                       dlmchar     = b',',
-	#                                       header      = False,
-	#                                       usercol     = 0,
-	#                                       itemcol     = 1,
-	#                                       ratingcol   = 2,
-	#                                       topn        = n,
-	#                                       includeRated= True )
-	# 	# quiero..
-	# 	nDCGs = []
-	# 	APs = []
-	# 	for user in users:
-	# 		nDCGs.append( nDCG(recs(user)) )
-	# 		APs.append( AP_at_N(n, recs(user), 4) )
+	consumption = {}
+	with open('TwitterRatings/funkSVD/ratings.total', 'r') as f:
+		for line in f:
+			userId, itemId, rating = line.strip().split(',')
+			if userId not in consumption:
+				consumption[userId] = {}
+			consumption[userId][itemId] = rating
+
+	for n in topN:
+		svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.train',
+												dlmchar   = b',',
+												header    = False,
+												usercol   = 0,
+												itemcol   = 1,
+												ratingcol = 2 )
+		svd.train( factors= params['f'], maxiter= params['mi'], lr= params['lr'], lamb= params['lamb'] )
+		recommendationList = svd.testrec( input_file    = 'TwitterRatings/funkSVD/ratings.test',
+	                                      dlmchar     = b',',
+	                                      header      = False,
+	                                      usercol     = 0,
+	                                      itemcol     = 1,
+	                                      ratingcol   = 2,
+	                                      topn        = n,
+	                                      includeRated= False )
+
+		nDCGs = []
+		APs = []
+		for userId in recommendationList[0]:
+			recs = {}
+			place = 1
+			for itemId in recommendationList[0][userId]:
+				if itemId in consumption[userId]: 
+					rating = consumption[userId][itemId]
+				else:
+					rating = 0
+				recs[place] = rating
+				place += 1 
+			nDCGs.append( nDCG(recs) )
+			APs.append( AP_at_N(n, recs, 4) )
+
+		with open('TwitterRatings/funkSVD/nDCGMAP.txt', 'a') as file:
+			file.write( "N=%s, nDCG=%s, MAP=%s\n" % (n, mean(nDCGs), mean(APs)) )	
 
 
 
@@ -376,7 +395,32 @@ max_iters = range(100, 520, 20) # [100, 120, .., 500]
 lrn_rates = range(2, 21, 1) # [2, 3, .., 20] / 200 = [0.01, 0.015, .., 0.1]
 reg_params = range(2, 21, 1) # [2, 3, .., 20] / 20 = [0.1, 0.15, .., 1]
 
-opt_params = boosting(folds=15)
+opt_params = boosting(folds=10)
 RMSEMAE_distr()
-PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
+PRF_calculator(params=opt_params, folds=5, topN=[5, 10, 20, 50])
+nDCGMAP_calculator(params=opt_params, folds=5, topN=[5, 10, 20, 50])
 # generate_recommends(params=opt_params)
+
+svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.total',
+										dlmchar   = b',',
+										header    = False,
+										usercol   = 0,
+										itemcol   = 1,
+										ratingcol = 2 )
+svd.train( factors= 100, maxiter= 100, lr= 0.01, lamb= 0.1 )
+
+predlist, mae, rmse = svd.test( input_file  = 'TwitterRatings/funkSVD/ratings.test',
+                                dlmchar     = b',',
+                                header      = False,
+                                usercol     = 0,
+                                itemcol     = 1,
+                                ratingcol   = 2)
+
+recommendationList = svd.testrec( input_file    = 'TwitterRatings/funkSVD/ratings.test',
+                                    dlmchar     = b',',
+                                    header      = False,
+                                    usercol     = 0,
+                                    itemcol     = 1,
+                                    ratingcol   = 2,
+                                    topn        = 10,
+                                    includeRated= True )

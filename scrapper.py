@@ -382,7 +382,7 @@ path_jsons = 'TwitterRatings/goodreads_renamed/'
 # 4)
 # add_column_timestamp(db_conn= conn, alter_table= True)
 # 5)
-ratings_maker(db_conn= conn, frac_train= 0.8, output_train= 'TwitterRatings/funkSVD/ratings.train', output_test= 'TwitterRatings/funkSVD/ratings.test', output_total= 'TwitterRatings/funkSVD/ratings.total')
+ratings_maker(db_conn= conn, frac_train= 0.9, output_train= 'TwitterRatings/funkSVD/ratings.train', output_test= 'TwitterRatings/funkSVD/ratings.test', output_total= 'TwitterRatings/funkSVD/ratings.total')
 
 
 # Cerramos la conexion a la BD
