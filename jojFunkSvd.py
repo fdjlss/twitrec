@@ -53,8 +53,8 @@ def nDCG(recs, binary_relevance):
 		return 0.0
 def P_at_N(n, recs, rel_thresh):
 	s = 0.0
-	for place in recs:
-		while place <= n:
+	while place <= n:
+		for place in recs:
 			if recs[place] >= rel_thresh:
 				s += 1
 	return s / n
@@ -62,14 +62,12 @@ def AP_at_N(n, recs, rel_thresh):
 	s = 0.0
 	relevants_count = 0
 	for place in recs:
-
 		if recs[place] >= rel_thresh:
 			rel_k = 1
 			relevants_count += 1
 		else:
 			rel_k = 0
 		s += P_at_N(place, recs, rel_thresh) * rel_k
-
 	try:
 		return s / min(n, relevants_count) 
 	except ZeroDivisionError as e:
