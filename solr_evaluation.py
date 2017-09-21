@@ -1,3 +1,5 @@
+# coding=utf-8
+
 import re, json
 # from urllib.request import urlopen
 # from urllib.parse import urlencode, quote_plus
