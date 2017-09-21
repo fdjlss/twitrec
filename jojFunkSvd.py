@@ -44,7 +44,7 @@ def iDCG(recs, binary_relevance):
 	i_recs = {}
 	for relevance in sorted( recs.values(), reverse=True ):
 		place += 1
-		i_recs[i] = relevance
+		i_recs[place] = relevance
 	return DCG(i_recs, binary_relevance)
 def nDCG(recs, binary_relevance):
 	return DCG(recs, binary_relevance) / iDCG(recs, binary_relevance)
