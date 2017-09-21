@@ -10,12 +10,12 @@ from jojFunkSvd import mean, stddev, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, 
 
 #-----"PRIVATE" METHODS----------#
 def flatten_list(list_of_lists):
+	# eliminamos duplicados manteniendo orden
 	flattened = []
-	for i in range(0, len(list_of_lists)):
-		for j in range(0, len(list_of_lists[0])): #asumimos que todas las listas tienen largo "rows"
+	for i in range(0, len(list_of_lists[0])): #asumimos que todas las listas tienen largo "rows"
+		for j in range(0, len(list_of_lists)):
 				flattened.append( list_of_lists[j][i] )
-
-	return list(set(flattened))
+	return sorted(set(flattened), key=lambda x: flattened.index(x))
 def remove_consumed(user_consumption, rec_list):
 	l = rec_list
 	for itemId in rec_list:
