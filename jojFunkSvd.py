@@ -315,40 +315,43 @@ def nDCGMAP_calculator(params, folds, topN):
 
 	consumption = consumption(ratings_path='TwitterRatings/funkSVD/ratings.total', rel_thresh=0, with_ratings=True)
 
-	for n in topN:
-		svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.train',
-												dlmchar   = b',',
-												header    = False,
-												usercol   = 0,
-												itemcol   = 1,
-												ratingcol = 2 )
-		svd.train( factors= params['f'], maxiter= params['mi'], lr= params['lr'], lamb= params['lamb'] )
-		recommendationList = svd.testrec( input_file    = 'TwitterRatings/funkSVD/ratings.test',
-	                                      dlmchar     = b',',
-	                                      header      = False,
-	                                      usercol     = 0,
-	                                      itemcol     = 1,
-	                                      ratingcol   = 2,
-	                                      topn        = n,
-	                                      includeRated= False )
+	svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.train',
+											dlmchar   = b',',
+											header    = False,
+											usercol   = 0,
+											itemcol   = 1,
+											ratingcol = 2 )
+	svd.train( factors= params['f'], maxiter= params['mi'], lr= params['lr'], lamb= params['lamb'] )
+	recommendationList = svd.testrec( input_file    = 'TwitterRatings/funkSVD/ratings.test',
+                                      dlmchar     = b',',
+                                      header      = False,
+                                      usercol     = 0,
+                                      itemcol     = 1,
+                                      ratingcol   = 2,
+                                      topn        = 50,
+                                      includeRated= False )
 
-		nDCGs = []
-		APs = []
-		for userId in recommendationList[0]:
-			recs = {}
-			place = 1
-			for itemId in recommendationList[0][userId]:
-				if itemId in consumption[userId]: 
-					rating = consumption[userId][itemId]
-				else:
-					rating = 0
-				recs[place] = rating
-				place += 1 
-			nDCGs.append( nDCG(recs=recs, binary_relevance=False) )
-			APs.append( AP_at_N(n=n, recs=recs, rel_thresh=4) )
+	nDCGs = dict((n, []) for n in topN)
+	APs = dict((n, []) for n in topN)
+	for userId in recommendationList[0]:
+		recs = {}
+		place = 1
+		for itemId in recommendationList[0][userId]:
+			if itemId in consumption[userId]: 
+				rating = int( consumption[userId][itemId] )
+			else:
+				rating = 0
+			recs[place] = rating
+			place += 1 
 
-		with open('TwitterRatings/funkSVD/nDCGMAP.txt', 'a') as file:
-			file.write( "N=%s, nDCG=%s, MAP=%s\n" % (n, mean(nDCGs), mean(APs)) )	
+		for n in topN:
+			mini_recs = dict((k, recs[k]) for k in recs.keys()[:n])
+			nDCGs[n].append( nDCG(recs=mini_recs, binary_relevance=False) )
+			APs[n].append( AP_at_N(n=n, recs=recs, rel_thresh=4) )
+
+	with open('TwitterRatings/CB/nDCGMAP.txt', 'a') as file:
+		for n in topN:
+			file.write( "N=%s, nDCG=%s, MAP=%s\n" % (n, mean(nDCGs[n]), mean(APs[n])) )	
 
 
 
@@ -389,8 +392,8 @@ def generate_recommends(params):
 def main():
 	opt_params = boosting(folds=10)
 	RMSEMAE_distr()
-	PRF_calculator(params=opt_params, folds=5, topN=[5, 10, 20, 50])
-	nDCGMAP_calculator(params=opt_params, folds=5, topN=[5, 10, 20, 50])
+	PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
+	nDCGMAP_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
 	# generate_recommends(params=opt_params)
 
 	# svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.total',
