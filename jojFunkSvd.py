@@ -36,8 +36,8 @@ def rel_div(relevance_i, i, binary_relevance):
 		return relevance_i / log(1.0 + i, 2)
 def DCG(recs, binary_relevance):
 	s = 0.0
-	for place, relevance in recs:
-		s += rel_div(relevance, place, binary_relevance)
+	for place in recs:
+		s += rel_div(recs[place], place, binary_relevance)
 	return s
 def iDCG(recs, binary_relevance):
 	place = 0
@@ -50,17 +50,17 @@ def nDCG(recs, binary_relevance):
 	return DCG(recs, binary_relevance) / iDCG(recs, binary_relevance)
 def P_at_N(n, recs, rel_thresh):
 	s = 0.0
-	for place, relevance in recs:
+	for place in recs:
 		while place <= n:
-			if relevance >= rel_thresh:
+			if recs[place] >= rel_thresh:
 				s += 1
 	return s / n
 def AP_at_N(n, recs, rel_thresh):
 	s = 0.0
 	relevants_count = 0
-	for place, relevance in recs:
+	for place in recs:
 
-		if relevance >= rel_thresh:
+		if recs[place] >= rel_thresh:
 			rel_k = 1
 			relevants_count += 1
 		else:
