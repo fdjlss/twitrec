@@ -53,10 +53,12 @@ def nDCG(recs, binary_relevance):
 		return 0.0
 def P_at_N(n, recs, rel_thresh):
 	s = 0.0
-	while place <= n:
-		for place in recs:
+	for place in recs:
+		if place <= n:
 			if recs[place] >= rel_thresh:
 				s += 1
+		else:
+			break
 	return s / n
 def AP_at_N(n, recs, rel_thresh):
 	s = 0.0
