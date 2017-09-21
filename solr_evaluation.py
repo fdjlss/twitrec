@@ -6,6 +6,8 @@ import re, json
 from urllib import urlencode, quote_plus
 from urllib2 import urlopen
 from jojFunkSvd import mean, stddev, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, consumption
+import logging
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 
 #-----"PRIVATE" METHODS----------#
@@ -29,6 +31,7 @@ def option1(solr, q, rows, fl, topN):
 	nDCGs = dict((n, []) for n in topN)
 	APs = dict((n, []) for n in topN)
 	for userId in train_c:
+		logging.info("-> Option 1. Viendo usuario {0}/{1}".format(userId, len(train_c)) )
 		book_recs = []
 		for itemId in train_c[userId]:
 			base_params = {'q' : q.format(goodreadsId=itemId),
@@ -71,6 +74,7 @@ def option2(solr, rows, fl, topN, mlt_field):
 	APs = dict((n, []) for n in topN)
 
 	for userId in train_c:
+		logging.info("-> Option 2. mlt.fl: {2}. Viendo usuario {0}/{1}".format(userId, len(train_c), mlt_field) )
 		stream_url = solr + '/query?q=goodreadsId:{ids}'
 
 		ids_string = '('
@@ -116,7 +120,6 @@ solr = "http://localhost:8983/solr/grrecsys"
 q = 'goodreadsId:{goodreadsId}'
 rows = 100
 fl = 'id,goodreadsId,title.titleOfficial,rating.ratingAvg,genres.genreName,description'
-mlt_fields = ['description', 'title.titleOfficial', 'genres.genreName', 'author.authors.authorName', 'quotes.quoteText']
 option1(solr=solr, q=q, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50])
 option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='description')
 option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='title.titleOfficial')
