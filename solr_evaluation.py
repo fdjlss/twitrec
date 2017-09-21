@@ -44,7 +44,7 @@ def option1(solr, q, rows, fl, topN):
 			book_recs.append( [ str(doc['goodreadsId'][0]) for doc in docs ] )
 
 		book_recs = flatten_list(list_of_lists=book_recs)
-		book_recs = remove_consumed(consumption=train_c[userId], rec_list=book_recs)
+		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		recs = {}
 		place = 1
 		for itemId in book_recs:
@@ -90,7 +90,7 @@ def option2(solr, rows, fl, topN, mlt_field):
 		docs           = response['response']['docs']
 		parsed_query   = response['debug']['parsedquery']
 		book_recs      = [ str(doc['goodreadsId'][0]) for doc in docs] 
-		book_recs      = remove_consumed(consumption=train_c[userId], rec_list=book_recs)
+		book_recs      = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 
 		recs = {}
 		place = 1
