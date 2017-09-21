@@ -11,12 +11,15 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 
 
 #-----"PRIVATE" METHODS----------#
-def flatten_list(list_of_lists):
+def flatten_list(list_of_lists, rows):
 	# eliminamos duplicados manteniendo orden
 	flattened = []
-	for i in range(0, len(list_of_lists[0])): #asumimos que todas las listas tienen largo "rows"
+	for i in range(0, rows): #asumimos que todas las listas tienen largo "rows"
 		for j in range(0, len(list_of_lists)):
+			try:
 				flattened.append( list_of_lists[j][i] )
+			except IndexError as e:
+				continue
 	return sorted(set(flattened), key=lambda x: flattened.index(x))
 def remove_consumed(user_consumption, rec_list):
 	l = rec_list
@@ -51,7 +54,7 @@ def option1(solr, q, rows, fl, topN):
 			book_recs.append( [ str(doc['goodreadsId'][0]) for doc in docs ] )
 
 		logging.info("Flattening list..")
-		book_recs = flatten_list(list_of_lists=book_recs)
+		book_recs = flatten_list(list_of_lists=book_recs, rows=rows)
 		logging.info("Removing consumed..")
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		recs = {}
