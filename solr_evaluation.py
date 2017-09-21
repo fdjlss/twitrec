@@ -56,6 +56,7 @@ def option1(solr, q, rows, fl, topN):
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		recs = {}
 		place = 1
+		logging.info("Making recs..")
 		for itemId in book_recs:
 			if itemId in total_c[userId]:
 				rating = int( total_c[userId][itemId] )
@@ -66,7 +67,9 @@ def option1(solr, q, rows, fl, topN):
 
 		for n in topN: 
 			mini_recs = dict((k, recs[k]) for k in recs.keys()[:n])
+			logging.info("Appending result of individual nDCG..")
 			nDCGs[n].append( nDCG(recs=mini_recs, binary_relevance=False) )
+			logging.info("Appending result of individual AP..")
 			APs[n].append( AP_at_N(n=n, recs=recs, rel_thresh=4) )
 
 	with open('TwitterRatings/CB/option1_results.txt', 'a') as file:
