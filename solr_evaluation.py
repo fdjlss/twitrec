@@ -34,19 +34,25 @@ def option1(solr, q, rows, fl, topN):
 		logging.info("-> Option 1. Viendo usuario {0}/{1}".format(userId, len(train_c)) )
 		book_recs = []
 		for itemId in train_c[userId]:
+			logging.info("Viendo item {0}".format(itemId))
 			base_params = {'q' : q.format(goodreadsId=itemId),
 										 'rows' : rows, 
 										 'fl' : fl,
 										 'omitHeader' : 'true',
 										 'debugQuery' : 'on'}
+			logging.info("Encoding params..")
 			encoded_params = urlencode(base_params)
 			url            = solr + '/mlt?' + encoded_params
+			logging.info("Fetching response..")
 			response       = json.loads( urlopen(url).read().decode('utf8') )
 			docs           = response['response']['docs']
 			parsed_query   = response['debug']['parsedquery']
+			logging.info("Apending book IDs..")
 			book_recs.append( [ str(doc['goodreadsId'][0]) for doc in docs ] )
 
+		logging.info("Flattening list..")
 		book_recs = flatten_list(list_of_lists=book_recs)
+		logging.info("Removing consumed..")
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		recs = {}
 		place = 1
