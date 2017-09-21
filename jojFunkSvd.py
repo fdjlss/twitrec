@@ -47,7 +47,10 @@ def iDCG(recs, binary_relevance):
 		i_recs[place] = relevance
 	return DCG(i_recs, binary_relevance)
 def nDCG(recs, binary_relevance):
-	return DCG(recs, binary_relevance) / iDCG(recs, binary_relevance)
+	try:
+		return DCG(recs, binary_relevance) / iDCG(recs, binary_relevance)
+	except ZeroDivisionError as e:
+		return 0.0
 def P_at_N(n, recs, rel_thresh):
 	s = 0.0
 	for place in recs:
