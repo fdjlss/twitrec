@@ -319,7 +319,7 @@ def PRF_calculator(params, folds, topN):
 
 def nDCGMAP_calculator(params, folds, topN):
 
-	consumption = consumption(ratings_path='TwitterRatings/funkSVD/ratings.total', rel_thresh=0, with_ratings=True)
+	user_consumption = consumption(ratings_path='TwitterRatings/funkSVD/ratings.total', rel_thresh=0, with_ratings=True)
 
 	svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.train',
 											dlmchar   = b',',
@@ -343,8 +343,8 @@ def nDCGMAP_calculator(params, folds, topN):
 		recs = {}
 		place = 1
 		for itemId in recommendationList[0][userId]:
-			if itemId in consumption[userId]: 
-				rating = int( consumption[userId][itemId] )
+			if itemId in user_consumption[userId]:
+				rating = int( user_consumption[userId][itemId] )
 			else:
 				rating = 0
 			recs[place] = rating
@@ -399,7 +399,7 @@ def main():
 	# opt_params = boosting(folds=10)
 	# RMSEMAE_distr()
 	opt_params = {'f': 825, 'mi': 50, 'lr': 0.0285, 'lamb': 0.12}
-	PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
+	# PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
 	nDCGMAP_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
 	# generate_recommends(params=opt_params)
 
