@@ -48,7 +48,10 @@ def option1(solr, q, rows, fl, topN):
 			url            = solr + '/mlt?' + encoded_params
 			logging.info("Fetching response..")
 			response       = json.loads( urlopen(url).read().decode('utf8') )
-			docs           = response['response']['docs']
+			try:
+				docs           = response['response']['docs']
+			except TypeError as e:
+				continue
 			parsed_query   = response['debug']['parsedquery']
 			logging.info("Apending book IDs..")
 			book_recs.append( [ str(doc['goodreadsId'][0]) for doc in docs ] )
@@ -103,7 +106,10 @@ def option2(solr, rows, fl, topN, mlt_field):
 		encoded_params = urlencode(base_params)
 		url            = solr + '/mlt?stream.url=' + stream_url.format(ids=ids_string) + "&" + encoded_params
 		response       = json.loads( urlopen(url).read().decode('utf8') )
-		docs           = response['response']['docs']
+		try:
+			docs           = response['response']['docs']
+		except TypeError as e:
+			continue
 		parsed_query   = response['debug']['parsedquery']
 		book_recs      = [ str(doc['goodreadsId'][0]) for doc in docs] 
 		book_recs      = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
