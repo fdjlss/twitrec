@@ -302,8 +302,11 @@ def PRF_calculator(params, folds, topN):
 			fp = len(recs - cons)
 			fn = len(cons - recs)
 			users_precisions.append( float(tp) / (tp + fp) )
-			users_recalls.append( float(tp) / (tp + fn) )
-
+			try:
+				users_recalls.append( float(tp) / (tp + fn) )
+			except ZeroDivisionError as e:
+				users_recalls.append( 0.0 )
+				
 		precision_folds.append( mean(users_precisions) )
 		recall_folds.append( mean(users_recalls) )
 
@@ -393,8 +396,8 @@ def generate_recommends(params):
 	logging.info( 'recommendation time: ' + str( end - start ) )
 
 def main():
-	opt_params = boosting(folds=10)
-	RMSEMAE_distr()
+	# opt_params = boosting(folds=10)
+	# RMSEMAE_distr()
 	PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
 	nDCGMAP_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
 	# generate_recommends(params=opt_params)
