@@ -1,0 +1,5 @@
+N=5, nDCG=0.0, MAP=0.0
+N=10, nDCG=0.0, MAP=0.0
+N=15, nDCG=0.0, MAP=0.0
+N=20, nDCG=0.0, MAP=0.0
+N=50, nDCG=0.0, MAP=0.0
