@@ -341,8 +341,10 @@ def nDCGMAP_calculator(params, topN, output_filename):
                                       topn        = 50,
                                       includeRated= False )
 
-	nDCGs = dict((n, []) for n in topN)
-	APs = dict((n, []) for n in topN)
+	nDCGs_nonbinary = dict((n, []) for n in topN)
+	nDCGs_binary    = dict((n, []) for n in topN)
+	APs_thresh4     = dict((n, []) for n in topN)
+	APs_thresh3     = dict((n, []) for n in topN)
 	for userId in recommendationList[0]:
 		recs = {}
 		place = 1
@@ -356,17 +358,15 @@ def nDCGMAP_calculator(params, topN, output_filename):
 
 		for n in topN:
 			mini_recs = dict((k, recs[k]) for k in recs.keys()[:n])
-			nDCGs[n].append( nDCG(recs=mini_recs, binary_relevance=False) )
-			APs[n].append( AP_at_N(n=n, recs=recs, rel_thresh=4) )
+			nDCGs_nonbinary[n].append( nDCG(recs=mini_recs, binary_relevance=False) )
+			nDCGs_binary[n].append( nDCG(recs=mini_recs, binary_relevance=True) )			
+			APs_thresh4[n].append( AP_at_N(n=n, recs=recs, rel_thresh=4) )
+			APs_thresh3[n].append( AP_at_N(n=n, recs=recs, rel_thresh=3) )
 
 	with open('TwitterRatings/funkSVD/'+output_filename, 'a') as file:
 		for n in topN:
-			file.write( "N=%s, nDCG=%s, MAP=%s\n" % (n, mean(nDCGs[n]), mean(APs[n])) )	
-
-
-
-
-
+			file.write( "N=%s, non-binary nDCG=%s, MAP(rel_thresh=4)=%s, binary nDCG=%s, MAP(rel_thresh=3)=%s\n" % \
+				(n, mean(nDCGs_nonbinary[n]), mean(APs_thresh4[n]), mean(nDCGs_binary[n]), mean(APs_thresh3[n])) )	
 
 def generate_recommends(params):
 
@@ -399,9 +399,11 @@ def generate_recommends(params):
 	end = time.clock()
 	logging.info( 'recommendation time: ' + str( end - start ) )
 
+
+
 def main():
 	opt_params = boosting(folds=2, sample_fraction=1.0)
-	RMSEMAE_distr(output_filename="resumen_8020.txt")
+	RMSEMAE_distr(output_filename="results_8020.txt")
 	# opt_params = {'f': 825, 'mi': 50, 'lr': 0.0285, 'lamb': 0.12}
 	# PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
 	nDCGMAP_calculator(params=opt_params, topN=[10, 20, 50], output_filename="nDCGMAP_8020.txt")
