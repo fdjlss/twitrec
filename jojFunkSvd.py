@@ -111,7 +111,7 @@ def SVDJob(train_path, test_path, f, mi, lr, lamb):
 	                                ratingcol   = 2 )
 	return predlist, mae, rmse
 
-def boosting(folds):
+def boosting(folds, sample_fraction):
 
 	ratings_train, ratings_test = [], []
 	with open('TwitterRatings/funkSVD/ratings.train', 'r') as f:
@@ -137,8 +137,8 @@ def boosting(folds):
 				rmses = []
 				maes  = []
 				for _ in range(0, folds):
-					ratingsSampler(ratings_train, train_path, 0.9)
-					ratingsSampler(ratings_test, test_path, 0.9)
+					ratingsSampler(ratings_train, train_path, sample_fraction)
+					ratingsSampler(ratings_test, test_path, sample_fraction)
 					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= i, mi= defaults['mi'], lr= defaults['lr'], lamb= defaults['lamb'])
 					rmses.append(rmse)
 					maes.append(mae)
@@ -160,8 +160,8 @@ def boosting(folds):
 				rmses = []
 				maes  = []
 				for _ in range(0, folds):
-					ratingsSampler(ratings_train, train_path, 0.9)
-					ratingsSampler(ratings_test, test_path, 0.9)
+					ratingsSampler(ratings_train, train_path, sample_fraction)
+					ratingsSampler(ratings_test, test_path, sample_fraction)
 					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= defaults['f'], mi= defaults['mi'], lr= defaults['lr'], lamb= i)
 					rmses.append(rmse)
 					maes.append(mae)
@@ -183,8 +183,8 @@ def boosting(folds):
 				rmses = []
 				maes  = []
 				for _ in range(0, folds):
-					ratingsSampler(ratings_train, train_path, 0.9)
-					ratingsSampler(ratings_test, test_path, 0.9)
+					ratingsSampler(ratings_train, train_path, sample_fraction)
+					ratingsSampler(ratings_test, test_path, sample_fraction)
 					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= defaults['f'], mi= defaults['mi'], lr= i, lamb= defaults['lamb'])
 					rmses.append(rmse)
 					maes.append(mae)
@@ -206,8 +206,8 @@ def boosting(folds):
 				rmses = []
 				maes  = []
 				for _ in range(0, folds):
-					ratingsSampler(ratings_train, train_path, 0.9)
-					ratingsSampler(ratings_test, test_path, 0.9)
+					ratingsSampler(ratings_train, train_path, sample_fraction)
+					ratingsSampler(ratings_test, test_path, sample_fraction)
 					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= defaults['f'], mi= i, lr= defaults['lr'], lamb= defaults['lamb'])
 					rmses.append(rmse)
 					maes.append(mae)
@@ -221,10 +221,14 @@ def boosting(folds):
 
 			defaults['mi'] = opt_value(results['mi'])
 
+	with open('TwitterRatings/funkSVD/opt_params.txt', 'w') as f:
+		for param in defaults:
+			f.write( "%s:%s\n" % (param, defaults[param]) )
+
 	return defaults
 
 
-def RMSEMAE_distr():
+def RMSEMAE_distr(output_filename):
 	path = "TwitterRatings/funkSVD/params/"
 	datos = {}
 
@@ -249,7 +253,7 @@ def RMSEMAE_distr():
 
 			datos[param][value[:-4]] = [ [rmse_mean, rmse_stddev], [mae_mean, mae_stddev] ]
 
-	with open("TwitterRatings/funkSVD/resumen3.txt", 'w') as f:
+	with open("TwitterRatings/funkSVD/"+output_filename, 'w') as f:
 		for param in datos:
 			f.write("%s\n" % param)
 			for v in sorted(datos[param].items()):
@@ -317,7 +321,7 @@ def PRF_calculator(params, folds, topN):
 		with open('TwitterRatings/funkSVD/recall.txt', 'a') as file:
 			file.write( "N=%s, P=%s, R=%s, F=%s\n" % (n, p, r, f) )
 
-def nDCGMAP_calculator(params, folds, topN):
+def nDCGMAP_calculator(params, topN):
 
 	user_consumption = consumption(ratings_path='TwitterRatings/funkSVD/ratings.total', rel_thresh=0, with_ratings=True)
 
@@ -355,7 +359,7 @@ def nDCGMAP_calculator(params, folds, topN):
 			nDCGs[n].append( nDCG(recs=mini_recs, binary_relevance=False) )
 			APs[n].append( AP_at_N(n=n, recs=recs, rel_thresh=4) )
 
-	with open('TwitterRatings/CB/nDCGMAP.txt', 'a') as file:
+	with open('TwitterRatings/CB/nDCGMAP_8020.txt', 'a') as file:
 		for n in topN:
 			file.write( "N=%s, nDCG=%s, MAP=%s\n" % (n, mean(nDCGs[n]), mean(APs[n])) )	
 
@@ -396,11 +400,11 @@ def generate_recommends(params):
 	logging.info( 'recommendation time: ' + str( end - start ) )
 
 def main():
-	# opt_params = boosting(folds=10)
-	# RMSEMAE_distr()
-	opt_params = {'f': 825, 'mi': 50, 'lr': 0.0285, 'lamb': 0.12}
+	opt_params = boosting(folds=10, sample_fraction=1.0)
+	RMSEMAE_distr(output_filename="resumen_8020.txt")
+	# opt_params = {'f': 825, 'mi': 50, 'lr': 0.0285, 'lamb': 0.12}
 	# PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
-	nDCGMAP_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
+	nDCGMAP_calculator(params=opt_params, topN=[10, 20, 50])
 	# generate_recommends(params=opt_params)
 
 	# svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.total',
