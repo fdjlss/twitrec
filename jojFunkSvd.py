@@ -321,7 +321,7 @@ def PRF_calculator(params, folds, topN):
 		with open('TwitterRatings/funkSVD/recall.txt', 'a') as file:
 			file.write( "N=%s, P=%s, R=%s, F=%s\n" % (n, p, r, f) )
 
-def nDCGMAP_calculator(params, topN):
+def nDCGMAP_calculator(params, topN, output_filename):
 
 	user_consumption = consumption(ratings_path='TwitterRatings/funkSVD/ratings.total', rel_thresh=0, with_ratings=True)
 
@@ -359,7 +359,7 @@ def nDCGMAP_calculator(params, topN):
 			nDCGs[n].append( nDCG(recs=mini_recs, binary_relevance=False) )
 			APs[n].append( AP_at_N(n=n, recs=recs, rel_thresh=4) )
 
-	with open('TwitterRatings/CB/nDCGMAP_8020.txt', 'a') as file:
+	with open('TwitterRatings/funkSVD/'+output_filename, 'a') as file:
 		for n in topN:
 			file.write( "N=%s, nDCG=%s, MAP=%s\n" % (n, mean(nDCGs[n]), mean(APs[n])) )	
 
@@ -400,11 +400,11 @@ def generate_recommends(params):
 	logging.info( 'recommendation time: ' + str( end - start ) )
 
 def main():
-	opt_params = boosting(folds=10, sample_fraction=1.0)
+	opt_params = boosting(folds=2, sample_fraction=1.0)
 	RMSEMAE_distr(output_filename="resumen_8020.txt")
 	# opt_params = {'f': 825, 'mi': 50, 'lr': 0.0285, 'lamb': 0.12}
 	# PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
-	nDCGMAP_calculator(params=opt_params, topN=[10, 20, 50])
+	nDCGMAP_calculator(params=opt_params, topN=[10, 20, 50], output_filename="nDCGMAP_8020.txt")
 	# generate_recommends(params=opt_params)
 
 	# svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.total',
