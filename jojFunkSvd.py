@@ -127,7 +127,7 @@ def boosting(folds, sample_fraction):
 	train_path = 'TwitterRatings/funkSVD/ratings_temp.train'
 	test_path = 'TwitterRatings/funkSVD/ratings_temp.test'
 
-	for param in defaults:
+	for param in ['f', 'lamb', 'lr', 'mi']: #oops! antes "for param in defaults", pero defaults no tiene los params ordenados
 
 		if param=='f':
 			defaults['f'] = list(range(100, 1525, 25))
