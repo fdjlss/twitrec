@@ -29,26 +29,26 @@ def ratingsSampler(rats, fout, n):
 	with open(fout, 'w') as f:
 		f.write( '\n'.join('%s' % x for x in ratings_sampled) )
 	del ratings_sampled
-def rel_div(relevance_i, i, binary_relevance):
-	if binary_relevance:
+def rel_div(relevance_i, i, alt_form):
+	if alt_form:
 		return ( 2.0**relevance_i - 1) / log(1.0 + i, 2)
 	else:
 		return relevance_i / log(1.0 + i, 2)
-def DCG(recs, binary_relevance):
+def DCG(recs, alt_form):
 	s = 0.0
 	for place in recs:
-		s += rel_div(recs[place], place, binary_relevance)
+		s += rel_div(recs[place], place, alt_form)
 	return s
-def iDCG(recs, binary_relevance):
+def iDCG(recs, alt_form):
 	place = 0
 	i_recs = {}
 	for relevance in sorted( recs.values(), reverse=True ):
 		place += 1
 		i_recs[place] = relevance
-	return DCG(i_recs, binary_relevance)
-def nDCG(recs, binary_relevance):
+	return DCG(i_recs, alt_form)
+def nDCG(recs, alt_form):
 	try:
-		return DCG(recs, binary_relevance) / iDCG(recs, binary_relevance)
+		return DCG(recs, alt_form) / iDCG(recs, alt_form)
 	except ZeroDivisionError as e:
 		return 0.0
 def P_at_N(n, recs, rel_thresh):
@@ -345,10 +345,11 @@ def nDCGMAP_calculator(params, topN, output_filename):
                                       topn        = 50,
                                       includeRated= False )
 
-	nDCGs_nonbinary = dict((n, []) for n in topN)
-	nDCGs_binary    = dict((n, []) for n in topN)
-	APs_thresh4     = dict((n, []) for n in topN)
-	APs_thresh3     = dict((n, []) for n in topN)
+	nDCGs_normal  = dict((n, []) for n in topN)
+	nDCGs_altform = dict((n, []) for n in topN)
+	APs_thresh4   = dict((n, []) for n in topN)
+	APs_thresh3   = dict((n, []) for n in topN)
+	APs_thresh2   = dict((n, []) for n in topN)
 	for userId in recommendationList[0]:
 		recs = {}
 		place = 1
@@ -362,15 +363,16 @@ def nDCGMAP_calculator(params, topN, output_filename):
 
 		for n in topN:
 			mini_recs = dict((k, recs[k]) for k in recs.keys()[:n])
-			nDCGs_nonbinary[n].append( nDCG(recs=mini_recs, binary_relevance=False) )
-			nDCGs_binary[n].append( nDCG(recs=mini_recs, binary_relevance=True) )			
+			nDCGs_normal[n].append( nDCG(recs=mini_recs, alt_form=False) )
+			nDCGs_altform[n].append( nDCG(recs=mini_recs, alt_form=True) )			
 			APs_thresh4[n].append( AP_at_N(n=n, recs=recs, rel_thresh=4) )
 			APs_thresh3[n].append( AP_at_N(n=n, recs=recs, rel_thresh=3) )
+			APs_thresh2[n].append( AP_at_N(n=n, recs=recs, rel_thresh=2) )
 
 	with open('TwitterRatings/funkSVD/'+output_filename, 'a') as file:
 		for n in topN:
-			file.write( "N=%s, non-binary nDCG=%s, MAP(rel_thresh=4)=%s, binary nDCG=%s, MAP(rel_thresh=3)=%s\n" % \
-				(n, mean(nDCGs_nonbinary[n]), mean(APs_thresh4[n]), mean(nDCGs_binary[n]), mean(APs_thresh3[n])) )	
+			file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, MAP(rel_thresh=4)=%s, MAP(rel_thresh=3)=%s, MAP(rel_thresh=2)=%s\n" % \
+				(n, mean(nDCGs_normal[n]), mean(nDCGs_altform[n]), mean(APs_thresh4[n]), mean(APs_thresh3[n]), mean(APs_thresh2[n])) )	
 
 def generate_recommends(params):
 

@@ -31,8 +31,8 @@ def remove_consumed(user_consumption, rec_list):
 def option1(solr, q, rows, fl, topN):
 	train_c = consumption(ratings_path='TwitterRatings/funkSVD/ratings.train', rel_thresh=0, with_ratings=False)
 	total_c  = consumption(ratings_path='TwitterRatings/funkSVD/ratings.total', rel_thresh=0, with_ratings=True)
-	nDCGs_nonbinary = dict((n, []) for n in topN)
-	nDCGs_binary    = dict((n, []) for n in topN)
+	nDCGs_normal = dict((n, []) for n in topN)
+	nDCGs_altform    = dict((n, []) for n in topN)
 	APs_thresh4     = dict((n, []) for n in topN)
 	APs_thresh3     = dict((n, []) for n in topN)
 	APs_thresh2     = dict((n, []) for n in topN)
@@ -78,22 +78,22 @@ def option1(solr, q, rows, fl, topN):
 			mini_recs = dict((k, recs[k]) for k in recs.keys()[:n])
 			logging.info("Appending result of individual nDCG..")
 			logging.info("Appending result of individual AP..")
-			nDCGs_nonbinary[n].append( nDCG(recs=mini_recs, binary_relevance=False) )
-			nDCGs_binary[n].append( nDCG(recs=mini_recs, binary_relevance=True) )			
+			nDCGs_normal[n].append( nDCG(recs=mini_recs, binary_relevance=False) )
+			nDCGs_altform[n].append( nDCG(recs=mini_recs, binary_relevance=True) )			
 			APs_thresh4[n].append( AP_at_N(n=n, recs=recs, rel_thresh=4) )
 			APs_thresh3[n].append( AP_at_N(n=n, recs=recs, rel_thresh=3) )
 			APs_thresh2[n].append( AP_at_N(n=n, recs=recs, rel_thresh=2) )
 
 	with open('TwitterRatings/CB/option1_results.txt', 'a') as file:
 		for n in topN:
-			file.write( "N=%s, non-binary nDCG=%s, MAP(rel_thresh=4)=%s, binary nDCG=%s, MAP(rel_thresh=3)=%s, MAP(rel_thresh=2)=%s\n" % \
-				(n, mean(nDCGs_nonbinary[n]), mean(APs_thresh4[n]), mean(nDCGs_binary[n]), mean(APs_thresh3[n]), mean(APs_thresh2[n]) ) )	
+			file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, MAP(rel_thresh=4)=%s, MAP(rel_thresh=3)=%s, MAP(rel_thresh=2)=%s\n" % \
+				(n, mean(nDCGs_normal[n]), mean(nDCGs_altform[n]), mean(APs_thresh4[n]), mean(APs_thresh3[n]), mean(APs_thresh2[n]) ) )	
 
 def option2(solr, rows, fl, topN, mlt_field):
 	train_c = consumption(ratings_path='TwitterRatings/funkSVD/ratings.train', rel_thresh=0, with_ratings=False)
 	total_c  = consumption(ratings_path='TwitterRatings/funkSVD/ratings.total', rel_thresh=0, with_ratings=True)
-	nDCGs_nonbinary = dict((n, []) for n in topN)
-	nDCGs_binary    = dict((n, []) for n in topN)
+	nDCGs_normal = dict((n, []) for n in topN)
+	nDCGs_altform    = dict((n, []) for n in topN)
 	APs_thresh4     = dict((n, []) for n in topN)
 	APs_thresh3     = dict((n, []) for n in topN)
 	APs_thresh2     = dict((n, []) for n in topN)
@@ -136,16 +136,16 @@ def option2(solr, rows, fl, topN, mlt_field):
 
 		for n in topN: 
 			mini_recs = dict((k, recs[k]) for k in recs.keys()[:n])
-			nDCGs_nonbinary[n].append( nDCG(recs=mini_recs, binary_relevance=False) )
-			nDCGs_binary[n].append( nDCG(recs=mini_recs, binary_relevance=True) )			
+			nDCGs_normal[n].append( nDCG(recs=mini_recs, binary_relevance=False) )
+			nDCGs_altform[n].append( nDCG(recs=mini_recs, binary_relevance=True) )			
 			APs_thresh4[n].append( AP_at_N(n=n, recs=recs, rel_thresh=4) )
 			APs_thresh3[n].append( AP_at_N(n=n, recs=recs, rel_thresh=3) )
 			APs_thresh2[n].append( AP_at_N(n=n, recs=recs, rel_thresh=2) )
 
 	with open('TwitterRatings/CB/option2_results_'+mlt_field+'.txt', 'a') as file:
 		for n in topN:
-			file.write( "N=%s, non-binary nDCG=%s, MAP(rel_thresh=4)=%s, binary nDCG=%s, MAP(rel_thresh=3)=%s, MAP(rel_thresh=2)=%s\n" % \
-				(n, mean(nDCGs_nonbinary[n]), mean(APs_thresh4[n]), mean(nDCGs_binary[n]), mean(APs_thresh3[n]), mean(APs_thresh2[n])) )		
+			file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, MAP(rel_thresh=4)=%s, MAP(rel_thresh=3)=%s, MAP(rel_thresh=2)=%s\n" % \
+				(n, mean(nDCGs_normal[n]), mean(nDCGs_altform[n]), mean(APs_thresh4[n]), mean(APs_thresh3[n]), mean(APs_thresh2[n])) )		
 
 
 solr = "http://localhost:8983/solr/grrecsys"
