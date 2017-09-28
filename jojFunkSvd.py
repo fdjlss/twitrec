@@ -137,8 +137,8 @@ def boosting(folds, sample_fraction):
 				rmses = []
 				maes  = []
 				for _ in range(0, folds):
-					ratingsSampler(ratings_train, train_path, sample_fraction)
-					ratingsSampler(ratings_test, test_path, sample_fraction)
+					# ratingsSampler(ratings_train, train_path, sample_fraction)
+					# ratingsSampler(ratings_test, test_path, sample_fraction)
 					logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=i, lamb=defaults['lamb'], lr=defaults['lr'], mi=defaults['mi']) )
 					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= i, mi= defaults['mi'], lr= defaults['lr'], lamb= defaults['lamb'])
 					rmses.append(rmse)
@@ -161,8 +161,8 @@ def boosting(folds, sample_fraction):
 				rmses = []
 				maes  = []
 				for _ in range(0, folds):
-					ratingsSampler(ratings_train, train_path, sample_fraction)
-					ratingsSampler(ratings_test, test_path, sample_fraction)
+					# ratingsSampler(ratings_train, train_path, sample_fraction)
+					# ratingsSampler(ratings_test, test_path, sample_fraction)
 					logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=i, lr=defaults['lr'], mi=defaults['mi']) )
 					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= defaults['f'], mi= defaults['mi'], lr= defaults['lr'], lamb= i)
 					rmses.append(rmse)
@@ -185,8 +185,8 @@ def boosting(folds, sample_fraction):
 				rmses = []
 				maes  = []
 				for _ in range(0, folds):
-					ratingsSampler(ratings_train, train_path, sample_fraction)
-					ratingsSampler(ratings_test, test_path, sample_fraction)
+					# ratingsSampler(ratings_train, train_path, sample_fraction)
+					# ratingsSampler(ratings_test, test_path, sample_fraction)
 					logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=defaults['lamb'], lr=i, mi=defaults['mi']) )
 					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= defaults['f'], mi= defaults['mi'], lr= i, lamb= defaults['lamb'])
 					rmses.append(rmse)
@@ -209,8 +209,8 @@ def boosting(folds, sample_fraction):
 				rmses = []
 				maes  = []
 				for _ in range(0, folds):
-					ratingsSampler(ratings_train, train_path, sample_fraction)
-					ratingsSampler(ratings_test, test_path, sample_fraction)
+					# ratingsSampler(ratings_train, train_path, sample_fraction)
+					# ratingsSampler(ratings_test, test_path, sample_fraction)
 					logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=defaults['lamb'], lr=defaults['lr'], mi=i) )
 					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= defaults['f'], mi= i, lr= defaults['lr'], lamb= defaults['lamb'])
 					rmses.append(rmse)
