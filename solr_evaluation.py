@@ -78,8 +78,8 @@ def option1(solr, q, rows, fl, topN):
 			mini_recs = dict((k, recs[k]) for k in recs.keys()[:n])
 			logging.info("Appending result of individual nDCG..")
 			logging.info("Appending result of individual AP..")
-			nDCGs_normal[n].append( nDCG(recs=mini_recs, binary_relevance=False) )
-			nDCGs_altform[n].append( nDCG(recs=mini_recs, binary_relevance=True) )			
+			nDCGs_normal[n].append( nDCG(recs=mini_recs, alt_form=False) )
+			nDCGs_altform[n].append( nDCG(recs=mini_recs, alt_form=True) )			
 			APs_thresh4[n].append( AP_at_N(n=n, recs=recs, rel_thresh=4) )
 			APs_thresh3[n].append( AP_at_N(n=n, recs=recs, rel_thresh=3) )
 			APs_thresh2[n].append( AP_at_N(n=n, recs=recs, rel_thresh=2) )
@@ -136,8 +136,8 @@ def option2(solr, rows, fl, topN, mlt_field):
 
 		for n in topN: 
 			mini_recs = dict((k, recs[k]) for k in recs.keys()[:n])
-			nDCGs_normal[n].append( nDCG(recs=mini_recs, binary_relevance=False) )
-			nDCGs_altform[n].append( nDCG(recs=mini_recs, binary_relevance=True) )			
+			nDCGs_normal[n].append( nDCG(recs=mini_recs, alt_form=False) )
+			nDCGs_altform[n].append( nDCG(recs=mini_recs, alt_form=True) )			
 			APs_thresh4[n].append( AP_at_N(n=n, recs=recs, rel_thresh=4) )
 			APs_thresh3[n].append( AP_at_N(n=n, recs=recs, rel_thresh=3) )
 			APs_thresh2[n].append( AP_at_N(n=n, recs=recs, rel_thresh=2) )
