@@ -299,6 +299,57 @@ def add_column_timestamp(db_conn, alter_table=False):
 
 	db_conn.commit()
 
+def create_users_table(path_jsons, db_conn):
+	c = db_conn.cursor()
+
+	# Creacion de la tabla en la BD: users(id, screen_name)
+	table_name = 'users'
+	col_id = 'id'
+	col_screen_name = 'screen_name'
+	col_followers = 'followers'
+	col_friends = 'friends'
+	col_location = 'location'
+	col_lang = 'lang'
+	col_favourites = 'favourites'
+
+
+	c.execute( 'CREATE TABLE IF NOT EXISTS {0} ({1} {2} PRIMARY KEY, {3} {4}, {5} {6}, {7} {8}, {9} {10}, {11} {12}, {13} {14})'\
+	.format(table_name, \
+					col_id, 'INTEGER', \
+					col_screen_name, 'TEXT', \
+					col_followers, 'INTEGER', \
+					col_friends, 'INTEGER', \
+					col_location, 'TEXT', \
+					col_lang, 'TEXT', \
+					col_favourites,'INTEGER'))
+
+	# Listando el contenido del directorio <path_jsons>/
+	json_titles = [ f for f in listdir(path_jsons) if isfile(join(path_jsons, f)) ]
+
+	for i in range(0, len(json_titles)):
+
+		with open(path_jsons+json_titles[i], 'r') as f:
+			# Recuperando toda la info del documento
+			data_json = json.load(f)
+
+		user_id          = data_json[-1]['user']['id']
+		screen_name      = data_json[-1]['user']['screen_name']
+		followers_count  = data_json[-1]['user']['followers_count']
+		friends_count    = data_json[-1]['user']['friends_count']
+		location         = data_json[-1]['user']['location']
+		lang             = data_json[-1]['user']['lang']
+		favourites_count = data_json[-1]['user']['favourites_count']
+
+		# Insertando tupla en la BD:
+		try:
+			c.execute( "INSERT INTO {0} ({1}, {2}, {3}, {4}, {5}, {6}, {7}) VALUES (?, ?, ?, ?, ?, ?, ?)" \
+				.format(table_name, col_id, col_screen_name, col_followers, col_friends, col_location, col_lang, col_favourites), \
+							 						 (user_id, screen_name, followers_count, friends_count, location, lang, favourites_count) )
+		except sqlite3.IntegrityError:
+			logging.info( 'ERROR: Usuario ya ingresado: {}'.format(userid) )
+
+		# Manda los cambios al final de pasar por todos los tweets de cada usuario
+		db_conn.commit()
 
 
 def ratings_maker(db_conn, frac_train, output_train, output_test, output_total):
@@ -382,8 +433,9 @@ path_jsons = 'TwitterRatings/goodreads_renamed/'
 # 4)
 # add_column_timestamp(db_conn= conn, alter_table= True)
 # 5)
-ratings_maker(db_conn= conn, frac_train= 0.8, output_train= 'TwitterRatings/funkSVD/ratings.train', output_test= 'TwitterRatings/funkSVD/ratings.test', output_total= 'TwitterRatings/funkSVD/ratings.total')
-
+# ratings_maker(db_conn= conn, frac_train= 0.8, output_train= 'TwitterRatings/funkSVD/ratings.train', output_test= 'TwitterRatings/funkSVD/ratings.test', output_total= 'TwitterRatings/funkSVD/ratings.total')
+# 6)
+create_users_table(path_jsons= path_jsons, db_conn= conn)
 
 # Cerramos la conexion a la BD
 conn.close()
