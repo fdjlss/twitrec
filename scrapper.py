@@ -311,9 +311,10 @@ def create_users_table(path_jsons, db_conn):
 	col_location = 'location'
 	col_lang = 'lang'
 	col_favourites = 'favourites'
+	col_tweets = 'tweets'
 
 
-	c.execute( 'CREATE TABLE IF NOT EXISTS {0} ({1} {2} PRIMARY KEY, {3} {4}, {5} {6}, {7} {8}, {9} {10}, {11} {12}, {13} {14})'\
+	c.execute( 'CREATE TABLE IF NOT EXISTS {0} ({1} {2} PRIMARY KEY, {3} {4}, {5} {6}, {7} {8}, {9} {10}, {11} {12}, {13} {14}, {15} {16})'\
 	.format(table_name, \
 					col_id, 'INTEGER', \
 					col_screen_name, 'TEXT', \
@@ -321,7 +322,8 @@ def create_users_table(path_jsons, db_conn):
 					col_friends, 'INTEGER', \
 					col_location, 'TEXT', \
 					col_lang, 'TEXT', \
-					col_favourites,'INTEGER'))
+					col_favourites,'INTEGER', \
+					col_tweets, 'INTEGER'))
 
 	# Listando el contenido del directorio <path_jsons>/
 	json_titles = [ f for f in listdir(path_jsons) if isfile(join(path_jsons, f)) ]
@@ -339,12 +341,13 @@ def create_users_table(path_jsons, db_conn):
 		location         = data_json[-1]['user']['location']
 		lang             = data_json[-1]['user']['lang']
 		favourites_count = data_json[-1]['user']['favourites_count']
+		tweets_count     = data_json[-1]['user']['statuses_count']
 
 		# Insertando tupla en la BD:
 		try:
-			c.execute( "INSERT INTO {0} ({1}, {2}, {3}, {4}, {5}, {6}, {7}) VALUES (?, ?, ?, ?, ?, ?, ?)" \
-				.format(table_name, col_id, col_screen_name, col_followers, col_friends, col_location, col_lang, col_favourites), \
-							 						 (user_id, screen_name, followers_count, friends_count, location, lang, favourites_count) )
+			c.execute( "INSERT INTO {0} ({1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}) VALUES (?, ?, ?, ?, ?, ?, ?, ?)" \
+				.format(table_name, col_id, col_screen_name, col_followers, col_friends, col_location, col_lang, col_favourites, col_tweets), \
+							 						 (user_id, screen_name, followers_count, friends_count, location, lang, favourites_count, tweets_count) )
 		except sqlite3.IntegrityError:
 			logging.info( 'ERROR: Usuario ya ingresado: {}'.format(userid) )
 
