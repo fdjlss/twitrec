@@ -305,16 +305,22 @@ def create_users_table(path_jsons, db_conn):
 	# Creacion de la tabla en la BD: users(id, screen_name)
 	table_name = 'users'
 	col_id = 'id'
-	col_screen_name = 'screen_name'
-	col_followers = 'followers'
-	col_friends = 'friends'
-	col_location = 'location'
-	col_lang = 'lang'
-	col_favourites = 'favourites'
-	col_tweets = 'tweets'
+	col_screen_name = 'screen_name' #The screen name, handle, or alias that this user identifies themselves with. screen_names are unique but subject to change
+	col_followers = 'followers' #The number of followers this account currently has. Under certain conditions of duress, this field will temporarily indicate “0”.
+	col_friends = 'friends' #The number of users this account is following (AKA their “followings”)
+	col_location = 'location' #Nullable . The user-defined location for this account’s profile. Not necessarily a location,
+	col_lang = 'lang' #The BCP 47 code for the user’s self-declared user interface language. May or may not have anything to do with the content of their Tweets.
+	col_favourites = 'favourites' #The number of Tweets this user has liked in the account’s lifetime.
+	col_tweets = 'tweets' #The number of Tweets (including retweets) issued by the user. 
+	
+	col_description = 'description' #Nullable . The user-defined UTF-8 string describing their account.
+	col_listed = 'listed' #The number of public lists that this user is a member of.
+	col_utc = 'utc_offset' #Nullable . The offset from GMT/UTC in seconds.
+	col_name = 'name' #The name of the user, as they’ve defined it. Not necessarily a person’s name.
+	col_time_zone = 'time_zone'
 
 
-	c.execute( 'CREATE TABLE IF NOT EXISTS {0} ({1} {2} PRIMARY KEY, {3} {4}, {5} {6}, {7} {8}, {9} {10}, {11} {12}, {13} {14}, {15} {16})'\
+	c.execute( 'CREATE TABLE IF NOT EXISTS {0} ({1} {2} PRIMARY KEY, {3} {4}, {5} {6}, {7} {8}, {9} {10}, {11} {12}, {13} {14}, {15} {16}, {17} {18}, {19} {20}, {21} {22}, {23} {24}, {25} {26})'\
 	.format(table_name, \
 					col_id, 'INTEGER', \
 					col_screen_name, 'TEXT', \
@@ -323,7 +329,12 @@ def create_users_table(path_jsons, db_conn):
 					col_location, 'TEXT', \
 					col_lang, 'TEXT', \
 					col_favourites,'INTEGER', \
-					col_tweets, 'INTEGER'))
+					col_tweets, 'INTEGER', \
+					col_description, 'TEXT', \
+					col_listed, 'INTEGER', \
+					col_utc, 'INTEGER', \
+					col_name, 'TEXT', \
+					col_time_zone, 'TEXT'))
 
 	# Listando el contenido del directorio <path_jsons>/
 	json_titles = [ f for f in listdir(path_jsons) if isfile(join(path_jsons, f)) ]
@@ -342,12 +353,17 @@ def create_users_table(path_jsons, db_conn):
 		lang             = data_json[-1]['user']['lang']
 		favourites_count = data_json[-1]['user']['favourites_count']
 		tweets_count     = data_json[-1]['user']['statuses_count']
+		description      = data_json[-1]['user']['description']
+		listed_count     = data_json[-1]['user']['listed_count']
+		utc_offset       = data_json[-1]['user']['utc_offset']
+		name             = data_json[-1]['user']['name']
+		time_zone         = data_json[-1]['user']['time_zone']
 
 		# Insertando tupla en la BD:
 		try:
-			c.execute( "INSERT INTO {0} ({1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}) VALUES (?, ?, ?, ?, ?, ?, ?, ?)" \
-				.format(table_name, col_id, col_screen_name, col_followers, col_friends, col_location, col_lang, col_favourites, col_tweets), \
-							 						 (user_id, screen_name, followers_count, friends_count, location, lang, favourites_count, tweets_count) )
+			c.execute( "INSERT INTO {0} ({1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" \
+				.format(table_name, col_id, col_screen_name, col_followers, col_friends, col_location, col_lang, col_favourites, col_tweets, col_description, col_listed, col_utc, col_name, col_time_zone), \
+							 						 (user_id, screen_name, followers_count, friends_count, location, lang, favourites_count, tweets_count, description, listed_count, utc_offset, name, time_zone) )
 		except sqlite3.IntegrityError:
 			logging.info( 'ERROR: Usuario ya ingresado: {}'.format(userid) )
 
