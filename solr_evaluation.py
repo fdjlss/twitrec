@@ -1,8 +1,6 @@
 # coding=utf-8
 
 import re, json
-# from urllib.request import urlopen
-# from urllib.parse import urlencode, quote_plus
 from urllib import urlencode, quote_plus
 from urllib2 import urlopen
 from jojFunkSvd import mean, stddev, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, consumption
@@ -30,12 +28,12 @@ def remove_consumed(user_consumption, rec_list):
 
 def option1(solr, q, rows, fl, topN):
 	train_c = consumption(ratings_path='TwitterRatings/funkSVD/ratings.train', rel_thresh=0, with_ratings=False)
-	total_c  = consumption(ratings_path='TwitterRatings/funkSVD/ratings.total', rel_thresh=0, with_ratings=True)
-	nDCGs_normal = dict((n, []) for n in topN)
-	nDCGs_altform    = dict((n, []) for n in topN)
-	APs_thresh4     = dict((n, []) for n in topN)
-	APs_thresh3     = dict((n, []) for n in topN)
-	APs_thresh2     = dict((n, []) for n in topN)
+	total_c = consumption(ratings_path='TwitterRatings/funkSVD/ratings.total', rel_thresh=0, with_ratings=True)
+	nDCGs_normal  = dict((n, []) for n in topN)
+	nDCGs_altform = dict((n, []) for n in topN)
+	APs_thresh4   = dict((n, []) for n in topN)
+	APs_thresh3   = dict((n, []) for n in topN)
+	APs_thresh2   = dict((n, []) for n in topN)
 	for userId in train_c:
 		logging.info("-> Option 1. Viendo usuario {0}/{1}".format(userId, len(train_c)) )
 		book_recs = []
@@ -92,11 +90,11 @@ def option1(solr, q, rows, fl, topN):
 def option2(solr, rows, fl, topN, mlt_field):
 	train_c = consumption(ratings_path='TwitterRatings/funkSVD/ratings.train', rel_thresh=0, with_ratings=False)
 	total_c  = consumption(ratings_path='TwitterRatings/funkSVD/ratings.total', rel_thresh=0, with_ratings=True)
-	nDCGs_normal = dict((n, []) for n in topN)
-	nDCGs_altform    = dict((n, []) for n in topN)
-	APs_thresh4     = dict((n, []) for n in topN)
-	APs_thresh3     = dict((n, []) for n in topN)
-	APs_thresh2     = dict((n, []) for n in topN)
+	nDCGs_normal  = dict((n, []) for n in topN)
+	nDCGs_altform = dict((n, []) for n in topN)
+	APs_thresh4   = dict((n, []) for n in topN)
+	APs_thresh3   = dict((n, []) for n in topN)
+	APs_thresh2   = dict((n, []) for n in topN)
 
 	for userId in train_c:
 		logging.info("-> Option 2. mlt.fl: {2}. Viendo usuario {0}/{1}".format(userId, len(train_c), mlt_field) )
@@ -147,14 +145,17 @@ def option2(solr, rows, fl, topN, mlt_field):
 			file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, MAP(rel_thresh=4)=%s, MAP(rel_thresh=3)=%s, MAP(rel_thresh=2)=%s\n" % \
 				(n, mean(nDCGs_normal[n]), mean(nDCGs_altform[n]), mean(APs_thresh4[n]), mean(APs_thresh3[n]), mean(APs_thresh2[n])) )		
 
+def main():
+	solr = "http://localhost:8983/solr/grrecsys"
+	q = 'goodreadsId:{goodreadsId}'
+	rows = 100
+	fl = 'id,goodreadsId,title.titleOfficial,rating.ratingAvg,genres.genreName,description'
+	option1(solr=solr, q=q, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50])
+	option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='description')
+	option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='title.titleOfficial')
+	option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='genres.genreName')
+	option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='author.authors.authorName')
+	option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='quotes.quoteText')
 
-solr = "http://localhost:8983/solr/grrecsys"
-q = 'goodreadsId:{goodreadsId}'
-rows = 100
-fl = 'id,goodreadsId,title.titleOfficial,rating.ratingAvg,genres.genreName,description'
-option1(solr=solr, q=q, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50])
-option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='description')
-option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='title.titleOfficial')
-option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='genres.genreName')
-option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='author.authors.authorName')
-option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='quotes.quoteText')
+if __name__ == '__main__':
+	main()
