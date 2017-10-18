@@ -36,7 +36,7 @@ def book_list(db_conn):
 def random_eval(db_conn, topN):
 	train_c = consumption(ratings_path='TwitterRatings/funkSVD/ratings.train', rel_thresh=0, with_ratings=False)
 	total_c = consumption(ratings_path='TwitterRatings/funkSVD/ratings.total', rel_thresh=0, with_ratings=True)
-	book_list = book_list(db_conn=db_conn)
+	books   = book_list(db_conn=db_conn)
 	nDCGs_normal  = dict((n, []) for n in topN)
 	nDCGs_altform = dict((n, []) for n in topN)
 	APs_thresh4   = dict((n, []) for n in topN)
@@ -44,7 +44,7 @@ def random_eval(db_conn, topN):
 	APs_thresh2   = dict((n, []) for n in topN)
 
 	for userId in train_c:
-		book_recs = sample(book_list, k=100)
+		book_recs = sample(books, k=100)
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 
 		recs = {}
