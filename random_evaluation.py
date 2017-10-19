@@ -45,7 +45,7 @@ def random_eval(db_conn, topN, folds):
 		for line in f:
 			ratings_train.append( line.strip() )
 
-	for _ in folds:
+	for _ in range(0,folds):
 		nDCGs_normal  = dict((n, []) for n in topN)
 		nDCGs_altform = dict((n, []) for n in topN)
 		APs_thresh4   = dict((n, []) for n in topN)
