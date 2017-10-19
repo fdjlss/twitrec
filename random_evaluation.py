@@ -51,7 +51,7 @@ def random_eval(db_conn, topN, folds):
 		APs_thresh4   = dict((n, []) for n in topN)
 		APs_thresh3   = dict((n, []) for n in topN)
 		APs_thresh2   = dict((n, []) for n in topN)
-		ratingsSampler(rats=ratings_train, fout='TwitterRatings/funkSVD/ratings_temp.train', sample_fraction=0.8)
+		ratingsSampler(rats=ratings_train, fout='TwitterRatings/funkSVD/ratings_temp.train', n=0.8)
 		train_c = consumption(ratings_path='TwitterRatings/funkSVD/ratings_temp.train', rel_thresh=0, with_ratings=False)
 		for userId in train_c:
 			book_recs = sample(books, k=200)
