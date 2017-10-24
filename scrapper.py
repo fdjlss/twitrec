@@ -55,6 +55,14 @@ def unshorten_url(url):
 	else:
 		return url
 
+def chunks(seq, num):
+  avg = len(seq) / float(num)
+  out = []
+  last = 0.0
+  while last < len(seq):
+    out.append(seq[int(last):int(last + avg)])
+    last += avg
+  return out
 
 def reviews_wgetter(path_jsons, db_conn):
 	"""
@@ -371,7 +379,7 @@ def create_users_table(path_jsons, db_conn):
 		db_conn.commit()
 
 
-def ratings_maker(db_conn, frac_train, output_train, output_test, output_total):
+def ratings_maker(db_conn, folds, out_path):
 	"""
 	Guarda un set de entrenamiento y un set de test a partir
 	de datos de la DB
@@ -379,15 +387,13 @@ def ratings_maker(db_conn, frac_train, output_train, output_test, output_total):
 	c = db_conn.cursor()
 	table_name = 'user_reviews'
 
-	c.execute( "SELECT * FROM {0}".format(table_name) )
+	c.execute( "SELECT * FROM {0} ORDER BY timestamp asc".format(table_name) )
 	all_rows = c.fetchall()
 
 	interactions = []
 	logging.info("-> Iterando sobre resultado de la consulta..")
 	for tupl in all_rows:
-		
 		user_id, url_review, rating, url_book, timestamp = tupl
-		
 		try:
 		# Book ID es el número incluido en la URI del libro en GR
 		# Hay veces que luego deĺ número le sigue un punto o un guión,
@@ -396,41 +402,29 @@ def ratings_maker(db_conn, frac_train, output_train, output_test, output_total):
 		except AttributeError as e:
 			logging.info( "url_book es NULL en la DB! Tratado de obtener desde la review {0}".format(url_review) )
 			continue
-
 		if timestamp==None or timestamp=='':
 			# Si no hay fecha, pero se sabe el consumo y rating, 
 			# la seteamos a una de las últimas para tenerla en 
-			# set de test (últimos consumos: 2014-feb)
+			# set de test (últimos consumos: 2014-oct)
 			randday = str(randint(1,28))
 			if randday==1: randday = "0" + randday 
-			timestamp = int( "201401" + randday )
-
+			timestamp = int( "201410" + randday )
 		interactions.append( (user_id, book_id, rating, int(timestamp)) )
 	
-	# Sort con timestamp ascendientes
-	logging.info("Sorteando por fechas..")
-	interactions.sort( key= lambda x: x[3] )
+	lists = chunks(seq=interactions, num=folds)
 
-	num_train = int( len(interactions)*frac_train )
+	logging.info("Guardando folds..")
+	for i in range(0, folds-1):
+		with open(out_path+'train/'+str(i+1)+'.fold', 'w') as f:
+			f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in lists[i]) ) # x[:-1] : no guardamos el timestamp
 
-	rows_train = interactions[:num_train]
-	rows_test  = interactions[num_train:]
-	rows_total = interactions
+	logging.info("Guardando test..")
+	with open(out_path+'test/'+'test.fold', 'w') as f:
+		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in lists[-1]) )
 
-	logging.info("Guardando archivo de training..")
-	with open(output_train, 'w') as f:
-		# x[:-1] : no guardamos el timestamp
-		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in rows_train) )
-
-	logging.info("Guardando archivo de testing..")
-	with open(output_test, 'w') as f:
-		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in rows_test) )	
-
-	logging.info("Guardando archivo total de ratings..")
-	with open(output_total, 'w') as f:
-		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in rows_total) )
-
-
+	logging.info("Guardando total..")
+	with open(out_path+'ratings.total', 'w') as f:
+		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in interactions) )
 
 def users_wgetter(user_twitter_path):
 	pass
@@ -452,9 +446,9 @@ path_jsons = 'TwitterRatings/goodreads_renamed/'
 # 4)
 # add_column_timestamp(db_conn= conn, alter_table= True)
 # 5)
-# ratings_maker(db_conn= conn, frac_train= 0.8, output_train= 'TwitterRatings/funkSVD/ratings.train', output_test= 'TwitterRatings/funkSVD/ratings.test', output_total= 'TwitterRatings/funkSVD/ratings.total')
+ratings_maker(db_conn= conn, folds= 10, out_path='TwitterRatings/funkSVD/data/')
 # 6)
-create_users_table(path_jsons= path_jsons, db_conn= conn)
+# create_users_table(path_jsons= path_jsons, db_conn= conn)
 
 # Cerramos la conexion a la BD
 conn.close()
