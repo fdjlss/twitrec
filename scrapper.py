@@ -425,6 +425,10 @@ def ratings_maker(db_conn, folds, out_path):
 	with open(out_path+'test/test.'+str(folds), 'w') as f:
 		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in lists[-1]) )
 
+	logging.info("Guardando train (total-test)..")
+	with open(out_path+'ratings.train', 'w') as f:
+		f.write( '\n'.join('%s,%s,%s' % x[:-1] for l in lists[:-1] for x in l) )
+
 	logging.info("Guardando total..")
 	with open(out_path+'ratings.total', 'w') as f:
 		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in interactions) )
