@@ -106,14 +106,14 @@ def SVDJob(data_path, f, mi, lr, lamb):
 	val_folds   = os.listdir(data_path+'val/')
 	maes, rmses = [], []
 	for i in range(0, len(val_folds)):
-		svd = pyreclab.SVD( dataset   = data_path+'train/train.'+i,
+		svd = pyreclab.SVD( dataset   = data_path+'train/train.'+str(i),
 												dlmchar   = b',',
 												header    = False,
 												usercol   = 0,
 												itemcol   = 1,
 												ratingcol = 2 )
 		svd.train( factors= f, maxiter= mi, lr= lr, lamb= lamb )
-		predlist, mae, rmse = svd.test( input_file  = data_path+'val/val.'+i,
+		predlist, mae, rmse = svd.test( input_file  = data_path+'val/val.'+str(i),
 		                                dlmchar     = b',',
 		                                header      = False,
 		                                usercol     = 0,
