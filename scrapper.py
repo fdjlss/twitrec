@@ -415,14 +415,14 @@ def ratings_maker(db_conn, folds, out_path):
 
 	logging.info("Guardando validation folds y training aggregated folds..")
 	for i in range(0, folds-1):
-		with open(out_path+'val/val'+str(i+1), 'w') as f:
+		with open(out_path+'val/val.'+str(i+1), 'w') as f:
 			f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in lists[i]) ) # x[:-1] : no guardamos el timestamp
 
-		with open(out_path+'train/train'+str(i+1), 'w') as f:
+		with open(out_path+'train/train.'+str(i+1), 'w') as f:
 			f.write( '\n'.join('%s,%s,%s' % x[:-1] for l in lists[:i] + lists[i+1:] for x in l) )
 
 	logging.info("Guardando test..")
-	with open(out_path+'test/test'+str(folds), 'w') as f:
+	with open(out_path+'test/test.'+str(folds), 'w') as f:
 		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in lists[-1]) )
 
 	logging.info("Guardando total..")
