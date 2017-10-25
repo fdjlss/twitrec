@@ -6,6 +6,7 @@ from random import sample
 import gc
 from time import sleep
 import os
+from os.path import isfile, join
 from math import sqrt, log
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
@@ -95,139 +96,102 @@ def consumption(ratings_path, rel_thresh, with_ratings):
 #--------------------------------#
 
 
-def SVDJob(train_path, test_path, f, mi, lr, lamb):
-	svd = pyreclab.SVD( dataset   = train_path,
+
+
+def SVDJob(data_path, f, mi, lr, lamb):
+	# test = [] 
+	# with open(data_path+'test/test.fold', 'r') as f:
+	# 	for line in f:
+	# 		test.append( line.strip() )
+	val_folds   = os.listdir(data_path+'val/')
+	maes, rmses = [], []
+	for i in range(0, len(val_folds)):
+		svd = pyreclab.SVD( dataset   = data_path+'train/train.'+i,
+												dlmchar   = b',',
+												header    = False,
+												usercol   = 0,
+												itemcol   = 1,
+												ratingcol = 2 )
+		svd.train( factors= f, maxiter= mi, lr= lr, lamb= lamb )
+		predlist, mae, rmse = svd.test( input_file  = data_path+'val/val.'+i,
+		                                dlmchar     = b',',
+		                                header      = False,
+		                                usercol     = 0,
+		                                itemcol     = 1,
+		                                ratingcol   = 2 )
+		maes.append(mae)
+		rmses.append(rmse)
+
+	# # Escribe 1 archivo por cada valor de cada parámetro
+	# with open('TwitterRatings/funkSVD/params/'+param+'/'+str(i)+'.txt', 'w') as f:
+	# 	for j in range(0, folds):
+	# 		f.write( "%s\t%s\n" % (rmses[j], maes[j]) )
+	return mean(maes), mean(rmses)
+
+
+
+
+
+
+
+def boosting(data_path):
+
+	defaults = {'f': 1000, 'mi': 100, 'lr': 0.01, 'lamb': 0.1}
+	results  = {'f': {}, 'mi': {}, 'lr': {}, 'lamb': {}}
+
+	for param in ['f', 'lamb', 'lr', 'mi']: #oops! antes "for param in defaults", pero defaults no tiene los params ordenados
+
+		if param=='f':
+			defaults['f'] = list(range(100, 1525, 25))
+			for i in defaults['f']:
+				logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=i, lamb=defaults['lamb'], lr=defaults['lr'], mi=defaults['mi']) )
+				mae, rmse = SVDJob(data_path= data_path, f= i, mi= defaults['mi'], lr= defaults['lr'], lamb= defaults['lamb'])
+				results['f'][i] = rmse
+			defaults['f']  = opt_value(results['f'])
+
+		elif param=='lamb':
+			defaults['lamb'] = [0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]		
+			for i in defaults['lamb']:
+				logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=i, lr=defaults['lr'], mi=defaults['mi']) )
+				mae, rmse = SVDJob(data_path= data_path, f= defaults['f'], mi= defaults['mi'], lr= defaults['lr'], lamb= i)
+				results['lamb'][i] = rmse
+			defaults['lamb'] = opt_value(results['lamb'])
+
+		elif param=='lr':
+			defaults['lr']   = [0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
+			for i in defaults['lr']:
+				logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=defaults['lamb'], lr=i, mi=defaults['mi']) )
+				mae, rmse = SVDJob(data_path= data_path, f= defaults['f'], mi= defaults['mi'], lr= i, lamb= defaults['lamb'])
+				results['lr'][i] = rmse
+			defaults['lr'] = opt_value(results['lr'])
+
+		elif param=='mi':
+			defaults['mi'] = list(range(10, 520, 20))
+			for i in defaults['mi']:
+				logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=defaults['lamb'], lr=defaults['lr'], mi=i) )
+				mae, rmse = SVDJob(data_path= data_path, f= defaults['f'], mi= i, lr= defaults['lr'], lamb= defaults['lamb'])
+				results['mi'][i] = rmse
+			defaults['mi'] = opt_value(results['mi'])
+
+	# Real testing
+	svd = pyreclab.SVD( dataset   = data_path+'ratings.train',
 											dlmchar   = b',',
 											header    = False,
 											usercol   = 0,
 											itemcol   = 1,
 											ratingcol = 2 )
 	svd.train( factors= f, maxiter= mi, lr= lr, lamb= lamb )
-	predlist, mae, rmse = svd.test( input_file  = test_path,
+	predlist, mae, rmse = svd.test( input_file  = data_path+os.listdir(data_path+'test/')[0],
 	                                dlmchar     = b',',
 	                                header      = False,
 	                                usercol     = 0,
 	                                itemcol     = 1,
 	                                ratingcol   = 2 )
-	return predlist, mae, rmse
-
-def boosting(folds, sample_fraction):
-
-	ratings_train, ratings_test = [], []
-	with open('TwitterRatings/funkSVD/ratings.train', 'r') as f:
-		for line in f:
-			ratings_train.append( line.strip() )
-
-	with open('TwitterRatings/funkSVD/ratings.test', 'r') as f:
-		for line in f:
-			ratings_test.append( line.strip() )
-
-	defaults = {'f': 1000, 'mi': 100, 'lr': 0.01, 'lamb': 0.1}
-	results = {'f': {}, 'mi': {}, 'lr': {}, 'lamb': {}}
-	train_path = 'TwitterRatings/funkSVD/ratings_temp.train'
-	test_path = 'TwitterRatings/funkSVD/ratings_temp.test'
-
-	for param in ['f', 'lamb', 'lr', 'mi']: #oops! antes "for param in defaults", pero defaults no tiene los params ordenados
-
-		if param=='f':
-			defaults['f'] = list(range(100, 1525, 25))
-
-			for i in defaults['f']:
-
-				rmses = []
-				maes  = []
-				for _ in range(0, folds):
-					# ratingsSampler(ratings_train, train_path, sample_fraction)
-					# ratingsSampler(ratings_test, test_path, sample_fraction)
-					logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=i, lamb=defaults['lamb'], lr=defaults['lr'], mi=defaults['mi']) )
-					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= i, mi= defaults['mi'], lr= defaults['lr'], lamb= defaults['lamb'])
-					rmses.append(rmse)
-					maes.append(mae)
-
-				# Escribe 1 archivo por cada valor de cada parámetro
-				with open('TwitterRatings/funkSVD/params/'+param+'/'+str(i)+'.txt', 'w') as f:
-					for j in range(0, folds):
-						f.write( "%s\t%s\n" % (rmses[j], maes[j]) )
-
-				results['f'][i] = mean(rmses)
-
-			defaults['f']  = opt_value(results['f'])
-
-		elif param=='lamb':
-			defaults['lamb'] = [0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-		
-			for i in defaults['lamb']:
-
-				rmses = []
-				maes  = []
-				for _ in range(0, folds):
-					# ratingsSampler(ratings_train, train_path, sample_fraction)
-					# ratingsSampler(ratings_test, test_path, sample_fraction)
-					logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=i, lr=defaults['lr'], mi=defaults['mi']) )
-					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= defaults['f'], mi= defaults['mi'], lr= defaults['lr'], lamb= i)
-					rmses.append(rmse)
-					maes.append(mae)
-
-				# Escribe 1 archivo por cada valor de cada parámetro
-				with open('TwitterRatings/funkSVD/params/'+param+'/'+str(i)+'.txt', 'w') as f:
-					for j in range(0, folds):
-						f.write( "%s\t%s\n" % (rmses[j], maes[j]) )
-
-				results['lamb'][i] = mean(rmses)
-
-			defaults['lamb'] = opt_value(results['lamb'])
-
-		elif param=='lr':
-			defaults['lr']   = [0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
-
-			for i in defaults['lr']:
-
-				rmses = []
-				maes  = []
-				for _ in range(0, folds):
-					# ratingsSampler(ratings_train, train_path, sample_fraction)
-					# ratingsSampler(ratings_test, test_path, sample_fraction)
-					logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=defaults['lamb'], lr=i, mi=defaults['mi']) )
-					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= defaults['f'], mi= defaults['mi'], lr= i, lamb= defaults['lamb'])
-					rmses.append(rmse)
-					maes.append(mae)
-
-				# Escribe 1 archivo por cada valor de cada parámetro
-				with open('TwitterRatings/funkSVD/params/'+param+'/'+str(i)+'.txt', 'w') as f:
-					for j in range(0, folds):
-						f.write( "%s\t%s\n" % (rmses[j], maes[j]) )
-
-				results['lr'][i] = mean(rmses)
-
-			defaults['lr'] = opt_value(results['lr'])
-
-		elif param=='mi':
-			defaults['mi'] = list(range(10, 520, 20))
-
-			for i in defaults['mi']:
-
-				rmses = []
-				maes  = []
-				for _ in range(0, folds):
-					# ratingsSampler(ratings_train, train_path, sample_fraction)
-					# ratingsSampler(ratings_test, test_path, sample_fraction)
-					logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=defaults['lamb'], lr=defaults['lr'], mi=i) )
-					predlist, mae, rmse = SVDJob(train_path=train_path, test_path=test_path, f= defaults['f'], mi= i, lr= defaults['lr'], lamb= defaults['lamb'])
-					rmses.append(rmse)
-					maes.append(mae)
-
-				# Escribe 1 archivo por cada valor de cada parámetro
-				with open('TwitterRatings/funkSVD/params/'+param+'/'+str(i)+'.txt', 'w') as f:
-					for j in range(0, folds):
-						f.write( "%s\t%s\n" % (rmses[j], maes[j]) )
-
-				results['mi'][i] = mean(rmses)
-
-			defaults['mi'] = opt_value(results['mi'])
 
 	with open('TwitterRatings/funkSVD/opt_params.txt', 'w') as f:
 		for param in defaults:
-			f.write( "%s:%s\n" % (param, defaults[param]) )
+			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
+		f.write( "RMSE:{rmse}, MAE:{mae}".format(rmse=rmse, mae=mae) )
 
 	return defaults
 
@@ -408,11 +372,12 @@ def generate_recommends(params):
 
 
 def main():
-	opt_params = boosting(folds=1, sample_fraction=1.0)
-	RMSEMAE_distr(output_filename="results_8020.txt")
+	data_path = 'TwitterRatings/funkSVD/data/'
+	opt_params = boosting(data_path= data_path)
+	# RMSEMAE_distr(output_filename="results_8020.txt")
 	# opt_params = {'f': 825, 'mi': 50, 'lr': 0.0285, 'lamb': 0.12}
 	# PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
-	nDCGMAP_calculator(params=opt_params, topN=[10, 20, 50], output_filename="nDCGMAP_8020.txt")
+	# nDCGMAP_calculator(params=opt_params, topN=[10, 20, 50], output_filename="nDCGMAP_8020.txt")
 	# generate_recommends(params=opt_params)
 
 	# svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.total',
