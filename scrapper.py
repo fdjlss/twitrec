@@ -365,7 +365,7 @@ def create_users_table(path_jsons, db_conn):
 		listed_count     = data_json[-1]['user']['listed_count']
 		utc_offset       = data_json[-1]['user']['utc_offset']
 		name             = data_json[-1]['user']['name']
-		time_zone         = data_json[-1]['user']['time_zone']
+		time_zone        = data_json[-1]['user']['time_zone']
 
 		# Insertando tupla en la BD:
 		try:
@@ -413,13 +413,16 @@ def ratings_maker(db_conn, folds, out_path):
 	
 	lists = chunks(seq=interactions, num=folds)
 
-	logging.info("Guardando folds..")
+	logging.info("Guardando validation folds y training aggregated folds..")
 	for i in range(0, folds-1):
-		with open(out_path+'train/'+str(i+1)+'.fold', 'w') as f:
+		with open(out_path+'val/val'+str(i+1), 'w') as f:
 			f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in lists[i]) ) # x[:-1] : no guardamos el timestamp
 
+		with open(out_path+'train/train'+str(i+1), 'w') as f:
+			f.write( '\n'.join('%s,%s,%s' % x[:-1] for l in lists[:i] + lists[i+1:] for x in l) )
+
 	logging.info("Guardando test..")
-	with open(out_path+'test/'+'test.fold', 'w') as f:
+	with open(out_path+'test/test'+str(folds), 'w') as f:
 		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in lists[-1]) )
 
 	logging.info("Guardando total..")
@@ -446,7 +449,7 @@ path_jsons = 'TwitterRatings/goodreads_renamed/'
 # 4)
 # add_column_timestamp(db_conn= conn, alter_table= True)
 # 5)
-ratings_maker(db_conn= conn, folds= 10, out_path='TwitterRatings/funkSVD/data/')
+ratings_maker(db_conn= conn, folds= 5, out_path='TwitterRatings/funkSVD/data/')
 # 6)
 # create_users_table(path_jsons= path_jsons, db_conn= conn)
 
