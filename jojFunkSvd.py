@@ -180,7 +180,7 @@ def boosting(data_path):
 											usercol   = 0,
 											itemcol   = 1,
 											ratingcol = 2 )
-	svd.train( factors= f, maxiter= mi, lr= lr, lamb= lamb )
+	svd.train( factors= defaults['f'], maxiter= defaults['mi'], lr= defaults['lr'], lamb= defaults['lamb'] )
 	predlist, mae, rmse = svd.test( input_file  = data_path+os.listdir(data_path+'test/')[0],
 	                                dlmchar     = b',',
 	                                header      = False,
