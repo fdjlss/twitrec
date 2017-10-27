@@ -34,6 +34,8 @@ from bs4 import BeautifulSoup
 
 # Random numbers para fechas desconocidas
 from random import randint
+
+from jojFunkSvd import mean, stddev
 #--------------------------------#
 
 # Esto no es estrictamente necesario, es sólo para
@@ -436,6 +438,47 @@ def ratings_maker(db_conn, folds, out_path):
 def users_wgetter(user_twitter_path):
 	pass
 
+def statistics(db_conn):
+	c = db_conn.cursor()
+	table_name = 'user_reviews'
+	c.execute( "SELECT * FROM {0} ORDER BY timestamp asc".format(table_name) )
+	all_rows = c.fetchall()
+	interactions = []
+	logging.info("-> Iterando sobre resultado de la consulta..")
+	for tupl in all_rows:
+		user_id, url_review, rating, url_book, timestamp = tupl
+		try:
+			book_id = url_book.split('/')[-1].split('-')[0].split('.')[0]
+		except AttributeError as e:
+			logging.info( "url_book es NULL en la DB! Tratado de obtener desde la review {0}".format(url_review) )
+			continue
+		interactions.append( (user_id, book_id, rating, int(timestamp)) )
+
+	ratings = [ tuple[2] for tuple in interactions ]
+	users = [ tuple[0] for tuple in interactions ]
+	users = set(users)
+	logging.info( "MEAN ratings:{avgrat}±{stddevrat}".format(avgrat=mean(ratings), stddevrat=stddev(ratings)) )
+
+	c.execute( "SELECT user_id, COUNT(rating), timestamp FROM {} GROUP BY user_id ORDER BY timestamp asc".format(table_name) )
+	all_rows = c.fetchall()
+	results = []
+	for tupl in all_rows:
+		user_id, ratings, timestamp= tupl
+		if timestamp != None: results.append( (user_id, ratings) )
+
+	rats_usr = [ tuple[1] for tuple in results ]
+	logging.info( "MEAN ratings per user:{avgratusr}±{stddevratusr}".format(avgratusr=mean(rats_usr), stddevratusr=stddev(rats_usr)) )
+		
+	c.execute( "SELECT url_book, COUNT(rating), timestamp FROM {} GROUP BY url_book ORDER BY timestamp asc".format(table_name) )
+	all_rows = c.fetchall()
+	results = []
+	for tupl in all_rows:
+		url_book, ratings, timestamp= tupl
+		if timestamp != None: results.append( (user_id, ratings) )
+
+	rats_book = [ tuple[1] for tuple in results ]
+	logging.info( "MEAN ratings per book:{avgratbook}±{stddevratbook}".format(avgratusr=mean(rats_book), stddevratusr=stddev(rats_book)) )
+
 
 # Creando la conexion a la BD
 sqlite_file = 'db/goodreads.sqlite'
@@ -453,9 +496,10 @@ path_jsons = 'TwitterRatings/goodreads_renamed/'
 # 4)
 # add_column_timestamp(db_conn= conn, alter_table= True)
 # 5)
-ratings_maker(db_conn= conn, folds= 5, out_path='TwitterRatings/funkSVD/data/')
+# ratings_maker(db_conn= conn, folds= 5, out_path='TwitterRatings/funkSVD/data/')
 # 6)
 # create_users_table(path_jsons= path_jsons, db_conn= conn)
-
+# 7)
+statistics(db_conn= conn)
 # Cerramos la conexion a la BD
 conn.close()
