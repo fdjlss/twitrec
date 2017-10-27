@@ -18,7 +18,7 @@ from os import listdir
 from os.path import isfile, join
 
 # Para scrapping
-import urllib.request
+# import urllib.request
 # import urlparse
 # import httplib
 
