@@ -477,7 +477,7 @@ def statistics(db_conn):
 		if timestamp != None: results.append( (user_id, ratings) )
 
 	rats_book = [ tuple[1] for tuple in results ]
-	logging.info( "MEAN ratings per book:{avgratbook}±{stddevratbook}".format(avgratusr=mean(rats_book), stddevratusr=stddev(rats_book)) )
+	logging.info( "MEAN ratings per book:{avgratbook}±{stddevratbook}".format(avgratbook=mean(rats_book), stddevratbook=stddev(rats_book)) )
 
 
 # Creando la conexion a la BD
