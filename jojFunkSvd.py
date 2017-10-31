@@ -298,14 +298,14 @@ def nDCGMAP_calculator(data_path, params, topN, output_filename):
 	# nDCG = []
 	# val_folds   = os.listdir(data_path+'val/')
 	# for i in range(0, len(val_folds)):
-	svd = pyreclab.SVD( dataset   = data_path+'ratings.train'#data_path+'train/train.'+str(i),
+	svd = pyreclab.SVD( dataset   = data_path+'ratings.train',#data_path+'train/train.'+str(i),
 											dlmchar   = b',',
 											header    = False,
 											usercol   = 0,
 											itemcol   = 1,
 											ratingcol = 2 )
 	svd.train( factors= params['f'], maxiter= params['mi'], lr= params['lr'], lamb= params['lamb'] )
-	recommendationList = svd.testrec( input_file    = data_path+'test/'+os.listdir(data_path+'test/')[0]#data_path+'val/val.'+str(i),
+	recommendationList = svd.testrec( input_file    = data_path+'test/'+os.listdir(data_path+'test/')[0],#data_path+'val/val.'+str(i),
                                       dlmchar     = b',',
                                       header      = False,
                                       usercol     = 0,
