@@ -30,26 +30,36 @@ def ratingsSampler(rats, fout, n):
 	with open(fout, 'w') as f:
 		f.write( '\n'.join('%s' % x for x in ratings_sampled) )
 	del ratings_sampled
+
+
+
 def rel_div(relevance_i, i, alt_form):
 	if alt_form:
 		return ( 2.0**relevance_i - 1) / log(1.0 + i, 2)
 	else:
 		return relevance_i / log(1.0 + i, 2)
-def DCG(recs, alt_form):
+def DCG(recs, alt_form, rel_thresh):
 	s = 0.0
-	for place in recs:
-		s += rel_div(recs[place], place, alt_form)
+	if rel_thresh==False:
+		for place in recs:
+			s += rel_div(recs[place], place, alt_form)
+	else:
+		for place in recs:
+			if recs[place] >= rel_thresh:
+				s += rel_div(1, place, alt_form)
+			else:
+				s += rel_div(0, place, alt_form)
 	return s
-def iDCG(recs, alt_form):
+def iDCG(recs, alt_form, rel_thresh):
 	place = 0
 	i_recs = {}
 	for relevance in sorted( recs.values(), reverse=True ):
 		place += 1
 		i_recs[place] = relevance
-	return DCG(i_recs, alt_form)
-def nDCG(recs, alt_form):
+	return DCG(i_recs, alt_form, rel_thresh)
+def nDCG(recs, alt_form, rel_thresh):
 	try:
-		return DCG(recs, alt_form) / iDCG(recs, alt_form)
+		return DCG(recs, alt_form, rel_thresh) / iDCG(recs, alt_form, rel_thresh)
 	except ZeroDivisionError as e:
 		return 0.0
 def P_at_N(n, recs, rel_thresh):
@@ -285,55 +295,67 @@ def nDCGMAP_calculator(data_path, params, topN, output_filename):
 
 	user_consumption = consumption(ratings_path=data_path+'ratings.total', rel_thresh=0, with_ratings=True)
 
-	val_folds   = os.listdir(data_path+'val/')
-	nDCG
-	for i in range(0, len(val_folds)):
-		svd = pyreclab.SVD( dataset   = data_path+'train/train.'+str(i),
-												dlmchar   = b',',
-												header    = False,
-												usercol   = 0,
-												itemcol   = 1,
-												ratingcol = 2 )
-		svd.train( factors= params['f'], maxiter= params['mi'], lr= params['lr'], lamb= params['lamb'] )
-		recommendationList = svd.testrec( input_file    = data_path+'val/val.'+str(i),
-	                                      dlmchar     = b',',
-	                                      header      = False,
-	                                      usercol     = 0,
-	                                      itemcol     = 1,
-	                                      ratingcol   = 2,
-	                                      topn        = 100,
-	                                      includeRated= False )
-		nDCGs_normal  = dict((n, []) for n in topN)
-		nDCGs_altform = dict((n, []) for n in topN)
-		APs_thresh4   = dict((n, []) for n in topN)
-		APs_thresh3   = dict((n, []) for n in topN)
-		APs_thresh2   = dict((n, []) for n in topN)
-		for userId in recommendationList[0]:
-			recs = {}
-			place = 1
-			for itemId in recommendationList[0][userId]:
-				if itemId in user_consumption[userId]:
-					rating = int( user_consumption[userId][itemId] )
-				else:
-					rating = 0
-				recs[place] = rating
-				place += 1 
-			for n in topN:
-				mini_recs = dict((k, recs[k]) for k in recs.keys()[:n])
-				nDCGs_normal[n].append( nDCG(recs=mini_recs, alt_form=False) )
-				nDCGs_altform[n].append( nDCG(recs=mini_recs, alt_form=True) )			
-				APs_thresh4[n].append( AP_at_N(n=n, recs=recs, rel_thresh=4) )
-				APs_thresh3[n].append( AP_at_N(n=n, recs=recs, rel_thresh=3) )
-				APs_thresh2[n].append( AP_at_N(n=n, recs=recs, rel_thresh=2) )
+	# nDCG = []
+	# val_folds   = os.listdir(data_path+'val/')
+	# for i in range(0, len(val_folds)):
+	svd = pyreclab.SVD( dataset   = data_path+'ratings.train'#data_path+'train/train.'+str(i),
+											dlmchar   = b',',
+											header    = False,
+											usercol   = 0,
+											itemcol   = 1,
+											ratingcol = 2 )
+	svd.train( factors= params['f'], maxiter= params['mi'], lr= params['lr'], lamb= params['lamb'] )
+	recommendationList = svd.testrec( input_file    = data_path+'test/'+os.listdir(data_path+'test/')[0]#data_path+'val/val.'+str(i),
+                                      dlmchar     = b',',
+                                      header      = False,
+                                      usercol     = 0,
+                                      itemcol     = 1,
+                                      ratingcol   = 2,
+                                      topn        = 100,
+                                      includeRated= False )
+	MRR_thresh4   = []
+	MRR_thresh3   = []
+	nDCGs_bin_thresh4 = dict((n, []) for n in topN)
+	nDCGs_bin_thresh3 = dict((n, []) for n in topN)
+	nDCGs_normal  = dict((n, []) for n in topN)
+	nDCGs_altform = dict((n, []) for n in topN)
+	APs_thresh4   = dict((n, []) for n in topN)
+	APs_thresh3   = dict((n, []) for n in topN)
+	APs_thresh2   = dict((n, []) for n in topN)
 
+	for userId in recommendationList[0]:
+		recs = {}
+		place = 1
+		for itemId in recommendationList[0][userId]:
+			if itemId in user_consumption[userId]:
+				rating = int( user_consumption[userId][itemId] )
+			else:
+				rating = 0
+			recs[place] = rating
+			place += 1 
 
+		for rank in recs:
+			if int(recs[rank]) >= 3:
+				MRR_thresh3.append(1.0/int(rank))
+				if int(recs[rank]) >= 4:
+					MRR_thresh4.append(1.0/int(rank))
+				break
 
+		for n in topN:
+			mini_recs = dict((k, recs[k]) for k in recs.keys()[:n])
+			nDCGs_bin_thresh4[n].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=4) )
+			nDCGs_bin_thresh3[n].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=3) )
+			nDCGs_normal[n].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
+			nDCGs_altform[n].append( nDCG(recs=mini_recs, alt_form=True, rel_thresh=False) )			
+			APs_thresh4[n].append( AP_at_N(n=n, recs=recs, rel_thresh=4) )
+			APs_thresh3[n].append( AP_at_N(n=n, recs=recs, rel_thresh=3) )
+			APs_thresh2[n].append( AP_at_N(n=n, recs=recs, rel_thresh=2) )
 
 
 	with open('TwitterRatings/funkSVD/'+output_filename, 'a') as file:
 		for n in topN:
-			file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, MAP(rel_thresh=4)=%s, MAP(rel_thresh=3)=%s, MAP(rel_thresh=2)=%s\n" % \
-				(n, mean(nDCGs_normal[n]), mean(nDCGs_altform[n]), mean(APs_thresh4[n]), mean(APs_thresh3[n]), mean(APs_thresh2[n])) )	
+			file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG(rel_thresh=4)=%s, bin nDCG(rel_thresh=3)=%s, MAP(rel_thresh=4)=%s, MAP(rel_thresh=3)=%s, MAP(rel_thresh=2)=%s, MRR(rel_thresh=4)=%s, MRR(rel_thresh=3)=%s\n" % \
+				(n, mean(nDCGs_normal[n]), mean(nDCGs_altform[n]), mean(nDCGs_bin_thresh4[n]), mean(nDCGs_bin_thresh3[n]), mean(APs_thresh4[n]), mean(APs_thresh3[n]), mean(APs_thresh2[n]), mean(MRR_thresh4), mean(MRR_thresh3)) )	
 
 def generate_recommends(params):
 
@@ -370,11 +392,11 @@ def generate_recommends(params):
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	opt_params = boosting(data_path= data_path)
+	# opt_params = boosting(data_path= data_path)
 	# RMSEMAE_distr(output_filename="results_8020.txt")
-	# opt_params = {'f': 825, 'mi': 50, 'lr': 0.0285, 'lamb': 0.12}
+	opt_params = {'f': 425, 'mi': 110, 'lr': 0.01, 'lamb': 0.05}
 	# PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
-	# nDCGMAP_calculator(data_path= data_path, params=opt_params, topN=[10, 20, 50], output_filename="nDCGMAP_8020.txt")
+	nDCGMAP_calculator(data_path= data_path, params=opt_params, topN=[10, 15, 20, 50], output_filename="nDCGMAP.txt")
 	# generate_recommends(params=opt_params)
 
 	# svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.total',

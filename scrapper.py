@@ -439,6 +439,7 @@ def users_wgetter(user_twitter_path):
 	pass
 
 def statistics(db_conn):
+	"""Hay que correrlo en python 2.x"""
 	c = db_conn.cursor()
 	table_name = 'user_reviews'
 	c.execute( "SELECT * FROM {0} ORDER BY timestamp asc".format(table_name) )
@@ -479,6 +480,10 @@ def statistics(db_conn):
 	rats_book = [ tuple[1] for tuple in results ]
 	logging.info( "MEAN ratings per book:{avgratbook}±{stddevratbook}".format(avgratbook=mean(rats_book), stddevratbook=stddev(rats_book)) )
 
+  #La sparsity se puede obtener con las siguientes consultas:
+  # SELECT DISTINCT COUNT(user_id) FROM user_reviews WHERE rating IS NOT 0;
+  # SELECT DISTINCT COUNT(url_book) FROM user_reviews WHERE rating IS NOT 0;
+  # SELECT COUNT(rating) FROM user_reviews WHERE rating IS NOT 0; 
 
 # Creando la conexion a la BD
 sqlite_file = 'db/goodreads.sqlite'
