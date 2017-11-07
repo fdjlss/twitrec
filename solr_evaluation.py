@@ -3,12 +3,18 @@
 import re, json
 from urllib import urlencode, quote_plus
 from urllib2 import urlopen
-from jojFunkSvd import mean, stddev, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, consumption
+from jojFunkSvd import mean, stddev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, consumption, user_ranked_recs
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 
 #-----"PRIVATE" METHODS----------#
+def encoded_itemIds(item_list):
+	ids_string = '('
+	for itemId in item_list: ids_string += itemId + '%2520OR%2520'
+	ids_string = ids_string[:-12] # para borrar el último "%2520OR%2520"
+	ids_string += ')'
+	return ids_string
 def flatten_list(list_of_lists, rows):
 	# eliminamos duplicados manteniendo orden
 	flattened = []
@@ -24,11 +30,36 @@ def remove_consumed(user_consumption, rec_list):
 	for itemId in rec_list:
 		if itemId in user_consumption: l.remove(itemId)
 	return l
+
+
+def option2Job(data_path, solr, params):
+	val_folds   = os.listdir(data_path+'val/')
+	total_c = consumption(ratings_path=data_path+'ratings.total', rel_thresh=0, with_ratings=True)
+
+	for i in range(0, len(val_folds)):
+
+		train_c = consumption(ratings_path=data_path+'train/train.'+str(i), rel_thresh=0, with_ratings=False)
+		for userId in train_c:
+			stream_url     = solr + '/query?q=goodreadsId:{ids}'
+			ids_string     = encoded_itemIds(item_list=train_c[userId])
+			encoded_params = urlencode(params)
+			url            = solr + '/mlt?stream.url=' + stream_url.format(ids=ids_string) + "&" + encoded_params
+			response       = json.loads( urlopen(url).read().decode('utf8') )
+			try:
+				docs         = response['response']['docs']
+			except TypeError as e:
+				continue
+			book_recs      = [ str(doc['goodreadsId'][0]) for doc in docs] 
+			book_recs      = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+			# TODO: user_consumpt=validation_c[userId] ???
+			# O BIEN GENERAR RECOMENDACIONES A VAL.1 Y VER SI ESTABA BIEN EN TRAIN.1 ???
+			recs = user_ranked_recs(user_recs=book_recs, user_consumpt=total_c[userId])
+
 #--------------------------------#
 
-def option1(solr, q, rows, fl, topN):
-	train_c = consumption(ratings_path='TwitterRatings/funkSVD/ratings.train', rel_thresh=0, with_ratings=False)
-	total_c = consumption(ratings_path='TwitterRatings/funkSVD/ratings.total', rel_thresh=0, with_ratings=True)
+def option1(data_path, solr, q, rows, fl, topN):
+	train_c = consumption(ratings_path=data_path+'ratings.train', rel_thresh=0, with_ratings=False)
+	total_c = consumption(ratings_path=data_path+'ratings.total', rel_thresh=0, with_ratings=True)
 	nDCGs_normal  = dict((n, []) for n in topN)
 	nDCGs_altform = dict((n, []) for n in topN)
 	APs_thresh4   = dict((n, []) for n in topN)
@@ -87,9 +118,42 @@ def option1(solr, q, rows, fl, topN):
 			file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, MAP(rel_thresh=4)=%s, MAP(rel_thresh=3)=%s, MAP(rel_thresh=2)=%s\n" % \
 				(n, mean(nDCGs_normal[n]), mean(nDCGs_altform[n]), mean(APs_thresh4[n]), mean(APs_thresh3[n]), mean(APs_thresh2[n]) ) )	
 
-def option2(solr, rows, fl, topN, mlt_field):
-	train_c = consumption(ratings_path='TwitterRatings/funkSVD/ratings.train', rel_thresh=0, with_ratings=False)
-	total_c  = consumption(ratings_path='TwitterRatings/funkSVD/ratings.total', rel_thresh=0, with_ratings=True)
+def option2_tuning(data_path, solr):
+
+	solr_fields = ['description', 'title.titleOfficial', 'genres.genreName', 'author.authors.authorName', 'quotes.quoteText', 'author.authorBio', 'title.titleGreytext']
+	mlt_fields = {1:'description', 2:'title.titleOfficial', 3:'genres.genreName', 4:'author.authors.authorName', 5:'quotes.quoteText'}
+	defaults = {'fl' : ','.join(solr_fields),
+							'rows' : 100,
+							'mlt.fl' : mlt_fields[1],
+							'mlt.boost' : False,
+							'mlt.mintf' : 2,
+							'mlt.mindf' : 5,
+							'mlt.minwl' : 0,
+							'mlt.maxdf' : 10000, # en realidad no especificado
+							'mlt.maxwl' : 0,
+							'mlt.maxqt' : 25,
+							'mlt.maxntp' : 5000,
+							'mlt.qf' : mlt_fields[1] }
+
+
+
+	with open('TwitterRatings/CB/opt_params.txt', 'w') as f:
+		for param in defaults:
+			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
+		f.write( "nDCG:{nDCG}".format(mean(nDCG)) )
+
+	return defaults
+
+
+
+
+def option2(data_path, solr, rows, fl, topN, mlt_field):
+	train_c = consumption(ratings_path=data_path+'ratings.train', rel_thresh=0, with_ratings=False)
+	total_c = consumption(ratings_path=data_path+'ratings.total', rel_thresh=0, with_ratings=True)
+	MRR_thresh4   = []
+	MRR_thresh3   = []
+	nDCGs_bin_thresh4 = dict((n, []) for n in topN)
+	nDCGs_bin_thresh3 = dict((n, []) for n in topN)
 	nDCGs_normal  = dict((n, []) for n in topN)
 	nDCGs_altform = dict((n, []) for n in topN)
 	APs_thresh4   = dict((n, []) for n in topN)
@@ -134,18 +198,21 @@ def option2(solr, rows, fl, topN, mlt_field):
 
 		for n in topN: 
 			mini_recs = dict((k, recs[k]) for k in recs.keys()[:n])
-			nDCGs_normal[n].append( nDCG(recs=mini_recs, alt_form=False) )
-			nDCGs_altform[n].append( nDCG(recs=mini_recs, alt_form=True) )			
+			nDCGs_bin_thresh4[n].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=4) )
+			nDCGs_bin_thresh3[n].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=3) )
+			nDCGs_normal[n].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
+			nDCGs_altform[n].append( nDCG(recs=mini_recs, alt_form=True, rel_thresh=False) )			
 			APs_thresh4[n].append( AP_at_N(n=n, recs=recs, rel_thresh=4) )
 			APs_thresh3[n].append( AP_at_N(n=n, recs=recs, rel_thresh=3) )
 			APs_thresh2[n].append( AP_at_N(n=n, recs=recs, rel_thresh=2) )
 
 	with open('TwitterRatings/CB/option2_results_'+mlt_field+'.txt', 'a') as file:
 		for n in topN:
-			file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, MAP(rel_thresh=4)=%s, MAP(rel_thresh=3)=%s, MAP(rel_thresh=2)=%s\n" % \
-				(n, mean(nDCGs_normal[n]), mean(nDCGs_altform[n]), mean(APs_thresh4[n]), mean(APs_thresh3[n]), mean(APs_thresh2[n])) )		
+			file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG(rel_thresh=4)=%s, bin nDCG(rel_thresh=3)=%s, MAP(rel_thresh=4)=%s, MAP(rel_thresh=3)=%s, MAP(rel_thresh=2)=%s\n" % \
+				(n, mean(nDCGs_normal[n]), mean(nDCGs_altform[n]), mean(nDCGs_bin_thresh4[n]), mean(nDCGs_bin_thresh3[n]), mean(APs_thresh4[n]), mean(APs_thresh3[n]), mean(APs_thresh2[n])) )		
 
 def main():
+	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = "http://localhost:8983/solr/grrecsys"
 	q = 'goodreadsId:{goodreadsId}'
 	rows = 100
@@ -159,3 +226,5 @@ def main():
 
 if __name__ == '__main__':
 	main()
+
+
