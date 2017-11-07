@@ -16,8 +16,8 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 def mean(lst):
 	return float(sum(lst)) / len(lst)
 def stddev(lst):
-    m = mean(lst)
-    return sqrt(float(reduce(lambda x, y: x + y, map(lambda x: (x - m) ** 2, lst))) / len(lst))
+  m = mean(lst)
+  return sqrt(float(reduce(lambda x, y: x + y, map(lambda x: (x - m) ** 2, lst))) / len(lst))
 def opt_value(results):
 	for val in results:
 		if results[val] == min( list(results.values()) ): 
@@ -31,7 +31,13 @@ def ratingsSampler(rats, fout, n):
 		f.write( '\n'.join('%s' % x for x in ratings_sampled) )
 	del ratings_sampled
 
-
+def MRR(recs, rel_thresh):
+	res = 0.0
+	for place in recs:
+		if int(recs[place]) >= rel_thresh:
+			res = 1.0/int(place)
+			break
+	return res
 
 def rel_div(relevance_i, i, alt_form):
 	if alt_form:
@@ -103,6 +109,17 @@ def consumption(ratings_path, rel_thresh, with_ratings):
 				if int( rating ) >= rel_thresh:
 					c[userId].append(itemId)
 	return c
+def user_ranked_recs(user_recs, user_consumpt):
+	recs = {}
+	place = 1
+	for itemId in user_recs:
+		if itemId in user_consumpt:
+			rating = int( user_consumpt[itemId] )
+		else:
+			rating = 0
+		recs[place] = rating
+		place += 1
+	return recs
 #--------------------------------#
 
 
@@ -294,10 +311,6 @@ def PRF_calculator(params, folds, topN):
 def nDCGMAP_calculator(data_path, params, topN, output_filename):
 
 	user_consumption = consumption(ratings_path=data_path+'ratings.total', rel_thresh=0, with_ratings=True)
-
-	# nDCG = []
-	# val_folds   = os.listdir(data_path+'val/')
-	# for i in range(0, len(val_folds)):
 	svd = pyreclab.SVD( dataset   = data_path+'ratings.train',#data_path+'train/train.'+str(i),
 											dlmchar   = b',',
 											header    = False,
@@ -324,23 +337,10 @@ def nDCGMAP_calculator(data_path, params, topN, output_filename):
 	APs_thresh2   = dict((n, []) for n in topN)
 
 	for userId in recommendationList[0]:
-		recs = {}
-		place = 1
-		for itemId in recommendationList[0][userId]:
-			if itemId in user_consumption[userId]:
-				rating = int( user_consumption[userId][itemId] )
-			else:
-				rating = 0
-			recs[place] = rating
-			place += 1 
+		recs = user_ranked_recs(user_recs=recommendationList[0][userId], user_consumpt=user_consumption[userId])
 
-		for rank in recs:
-			if int(recs[rank]) >= 3:
-				MRR_thresh3.append(1.0/int(rank))
-				if int(recs[rank]) >= 4:
-					MRR_thresh4.append(1.0/int(rank))
-				break
-
+		MRR_thresh4.append( MRR(recs=recs, rel_thresh=4) )
+		MRR_thresh3.append( MRR(recs=recs, rel_thresh=3) )
 		for n in topN:
 			mini_recs = dict((k, recs[k]) for k in recs.keys()[:n])
 			nDCGs_bin_thresh4[n].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=4) )
