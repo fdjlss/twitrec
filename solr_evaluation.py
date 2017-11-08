@@ -3,7 +3,7 @@
 import re, json
 from urllib import urlencode, quote_plus
 from urllib2 import urlopen
-from jojFunkSvd import mean, stddev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, consumption, user_ranked_recs
+from jojFunkSvd import mean, stddev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, consumption, user_ranked_recs, opt_value
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
@@ -33,15 +33,17 @@ def remove_consumed(user_consumption, rec_list):
 
 
 def option2Job(data_path, solr, params):
-	val_folds   = os.listdir(data_path+'val/')
-	total_c = consumption(ratings_path=data_path+'ratings.total', rel_thresh=0, with_ratings=True)
-
+	"""Genera recomendaciones para filas en <validation>.
+	Calcula las métricas comparando con <training>"""
+	val_folds = os.listdir(data_path+'val/')
+	nDCGs = []
 	for i in range(0, len(val_folds)):
-
-		train_c = consumption(ratings_path=data_path+'train/train.'+str(i), rel_thresh=0, with_ratings=False)
+		users_nDCGs = []
+		train_c = consumption(ratings_path=data_path+'train/train.'+str(i), rel_thresh=0, with_ratings=True)
+		val_c   = consumption(ratings_path=data_path+'val/val.'+str(i), rel_thresh=0, with_ratings=False)
 		for userId in train_c:
 			stream_url     = solr + '/query?q=goodreadsId:{ids}'
-			ids_string     = encoded_itemIds(item_list=train_c[userId])
+			ids_string     = encoded_itemIds(item_list=val_c[userId])
 			encoded_params = urlencode(params)
 			url            = solr + '/mlt?stream.url=' + stream_url.format(ids=ids_string) + "&" + encoded_params
 			response       = json.loads( urlopen(url).read().decode('utf8') )
@@ -50,11 +52,15 @@ def option2Job(data_path, solr, params):
 			except TypeError as e:
 				continue
 			book_recs      = [ str(doc['goodreadsId'][0]) for doc in docs] 
-			book_recs      = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
-			# TODO: user_consumpt=validation_c[userId] ???
-			# O BIEN GENERAR RECOMENDACIONES A VAL.1 Y VER SI ESTABA BIEN EN TRAIN.1 ???
-			recs = user_ranked_recs(user_recs=book_recs, user_consumpt=total_c[userId])
+			book_recs      = remove_consumed(user_consumption=val_c[userId], rec_list=book_recs)
+			recs           = user_ranked_recs(user_recs=book_recs, user_consumpt=train_c[userId])
 
+			mini_recs = dict((k, recs[k]) for k in recs.keys()[:10])
+			users_nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=3) )
+
+		nDCGs.append( mean(users_nDCGs) )
+
+	return mean(nDCGs)
 #--------------------------------#
 
 def option1(data_path, solr, q, rows, fl, topN):
@@ -120,8 +126,9 @@ def option1(data_path, solr, q, rows, fl, topN):
 
 def option2_tuning(data_path, solr):
 
+	param_names = ['mlt.fl', 'mlt.boost', 'mlt.mintf', 'mlt.mindf', 'mlt.minwl', 'mlt.maxdf', 'mlt.maxwl', 'mlt.maxqt', 'mlt.maxntp']
 	solr_fields = ['description', 'title.titleOfficial', 'genres.genreName', 'author.authors.authorName', 'quotes.quoteText', 'author.authorBio', 'title.titleGreytext']
-	mlt_fields = {1:'description', 2:'title.titleOfficial', 3:'genres.genreName', 4:'author.authors.authorName', 5:'quotes.quoteText'}
+	mlt_fields  = {1:'description', 2:'title.titleOfficial', 3:'genres.genreName', 4:'author.authors.authorName', 5:'quotes.quoteText'}
 	defaults = {'fl' : ','.join(solr_fields),
 							'rows' : 100,
 							'mlt.fl' : mlt_fields[1],
@@ -134,6 +141,19 @@ def option2_tuning(data_path, solr):
 							'mlt.maxqt' : 25,
 							'mlt.maxntp' : 5000,
 							'mlt.qf' : mlt_fields[1] }
+
+	results = dict((param, {}) for param in param_names)
+	for param in param_names: 
+		
+		if param=='mlt.fl':
+			for i in mlt_fields.values():
+				defaults['mlt.fl'] = i
+				logging.info("Evaluando con params: {}".format(defaults))
+				results['mlt.fl'] = option2Job(data_path=data_path, solr=solr, params=defaults)
+			defaults['mlt.fl']  = opt_value(results=results['mlt.fl'], metric='ndcg')
+
+		if param=='mlt.boost':
+			#TODO
 
 
 

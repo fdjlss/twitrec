@@ -18,10 +18,14 @@ def mean(lst):
 def stddev(lst):
   m = mean(lst)
   return sqrt(float(reduce(lambda x, y: x + y, map(lambda x: (x - m) ** 2, lst))) / len(lst))
-def opt_value(results):
+def opt_value(results, metric):
 	for val in results:
-		if results[val] == min( list(results.values()) ): 
-			opt_value = val
+		if metric=='rmse':
+			if results[val] == min( list(results.values()) ): 
+				opt_value = val
+		if metric=='ndcg':
+			if results[val] == max( list(results.values()) ): 
+				opt_value = val
 	return opt_value
 def ratingsSampler(rats, fout, n):
 	l = len(rats)
@@ -30,7 +34,6 @@ def ratingsSampler(rats, fout, n):
 	with open(fout, 'w') as f:
 		f.write( '\n'.join('%s' % x for x in ratings_sampled) )
 	del ratings_sampled
-
 def MRR(recs, rel_thresh):
 	res = 0.0
 	for place in recs:
@@ -38,7 +41,6 @@ def MRR(recs, rel_thresh):
 			res = 1.0/int(place)
 			break
 	return res
-
 def rel_div(relevance_i, i, alt_form):
 	if alt_form:
 		return ( 2.0**relevance_i - 1) / log(1.0 + i, 2)
@@ -148,7 +150,6 @@ def SVDJob(data_path, f, mi, lr, lamb):
 		                                ratingcol   = 2 )
 		maes.append(mae)
 		rmses.append(rmse)
-
 	# # Escribe 1 archivo por cada valor de cada parámetro
 	# with open('TwitterRatings/funkSVD/params/'+param+'/'+str(i)+'.txt', 'w') as f:
 	# 	for j in range(0, folds):
@@ -168,7 +169,7 @@ def boosting(data_path):
 				logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=i, lamb=defaults['lamb'], lr=defaults['lr'], mi=defaults['mi']) )
 				mae, rmse = SVDJob(data_path= data_path, f= i, mi= defaults['mi'], lr= defaults['lr'], lamb= defaults['lamb'])
 				results['f'][i] = rmse
-			defaults['f']  = opt_value(results['f'])
+			defaults['f']  = opt_value(results=results['f'], metric='rmse')
 
 		elif param=='lamb':
 			defaults['lamb'] = [0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]		
@@ -176,7 +177,7 @@ def boosting(data_path):
 				logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=i, lr=defaults['lr'], mi=defaults['mi']) )
 				mae, rmse = SVDJob(data_path= data_path, f= defaults['f'], mi= defaults['mi'], lr= defaults['lr'], lamb= i)
 				results['lamb'][i] = rmse
-			defaults['lamb'] = opt_value(results['lamb'])
+			defaults['lamb'] = opt_value(results=results['lamb'], metric='rmse')
 
 		elif param=='lr':
 			defaults['lr']   = [0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
@@ -184,7 +185,7 @@ def boosting(data_path):
 				logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=defaults['lamb'], lr=i, mi=defaults['mi']) )
 				mae, rmse = SVDJob(data_path= data_path, f= defaults['f'], mi= defaults['mi'], lr= i, lamb= defaults['lamb'])
 				results['lr'][i] = rmse
-			defaults['lr'] = opt_value(results['lr'])
+			defaults['lr'] = opt_value(results=results['lr'], metric='rmse')
 
 		elif param=='mi':
 			defaults['mi'] = list(range(10, 520, 20))
@@ -192,7 +193,7 @@ def boosting(data_path):
 				logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=defaults['lamb'], lr=defaults['lr'], mi=i) )
 				mae, rmse = SVDJob(data_path= data_path, f= defaults['f'], mi= i, lr= defaults['lr'], lamb= defaults['lamb'])
 				results['mi'][i] = rmse
-			defaults['mi'] = opt_value(results['mi'])
+			defaults['mi'] = opt_value(results=results['mi'], metric='rmse')
 
 	# Real testing
 	svd = pyreclab.SVD( dataset   = data_path+'ratings.train',
