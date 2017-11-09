@@ -40,11 +40,11 @@ def option2Job(data_path, solr, params):
 	nDCGs = []
 	for i in range(1, len(val_folds)+1):
 		users_nDCGs = []
-		train_c = consumption(ratings_path=data_path+'train/train.'+str(i), rel_thresh=0, with_ratings=True)
-		val_c   = consumption(ratings_path=data_path+'val/val.'+str(i), rel_thresh=0, with_ratings=False)
-		for userId in val_c:
+		train_c = consumption(ratings_path=data_path+'train/train.'+str(i), rel_thresh=0, with_ratings=False)
+		val_c   = consumption(ratings_path=data_path+'val/val.'+str(i), rel_thresh=0, with_ratings=True)
+		for userId in train_c:
 			stream_url     = solr + '/query?q=goodreadsId:{ids}'
-			ids_string     = encoded_itemIds(item_list=val_c[userId])
+			ids_string     = encoded_itemIds(item_list=train_c[userId])
 			encoded_params = urlencode(params)
 			url            = solr + '/mlt?stream.url=' + stream_url.format(ids=ids_string) + "&" + encoded_params
 			response       = json.loads( urlopen(url).read().decode('utf8') )
@@ -53,11 +53,11 @@ def option2Job(data_path, solr, params):
 			except TypeError as e:
 				continue 
 			book_recs      = [ str(doc['goodreadsId'][0]) for doc in docs] 
-			book_recs      = remove_consumed(user_consumption=val_c[userId], rec_list=book_recs)
+			book_recs      = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 			try:
-				recs           = user_ranked_recs(user_recs=book_recs, user_consumpt=train_c[userId]) #...puede que en train no esté el mismo usuario...
+				recs           = user_ranked_recs(user_recs=book_recs, user_consumpt=val_c[userId]) #...puede que en val. no esté el mismo usuario...
 			except KeyError as e:
-				logging.info("Usuario {0} del fold de val. {1} no encontrado en fold de 'train'".format(userId, i))
+				logging.info("Usuario {0} del fold de train {1} no encontrado en fold de val.".format(userId, i))
 				continue
 
 			mini_recs = dict((k, recs[k]) for k in recs.keys()[:10]) # Metric for tuning: nDCG at 10
@@ -221,8 +221,8 @@ def option2_tuning(data_path, solr):
 	return defaults
 
 def option2_testing(data_path, solr, topN, params):
-	test_c  = consumption(ratings_path=data_path+'test/'+os.listdir(data_path+'test/')[0], rel_thresh=0, with_ratings=False)
-	total_c = consumption(ratings_path=data_path+'ratings.total', rel_thresh=0, with_ratings=True)
+	test_c  = consumption(ratings_path=data_path+'test/'+os.listdir(data_path+'test/')[0], rel_thresh=0, with_ratings=True)
+	train_c = consumption(ratings_path=data_path+'ratings.train', rel_thresh=0, with_ratings=False)
 	MRR_thresh4   = []
 	MRR_thresh3   = []
 	nDCGs_bin_thresh4 = dict((n, []) for n in topN)
@@ -233,9 +233,9 @@ def option2_testing(data_path, solr, topN, params):
 	APs_thresh3   = dict((n, []) for n in topN)
 	APs_thresh2   = dict((n, []) for n in topN)
 
-	for userId in test_c:
+	for userId in train_c:
 		stream_url     = solr + '/query?q=goodreadsId:{ids}'
-		ids_string     = encoded_itemIds(item_list=test_c[userId])
+		ids_string     = encoded_itemIds(item_list=train_c[userId])
 		encoded_params = urlencode(params)
 		url            = solr + '/mlt?stream.url=' + stream_url.format(ids=ids_string) + "&" + encoded_params
 		response       = json.loads( urlopen(url).read().decode('utf8') )
@@ -245,8 +245,12 @@ def option2_testing(data_path, solr, topN, params):
 			continue
 		parsed_query   = response['debug']['parsedquery']
 		book_recs      = [ str(doc['goodreadsId'][0]) for doc in docs] 
-		book_recs      = remove_consumed(user_consumption=test_c[userId], rec_list=book_recs)
-		recs           = user_ranked_recs(user_recs=book_recs, user_consumpt=total_c[userId])
+		book_recs      = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+		try:
+			recs           = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
+		except KeyError as e:
+			logging.info("Usuario {0} del fold de train (total) no encontrado en fold de 'test'".format(userId))
+			continue
 
 		for n in topN: 
 			mini_recs = dict((k, recs[k]) for k in recs.keys()[:n])
