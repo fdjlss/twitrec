@@ -128,7 +128,7 @@ def option1(data_path, solr, q, rows, fl, topN):
 def option2_tuning(data_path, solr):
 
 	param_names = ['mlt.fl', 'mlt.boost', 'mlt.mintf', 'mlt.mindf', 'mlt.minwl', 'mlt.maxdf', 'mlt.maxwl', 'mlt.maxqt', 'mlt.maxntp']
-	solr_fields = ['description', 'title.titleOfficial', 'genres.genreName', 'author.authors.authorName', 'quotes.quoteText', 'author.authorBio', 'title.titleGreytext']
+	solr_fields = ['goodreadsId', 'description', 'title.titleOfficial', 'genres.genreName', 'author.authors.authorName', 'quotes.quoteText', 'author.authorBio', 'title.titleGreytext']
 	mlt_fields  = {1:'description', 2:'title.titleOfficial', 3:'genres.genreName', 4:'author.authors.authorName', 5:'quotes.quoteText'}
 	defaults = {'fl' : ','.join(solr_fields),
 							'rows' : 100,
