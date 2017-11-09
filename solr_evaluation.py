@@ -1,5 +1,6 @@
 # coding=utf-8
 
+import os
 import re, json
 from urllib import urlencode, quote_plus
 from urllib2 import urlopen
