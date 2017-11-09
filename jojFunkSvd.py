@@ -134,7 +134,7 @@ def SVDJob(data_path, f, mi, lr, lamb):
 	# 		test.append( line.strip() )
 	val_folds   = os.listdir(data_path+'val/')
 	maes, rmses = [], []
-	for i in range(0, len(val_folds)):
+	for i in range(1, len(val_folds)+1):
 		svd = pyreclab.SVD( dataset   = data_path+'train/train.'+str(i),
 												dlmchar   = b',',
 												header    = False,
@@ -393,7 +393,7 @@ def generate_recommends(params):
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	# opt_params = boosting(data_path= data_path)
+	opt_params = boosting(data_path= data_path)
 	# RMSEMAE_distr(output_filename="results_8020.txt")
 	opt_params = {'f': 425, 'mi': 110, 'lr': 0.01, 'lamb': 0.05}
 	# PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])

@@ -38,7 +38,7 @@ def option2Job(data_path, solr, params):
 	Calcula las métricas comparando con <training>"""
 	val_folds = os.listdir(data_path+'val/')
 	nDCGs = []
-	for i in range(0, len(val_folds)):
+	for i in range(1, len(val_folds)+1):
 		users_nDCGs = []
 		train_c = consumption(ratings_path=data_path+'train/train.'+str(i), rel_thresh=0, with_ratings=True)
 		val_c   = consumption(ratings_path=data_path+'val/val.'+str(i), rel_thresh=0, with_ratings=False)
@@ -254,7 +254,7 @@ def option2_testing(data_path, solr, topN, params):
 			APs_thresh3[n].append( AP_at_N(n=n, recs=recs, rel_thresh=3) )
 			APs_thresh2[n].append( AP_at_N(n=n, recs=recs, rel_thresh=2) )
 
-	with open('TwitterRatings/CB/option2_results.txt', 'a') as file:
+	with open('TwitterRatings/CB/option2_results.txt', 'w') as file:
 		for n in topN:
 			file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG(rel_thresh=4)=%s, bin nDCG(rel_thresh=3)=%s, MAP(rel_thresh=4)=%s, MAP(rel_thresh=3)=%s, MAP(rel_thresh=2)=%s\n" % \
 				(n, mean(nDCGs_normal[n]), mean(nDCGs_altform[n]), mean(nDCGs_bin_thresh4[n]), mean(nDCGs_bin_thresh3[n]), mean(APs_thresh4[n]), mean(APs_thresh3[n]), mean(APs_thresh2[n])) )		
