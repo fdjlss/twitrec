@@ -55,8 +55,8 @@ def option2Job(data_path, solr, params):
 			book_recs      = remove_consumed(user_consumption=val_c[userId], rec_list=book_recs)
 			recs           = user_ranked_recs(user_recs=book_recs, user_consumpt=train_c[userId])
 
-			mini_recs = dict((k, recs[k]) for k in recs.keys()[:10])
-			users_nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=3) )
+			mini_recs = dict((k, recs[k]) for k in recs.keys()[:10]) # Metric for tuning: nDCG at 10
+			users_nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=3) ) # relevant item if: rating>=3
 
 		nDCGs.append( mean(users_nDCGs) )
 
@@ -149,26 +149,74 @@ def option2_tuning(data_path, solr):
 			for i in mlt_fields.values():
 				defaults['mlt.fl'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
-				results['mlt.fl'] = option2Job(data_path=data_path, solr=solr, params=defaults)
+				results['mlt.fl'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
 			defaults['mlt.fl']  = opt_value(results=results['mlt.fl'], metric='ndcg')
 
 		if param=='mlt.boost':
-			#TODO
+			for i in [True, False]:
+				defaults['mlt.boost'] = i
+				logging.info("Evaluando con params: {}".format(defaults))
+				results['mlt.boost'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
+			defaults['mlt.boost']  = opt_value(results=results['mlt.boost'], metric='ndcg')
 
+		if param=='mlt.mintf':
+			for i in range(0, 21):
+				defaults['mlt.mintf'] = i
+				logging.info("Evaluando con params: {}".format(defaults))
+				results['mlt.mintf'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
+			defaults['mlt.mintf']  = opt_value(results=results['mlt.mintf'], metric='ndcg')
 
+		if param=='mlt.mindf':
+			for i in range(0, 21):
+				defaults['mlt.mindf'] = i
+				logging.info("Evaluando con params: {}".format(defaults))
+				results['mlt.mindf'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
+			defaults['mlt.mindf']  = opt_value(results=results['mlt.mindf'], metric='ndcg')		
+
+		if param=='mlt.minwl':
+			for i in range(0, 11):
+				defaults['mlt.minwl'] = i
+				logging.info("Evaluando con params: {}".format(defaults))
+				results['mlt.minwl'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
+			defaults['mlt.minwl']  = opt_value(results=results['mlt.minwl'], metric='ndcg')		
+
+		if param=='mlt.maxdf':
+			for i in [0, 100, 500, 1000, 5000, 10000, 50000]:
+				defaults['mlt.maxdf'] = i
+				logging.info("Evaluando con params: {}".format(defaults))
+				results['mlt.maxdf'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
+			defaults['mlt.maxdf']  = opt_value(results=results['mlt.maxdf'], metric='ndcg')	
+
+		if param=='mlt.maxwl':
+			for i in range(0, 30, 5):
+				defaults['mlt.maxwl'] = i
+				logging.info("Evaluando con params: {}".format(defaults))
+				results['mlt.maxwl'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
+			defaults['mlt.maxwl']  = opt_value(results=results['mlt.maxwl'], metric='ndcg')	
+
+		if param=='mlt.maxqt':
+			for i in range(0, 110, 10):
+				defaults['mlt.maxqt'] = i
+				logging.info("Evaluando con params: {}".format(defaults))
+				results['mlt.maxqt'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
+			defaults['mlt.maxqt']  = opt_value(results=results['mlt.maxqt'], metric='ndcg')	
+
+		if param=='mlt.maxntp':
+			for i in [500, 1000, 5000, 10000, 50000]:
+				defaults['mlt.maxntp'] = i
+				logging.info("Evaluando con params: {}".format(defaults))
+				results['mlt.maxntp'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
+			defaults['mlt.maxntp']  = opt_value(results=results['mlt.maxntp'], metric='ndcg')	
 
 	with open('TwitterRatings/CB/opt_params.txt', 'w') as f:
 		for param in defaults:
 			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
-		f.write( "nDCG:{nDCG}".format(mean(nDCG)) )
+
 
 	return defaults
 
-
-
-
-def option2(data_path, solr, rows, fl, topN, mlt_field):
-	train_c = consumption(ratings_path=data_path+'ratings.train', rel_thresh=0, with_ratings=False)
+def option2_testing(data_path, solr, topN, params):
+	test_c  = consumption(ratings_path=data_path+'test/'+os.listdir(data_path+'test/')[0], rel_thresh=0, with_ratings=False)
 	total_c = consumption(ratings_path=data_path+'ratings.total', rel_thresh=0, with_ratings=True)
 	MRR_thresh4   = []
 	MRR_thresh3   = []
@@ -180,16 +228,56 @@ def option2(data_path, solr, rows, fl, topN, mlt_field):
 	APs_thresh3   = dict((n, []) for n in topN)
 	APs_thresh2   = dict((n, []) for n in topN)
 
-	for userId in train_c:
-		logging.info("-> Option 2. mlt.fl: {2}. Viendo usuario {0}/{1}".format(userId, len(train_c), mlt_field) )
+	for userId in test_c:
+		stream_url     = solr + '/query?q=goodreadsId:{ids}'
+		ids_string     = encoded_itemIds(item_list=test_c[userId])
+		encoded_params = urlencode(params)
+		url            = solr + '/mlt?stream.url=' + stream_url.format(ids=ids_string) + "&" + encoded_params
+		response       = json.loads( urlopen(url).read().decode('utf8') )
+		try:
+			docs         = response['response']['docs']
+		except TypeError as e:
+			continue
+		parsed_query   = response['debug']['parsedquery']
+		book_recs      = [ str(doc['goodreadsId'][0]) for doc in docs] 
+		book_recs      = remove_consumed(user_consumption=test_c[userId], rec_list=book_recs)
+		recs           = user_ranked_recs(user_recs=book_recs, user_consumpt=total_c[userId])
+
+		for n in topN: 
+			mini_recs = dict((k, recs[k]) for k in recs.keys()[:n])
+			nDCGs_bin_thresh4[n].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=4) )
+			nDCGs_bin_thresh3[n].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=3) )
+			nDCGs_normal[n].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
+			nDCGs_altform[n].append( nDCG(recs=mini_recs, alt_form=True, rel_thresh=False) )			
+			APs_thresh4[n].append( AP_at_N(n=n, recs=recs, rel_thresh=4) )
+			APs_thresh3[n].append( AP_at_N(n=n, recs=recs, rel_thresh=3) )
+			APs_thresh2[n].append( AP_at_N(n=n, recs=recs, rel_thresh=2) )
+
+	with open('TwitterRatings/CB/option2_results.txt', 'a') as file:
+		for n in topN:
+			file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG(rel_thresh=4)=%s, bin nDCG(rel_thresh=3)=%s, MAP(rel_thresh=4)=%s, MAP(rel_thresh=3)=%s, MAP(rel_thresh=2)=%s\n" % \
+				(n, mean(nDCGs_normal[n]), mean(nDCGs_altform[n]), mean(nDCGs_bin_thresh4[n]), mean(nDCGs_bin_thresh3[n]), mean(APs_thresh4[n]), mean(APs_thresh3[n]), mean(APs_thresh2[n])) )		
+
+
+
+
+def option2(data_path, solr, rows, fl, topN, mlt_field):
+	test_c  = consumption(ratings_path=data_path+'test/'+os.listdir(data_path+'test/')[0], rel_thresh=0, with_ratings=False)
+	total_c = consumption(ratings_path=data_path+'ratings.total', rel_thresh=0, with_ratings=True)
+	MRR_thresh4   = []
+	MRR_thresh3   = []
+	nDCGs_bin_thresh4 = dict((n, []) for n in topN)
+	nDCGs_bin_thresh3 = dict((n, []) for n in topN)
+	nDCGs_normal  = dict((n, []) for n in topN)
+	nDCGs_altform = dict((n, []) for n in topN)
+	APs_thresh4   = dict((n, []) for n in topN)
+	APs_thresh3   = dict((n, []) for n in topN)
+	APs_thresh2   = dict((n, []) for n in topN)
+
+	for userId in test_c:
+		logging.info("-> Option 2. mlt.fl: {2}. Viendo usuario {0}/{1}".format(userId, len(test_c), mlt_field) )
 		stream_url = solr + '/query?q=goodreadsId:{ids}'
-
-		ids_string = '('
-		for itemId in train_c[userId]:
-			ids_string += itemId + '%2520OR%2520'
-		ids_string = ids_string[:-12] # para borrar el último "%2520OR%2520"
-		ids_string += ')'
-
+		ids_string = encoded_itemIds(item_list=test_c[userId])
 		base_params = {'rows' : rows,
 									 'fl' : fl,
 									 'mlt.fl' : mlt_field,
@@ -204,17 +292,8 @@ def option2(data_path, solr, rows, fl, topN, mlt_field):
 			continue
 		parsed_query   = response['debug']['parsedquery']
 		book_recs      = [ str(doc['goodreadsId'][0]) for doc in docs] 
-		book_recs      = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
-
-		recs = {}
-		place = 1
-		for itemId in book_recs:
-			if itemId in total_c[userId]:
-				rating = int( total_c[userId][itemId] )
-			else:
-				rating = 0
-			recs[place] = rating
-			place += 1
+		book_recs      = remove_consumed(user_consumption=test_c[userId], rec_list=book_recs)
+		recs           = user_ranked_recs(user_recs=book_recs, user_consumpt=total_c[userId])
 
 		for n in topN: 
 			mini_recs = dict((k, recs[k]) for k in recs.keys()[:n])
@@ -234,15 +313,17 @@ def option2(data_path, solr, rows, fl, topN, mlt_field):
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = "http://localhost:8983/solr/grrecsys"
-	q = 'goodreadsId:{goodreadsId}'
-	rows = 100
-	fl = 'id,goodreadsId,title.titleOfficial,rating.ratingAvg,genres.genreName,description'
-	option1(solr=solr, q=q, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50])
-	option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='description')
-	option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='title.titleOfficial')
-	option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='genres.genreName')
-	option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='author.authors.authorName')
-	option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='quotes.quoteText')
+	# q = 'goodreadsId:{goodreadsId}'
+	# rows = 100
+	# fl = 'id,goodreadsId,title.titleOfficial,rating.ratingAvg,genres.genreName,description'
+	# option1(solr=solr, q=q, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50])
+	params = option2_tuning(data_path=data_path, solr=solr)
+	option2_testing(data_path=data_path, solr=solr, topN=[5, 10, 15, 20, 50], params=params)
+	# option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='description')
+	# option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='title.titleOfficial')
+	# option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='genres.genreName')
+	# option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='author.authors.authorName')
+	# option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='quotes.quoteText')
 
 if __name__ == '__main__':
 	main()
