@@ -42,7 +42,7 @@ def option2Job(data_path, solr, params):
 		users_nDCGs = []
 		train_c = consumption(ratings_path=data_path+'train/train.'+str(i), rel_thresh=0, with_ratings=True)
 		val_c   = consumption(ratings_path=data_path+'val/val.'+str(i), rel_thresh=0, with_ratings=False)
-		for userId in train_c:
+		for userId in val_c:
 			stream_url     = solr + '/query?q=goodreadsId:{ids}'
 			ids_string     = encoded_itemIds(item_list=val_c[userId])
 			encoded_params = urlencode(params)
