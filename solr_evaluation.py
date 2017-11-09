@@ -133,7 +133,7 @@ def option2_tuning(data_path, solr):
 	defaults = {'fl' : ','.join(solr_fields),
 							'rows' : 100,
 							'mlt.fl' : mlt_fields[1],
-							'mlt.boost' : False,
+							'mlt.boost' : 'false',
 							'mlt.mintf' : 2,
 							'mlt.mindf' : 5,
 							'mlt.minwl' : 0,
@@ -154,7 +154,7 @@ def option2_tuning(data_path, solr):
 			defaults['mlt.fl']  = opt_value(results=results['mlt.fl'], metric='ndcg')
 
 		if param=='mlt.boost':
-			for i in [True, False]:
+			for i in ['true', 'false']:
 				defaults['mlt.boost'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['mlt.boost'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
@@ -330,3 +330,69 @@ if __name__ == '__main__':
 	main()
 
 
+"""DEBUGGING:"""
+# import os
+# import re, json
+# from urllib import urlencode, quote_plus
+# from urllib2 import urlopen
+# from jojFunkSvd import mean, stddev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, consumption, user_ranked_recs, opt_value
+# import logging
+# logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+# def encoded_itemIds(item_list):
+# 	ids_string = '('
+# 	for itemId in item_list: ids_string += itemId + '%2520OR%2520'
+# 	ids_string = ids_string[:-12] # para borrar el último "%2520OR%2520"
+# 	ids_string += ')'
+# 	return ids_string
+
+# def remove_consumed(user_consumption, rec_list):
+# 	l = rec_list
+# 	for itemId in rec_list:
+# 		if itemId in user_consumption: l.remove(itemId)
+# 	return l
+
+# def flatten_list(list_of_lists, rows):
+# 	# eliminamos duplicados manteniendo orden
+# 	flattened = []
+# 	for i in range(0, rows): #asumimos que todas las listas tienen largo "rows"
+# 		for j in range(0, len(list_of_lists)):
+# 			try:
+# 				flattened.append( list_of_lists[j][i] )
+# 			except IndexError as e:
+# 				continue
+# 	return sorted(set(flattened), key=lambda x: flattened.index(x))
+
+# data_path = 'TwitterRatings/funkSVD/data/'
+# solr = "http://localhost:8983/solr/grrecsys"
+# val_folds = os.listdir(data_path+'val/')
+# nDCGs = []
+# train_c = consumption(ratings_path=data_path+'train/train.1', rel_thresh=0, with_ratings=True)
+# val_c   = consumption(ratings_path=data_path+'val/val.1', rel_thresh=0, with_ratings=False)
+# param_names = ['mlt.fl', 'mlt.boost', 'mlt.mintf', 'mlt.mindf', 'mlt.minwl', 'mlt.maxdf', 'mlt.maxwl', 'mlt.maxqt', 'mlt.maxntp']
+# solr_fields = ['goodreadsId', 'description', 'title.titleOfficial', 'genres.genreName', 'author.authors.authorName', 'quotes.quoteText', 'author.authorBio', 'title.titleGreytext']
+# mlt_fields  = {1:'description', 2:'title.titleOfficial', 3:'genres.genreName', 4:'author.authors.authorName', 5:'quotes.quoteText'}
+# defaults = {'fl' : ','.join(solr_fields),
+# 						'rows' : 100,
+# 						'mlt.fl' : mlt_fields[1],
+# 						'mlt.boost' : 'false',
+# 						'mlt.mintf' : 2,
+# 						'mlt.mindf' : 5,
+# 						'mlt.minwl' : 0,
+# 						'mlt.maxdf' : 10000, # en realidad no especificado
+# 						'mlt.maxwl' : 0,
+# 						'mlt.maxqt' : 25,
+# 						'mlt.maxntp' : 5000,
+# 						'mlt.qf' : mlt_fields[1] }
+# results = dict((param, {}) for param in param_names)
+# stream_url     = solr + '/query?q=goodreadsId:{ids}'
+# ids_string     = encoded_itemIds(item_list=val_c['113447232'])
+# encoded_params = urlencode(defaults)
+# url            = solr + '/mlt?stream.url=' + stream_url.format(ids=ids_string) + "&" + encoded_params
+# response       = json.loads( urlopen(url).read().decode('utf8') )
+# docs           = response['response']['docs']
+# book_recs      = [ str(doc['goodreadsId'][0]) for doc in docs] 
+# book_recs      = remove_consumed(user_consumption=val_c['113447232'], rec_list=book_recs)
+# recs           = user_ranked_recs(user_recs=book_recs, user_consumpt=train_c['113447232']) #...puede que en train no esté el mismo usuario...
+
+# mini_recs = dict((k, recs[k]) for k in recs.keys()[:10]) # Metric for tuning: nDCG at 10
+# users_nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=3) ) # relevant item if: rating>=3
