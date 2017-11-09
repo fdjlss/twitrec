@@ -51,10 +51,14 @@ def option2Job(data_path, solr, params):
 			try:
 				docs         = response['response']['docs']
 			except TypeError as e:
-				continue
+				continue 
 			book_recs      = [ str(doc['goodreadsId'][0]) for doc in docs] 
 			book_recs      = remove_consumed(user_consumption=val_c[userId], rec_list=book_recs)
-			recs           = user_ranked_recs(user_recs=book_recs, user_consumpt=train_c[userId])
+			try:
+				recs           = user_ranked_recs(user_recs=book_recs, user_consumpt=train_c[userId]) #...puede que en train no esté el mismo usuario...
+			except KeyError as e:
+				logging.info("Usuario {0} del fold de val. {1} no encontrado en fold de 'train'".format(userId, i))
+				continue
 
 			mini_recs = dict((k, recs[k]) for k in recs.keys()[:10]) # Metric for tuning: nDCG at 10
 			users_nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=3) ) # relevant item if: rating>=3
