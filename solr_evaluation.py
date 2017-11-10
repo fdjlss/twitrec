@@ -144,8 +144,7 @@ def option2_tuning(data_path, solr):
 							'mlt.maxdf' : 10000, # en realidad no especificado
 							'mlt.maxwl' : 0,
 							'mlt.maxqt' : 25,
-							'mlt.maxntp' : 5000,
-							'mlt.qf' : mlt_fields[1] }
+							'mlt.maxntp' : 5000 }
 
 	results = dict((param, {}) for param in param_names)
 	for param in param_names: 
@@ -200,7 +199,7 @@ def option2_tuning(data_path, solr):
 			defaults['mlt.maxwl']  = opt_value(results=results['mlt.maxwl'], metric='ndcg')	
 
 		if param=='mlt.maxqt':
-			for i in range(0, 110, 10):
+			for i in range(1, 110, 10): # no se pueden tener 0 query terms
 				defaults['mlt.maxqt'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['mlt.maxqt'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
@@ -217,6 +216,10 @@ def option2_tuning(data_path, solr):
 		for param in defaults:
 			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
 
+	with open('TwitterRatings/CB/option2_params.txt', 'w') as f:
+		for param in param_names:
+			for value in results[param]:
+				f.write( "{param}={value}\t : {nDCG}".format(param=param, value=value, nDCG=results[param]) )
 
 	return defaults
 
@@ -338,7 +341,8 @@ if __name__ == '__main__':
 	main()
 
 
-"""DEBUGGING:"""
+# """DEBUGGING:"""
+# from pprint import pprint
 # import os
 # import re, json
 # from urllib import urlencode, quote_plus
@@ -376,12 +380,12 @@ if __name__ == '__main__':
 # nDCGs = []
 # train_c = consumption(ratings_path=data_path+'train/train.1', rel_thresh=0, with_ratings=True)
 # val_c   = consumption(ratings_path=data_path+'val/val.1', rel_thresh=0, with_ratings=False)
-# param_names = ['mlt.fl', 'mlt.boost', 'mlt.mintf', 'mlt.mindf', 'mlt.minwl', 'mlt.maxdf', 'mlt.maxwl', 'mlt.maxqt', 'mlt.maxntp']
 # solr_fields = ['goodreadsId', 'description', 'title.titleOfficial', 'genres.genreName', 'author.authors.authorName', 'quotes.quoteText', 'author.authorBio', 'title.titleGreytext']
+# param_names = ['mlt.fl', 'mlt.boost', 'mlt.mintf', 'mlt.mindf', 'mlt.minwl', 'mlt.maxdf', 'mlt.maxwl', 'mlt.maxqt', 'mlt.maxntp']
 # mlt_fields  = {1:'description', 2:'title.titleOfficial', 3:'genres.genreName', 4:'author.authors.authorName', 5:'quotes.quoteText'}
 # defaults = {'fl' : ','.join(solr_fields),
 # 						'rows' : 100,
-# 						'mlt.fl' : mlt_fields[1],
+# 						'mlt.fl' : mlt_fields[1], #'description'
 # 						'mlt.boost' : 'false',
 # 						'mlt.mintf' : 2,
 # 						'mlt.mindf' : 5,
@@ -389,8 +393,7 @@ if __name__ == '__main__':
 # 						'mlt.maxdf' : 10000, # en realidad no especificado
 # 						'mlt.maxwl' : 0,
 # 						'mlt.maxqt' : 25,
-# 						'mlt.maxntp' : 5000,
-# 						'mlt.qf' : mlt_fields[1] }
+# 						'mlt.maxntp' : 5000}
 # results = dict((param, {}) for param in param_names)
 # stream_url     = solr + '/query?q=goodreadsId:{ids}'
 # ids_string     = encoded_itemIds(item_list=val_c['113447232'])
