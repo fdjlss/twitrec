@@ -31,8 +31,6 @@ def remove_consumed(user_consumption, rec_list):
 	for itemId in rec_list:
 		if itemId in user_consumption: l.remove(itemId)
 	return l
-
-
 def option2Job(data_path, solr, params):
 	"""Genera recomendaciones para filas en <validation>.
 	Calcula las métricas comparando con <training>"""
@@ -185,7 +183,7 @@ def option2_tuning(data_path, solr):
 			defaults['mlt.minwl']  = opt_value(results=results['mlt.minwl'], metric='ndcg')		
 
 		if param=='mlt.maxdf':
-			for i in [0, 100, 500, 1000, 5000, 10000, 50000]:
+			for i in [0, 100, 500, 1000, 5000, 10000, 20000, 30000, 40000, 50000]: #agregados 3 desde últimos resultados
 				defaults['mlt.maxdf'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['mlt.maxdf'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
@@ -206,7 +204,7 @@ def option2_tuning(data_path, solr):
 			defaults['mlt.maxqt']  = opt_value(results=results['mlt.maxqt'], metric='ndcg')	
 
 		if param=='mlt.maxntp':
-			for i in [500, 1000, 5000, 10000, 50000]:
+			for i in [500, 1000, 5000, 10000, 50000, 100000, 150000, 200000]: #agregados 3 desde últimos resultados
 				defaults['mlt.maxntp'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['mlt.maxntp'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
@@ -219,7 +217,7 @@ def option2_tuning(data_path, solr):
 	with open('TwitterRatings/CB/option2_params.txt', 'w') as f:
 		for param in param_names:
 			for value in results[param]:
-				f.write( "{param}={value}\t : {nDCG}".format(param=param, value=value, nDCG=results[param]) )
+				f.write( "{param}={value}\t : {nDCG}\n".format(param=param, value=value, nDCG=results[param]) )
 
 	return defaults
 
@@ -246,7 +244,6 @@ def option2_testing(data_path, solr, topN, params):
 			docs         = response['response']['docs']
 		except TypeError as e:
 			continue
-		parsed_query   = response['debug']['parsedquery']
 		book_recs      = [ str(doc['goodreadsId'][0]) for doc in docs] 
 		book_recs      = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		try:
@@ -329,7 +326,18 @@ def main():
 	# rows = 100
 	# fl = 'id,goodreadsId,title.titleOfficial,rating.ratingAvg,genres.genreName,description'
 	# option1(solr=solr, q=q, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50])
-	params = option2_tuning(data_path=data_path, solr=solr)
+	# params = option2_tuning(data_path=data_path, solr=solr)
+	defaults = {'fl' : 'goodreadsId,description,title.titleOfficial,genres.genreName,author.authors.authorName,quotes.quoteText,author.authorBio,title.titleGreytext',
+							'rows' : 100,
+							'mlt.fl' : 'author.authors.authorName',
+							'mlt.boost' : 'false',
+							'mlt.mintf' : 1,
+							'mlt.mindf' : 5,
+							'mlt.minwl' : 2,
+							'mlt.maxdf' : 10000, # en realidad no especificado
+							'mlt.maxwl' : 10,
+							'mlt.maxqt' : 61,
+							'mlt.maxntp' : 50000 }
 	option2_testing(data_path=data_path, solr=solr, topN=[5, 10, 15, 20, 50], params=params)
 	# option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='description')
 	# option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='title.titleOfficial')
