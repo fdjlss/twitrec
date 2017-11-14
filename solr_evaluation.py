@@ -326,18 +326,18 @@ def main():
 	# rows = 100
 	# fl = 'id,goodreadsId,title.titleOfficial,rating.ratingAvg,genres.genreName,description'
 	# option1(solr=solr, q=q, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50])
-	# params = option2_tuning(data_path=data_path, solr=solr)
-	params = {'fl' : 'goodreadsId,description,title.titleOfficial,genres.genreName,author.authors.authorName,quotes.quoteText,author.authorBio,title.titleGreytext',
-							'rows' : 100,
-							'mlt.fl' : 'author.authors.authorName',
-							'mlt.boost' : 'false',
-							'mlt.mintf' : 1,
-							'mlt.mindf' : 5,
-							'mlt.minwl' : 2,
-							'mlt.maxdf' : 10000, # en realidad no especificado
-							'mlt.maxwl' : 10,
-							'mlt.maxqt' : 61,
-							'mlt.maxntp' : 50000 }
+	params = option2_tuning(data_path=data_path, solr=solr)
+	# params = {'fl' : 'goodreadsId,description,title.titleOfficial,genres.genreName,author.authors.authorName,quotes.quoteText,author.authorBio,title.titleGreytext',
+	# 						'rows' : 100,
+	# 						'mlt.fl' : 'author.authors.authorName',
+	# 						'mlt.boost' : 'false',
+	# 						'mlt.mintf' : 1,
+	# 						'mlt.mindf' : 5,
+	# 						'mlt.minwl' : 2,
+	# 						'mlt.maxdf' : 10000, # en realidad no especificado
+	# 						'mlt.maxwl' : 10,
+	# 						'mlt.maxqt' : 61,
+	# 						'mlt.maxntp' : 50000 }
 	option2_testing(data_path=data_path, solr=solr, topN=[5, 10, 15, 20, 50], params=params)
 	# option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='description')
 	# option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='title.titleOfficial')
