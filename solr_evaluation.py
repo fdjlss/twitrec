@@ -146,13 +146,6 @@ def option2_tuning(data_path, solr):
 
 	results = dict((param, {}) for param in param_names)
 	for param in param_names: 
-		
-		if param=='mlt.fl':
-			for i in mlt_fields.values():
-				defaults['mlt.fl'] = i
-				logging.info("Evaluando con params: {}".format(defaults))
-				results['mlt.fl'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
-			defaults['mlt.fl']  = opt_value(results=results['mlt.fl'], metric='ndcg')
 
 		if param=='mlt.boost':
 			for i in ['true', 'false']:
@@ -160,6 +153,13 @@ def option2_tuning(data_path, solr):
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['mlt.boost'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
 			defaults['mlt.boost']  = opt_value(results=results['mlt.boost'], metric='ndcg')
+		
+		if param=='mlt.fl':
+			for i in mlt_fields.values():
+				defaults['mlt.fl'] = i
+				logging.info("Evaluando con params: {}".format(defaults))
+				results['mlt.fl'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
+			defaults['mlt.fl']  = opt_value(results=results['mlt.fl'], metric='ndcg')
 
 		if param=='mlt.mintf':
 			for i in range(0, 21):
@@ -217,7 +217,7 @@ def option2_tuning(data_path, solr):
 	with open('TwitterRatings/CB/option2_params.txt', 'w') as f:
 		for param in param_names:
 			for value in results[param]:
-				f.write( "{param}={value}\t : {nDCG}\n".format(param=param, value=value, nDCG=results[param]) )
+				f.write( "{param}={value}\t : {nDCG}\n".format(param=param, value=value, nDCG=results[param][value]) )
 
 	return defaults
 
