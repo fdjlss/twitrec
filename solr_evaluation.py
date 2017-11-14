@@ -327,7 +327,7 @@ def main():
 	# fl = 'id,goodreadsId,title.titleOfficial,rating.ratingAvg,genres.genreName,description'
 	# option1(solr=solr, q=q, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50])
 	# params = option2_tuning(data_path=data_path, solr=solr)
-	defaults = {'fl' : 'goodreadsId,description,title.titleOfficial,genres.genreName,author.authors.authorName,quotes.quoteText,author.authorBio,title.titleGreytext',
+	params = {'fl' : 'goodreadsId,description,title.titleOfficial,genres.genreName,author.authors.authorName,quotes.quoteText,author.authorBio,title.titleGreytext',
 							'rows' : 100,
 							'mlt.fl' : 'author.authors.authorName',
 							'mlt.boost' : 'false',
