@@ -132,16 +132,17 @@ def option2_tuning(data_path, solr):
 	param_names = ['mlt.fl', 'mlt.boost', 'mlt.mintf', 'mlt.mindf', 'mlt.minwl', 'mlt.maxdf', 'mlt.maxwl', 'mlt.maxqt', 'mlt.maxntp']
 	solr_fields = ['goodreadsId', 'description', 'title.titleOfficial', 'genres.genreName', 'author.authors.authorName', 'quotes.quoteText', 'author.authorBio', 'title.titleGreytext']
 	mlt_fields  = {1:'description', 2:'title.titleOfficial', 3:'genres.genreName', 4:'author.authors.authorName', 5:'quotes.quoteText'}
-	defaults = {'fl' : ','.join(solr_fields),
+	defaults = {'echoParams' : 'none',
+							'fl' : mlt_fields[1],#','.join(solr_fields),
 							'rows' : 100,
 							'mlt.fl' : mlt_fields[1],
-							'mlt.boost' : 'false',
-							'mlt.mintf' : 2,
-							'mlt.mindf' : 5,
-							'mlt.minwl' : 0,
-							'mlt.maxdf' : 10000, # en realidad no especificado
+							'mlt.boost' : 'true', #def: false
+							'mlt.mintf' : 1, #def: 2
+							'mlt.mindf' : 1, #def: 5
+							'mlt.minwl' : 0, 
+							'mlt.maxdf' : 50000, # en realidad no especificado
 							'mlt.maxwl' : 0,
-							'mlt.maxqt' : 25,
+							'mlt.maxqt' : 40, #def: 25
 							'mlt.maxntp' : 5000 }
 
 	results = dict((param, {}) for param in param_names)
@@ -157,9 +158,11 @@ def option2_tuning(data_path, solr):
 		if param=='mlt.fl':
 			for i in mlt_fields.values():
 				defaults['mlt.fl'] = i
+				defaults['fl'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['mlt.fl'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
 			defaults['mlt.fl']  = opt_value(results=results['mlt.fl'], metric='ndcg')
+			defaults['fl'] = defaults['mlt.fl']
 
 		if param=='mlt.mintf':
 			for i in range(0, 21):
