@@ -59,7 +59,7 @@ def option2Job(data_path, solr, params):
 				continue
 
 			mini_recs = dict((k, recs[k]) for k in recs.keys()[:10]) # Metric for tuning: nDCG at 10
-			users_nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=3) ) # relevant item if: rating>=3
+			users_nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
 
 		nDCGs.append( mean(users_nDCGs) )
 
@@ -133,36 +133,36 @@ def option2_tuning(data_path, solr):
 	solr_fields = ['goodreadsId', 'description', 'title.titleOfficial', 'genres.genreName', 'author.authors.authorName', 'quotes.quoteText', 'author.authorBio', 'title.titleGreytext']
 	mlt_fields  = {1:'description', 2:'title.titleOfficial', 3:'genres.genreName', 4:'author.authors.authorName', 5:'quotes.quoteText'}
 	defaults = {'echoParams' : 'none',
-							'fl' : 'goodreadsId,'+ mlt_fields[1],#','.join(solr_fields),
+							'fl' : ','.join(solr_fields),#'goodreadsId,'+ mlt_fields[1],
 							'rows' : 100,
 							'mlt.fl' : mlt_fields[1],
-							'mlt.boost' : 'true', #def: false
-							'mlt.mintf' : 1, #def: 2
-							'mlt.mindf' : 1, #def: 5
+							'mlt.boost' : 'false', #def: false
+							'mlt.mintf' : 2, #def: 2
+							'mlt.mindf' : 5, #def: 5
 							'mlt.minwl' : 0, 
 							'mlt.maxdf' : 50000, # en realidad no especificado
 							'mlt.maxwl' : 0,
-							'mlt.maxqt' : 40, #def: 25
+							'mlt.maxqt' : 25, #def: 25
 							'mlt.maxntp' : 5000 }
 
 	results = dict((param, {}) for param in param_names)
 	for param in param_names: 
-
-		if param=='mlt.boost':
-			for i in ['true', 'false']:
-				defaults['mlt.boost'] = i
-				logging.info("Evaluando con params: {}".format(defaults))
-				results['mlt.boost'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
-			defaults['mlt.boost']  = opt_value(results=results['mlt.boost'], metric='ndcg')
 		
 		if param=='mlt.fl':
 			for i in mlt_fields.values():
 				defaults['mlt.fl'] = i
-				defaults['fl'] = 'goodreadsId,'+ i
+				# defaults['fl'] = 'goodreadsId,'+ i
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['mlt.fl'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
 			defaults['mlt.fl']  = opt_value(results=results['mlt.fl'], metric='ndcg')
-			defaults['fl'] = 'goodreadsId,'+ defaults['mlt.fl']
+			# defaults['fl'] = 'goodreadsId,'+ defaults['mlt.fl']
+
+		if param=='mlt.minwl':
+			for i in range(0, 11):
+				defaults['mlt.minwl'] = i
+				logging.info("Evaluando con params: {}".format(defaults))
+				results['mlt.minwl'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
+			defaults['mlt.minwl']  = opt_value(results=results['mlt.minwl'], metric='ndcg')		
 
 		if param=='mlt.mintf':
 			for i in range(0, 21):
@@ -177,13 +177,6 @@ def option2_tuning(data_path, solr):
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['mlt.mindf'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
 			defaults['mlt.mindf']  = opt_value(results=results['mlt.mindf'], metric='ndcg')		
-
-		if param=='mlt.minwl':
-			for i in range(0, 11):
-				defaults['mlt.minwl'] = i
-				logging.info("Evaluando con params: {}".format(defaults))
-				results['mlt.minwl'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
-			defaults['mlt.minwl']  = opt_value(results=results['mlt.minwl'], metric='ndcg')		
 
 		if param=='mlt.maxdf':
 			for i in [0, 100, 500, 1000, 5000, 10000, 20000, 30000, 40000, 50000]: #agregados 3 desde últimos resultados
@@ -212,6 +205,13 @@ def option2_tuning(data_path, solr):
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['mlt.maxntp'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
 			defaults['mlt.maxntp']  = opt_value(results=results['mlt.maxntp'], metric='ndcg')	
+
+		if param=='mlt.boost':
+			for i in ['true', 'false']:
+				defaults['mlt.boost'] = i
+				logging.info("Evaluando con params: {}".format(defaults))
+				results['mlt.boost'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
+			defaults['mlt.boost']  = opt_value(results=results['mlt.boost'], metric='ndcg')
 
 	with open('TwitterRatings/CB/opt_params.txt', 'w') as f:
 		for param in defaults:
