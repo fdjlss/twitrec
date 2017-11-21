@@ -133,7 +133,7 @@ def option2_tuning(data_path, solr):
 	solr_fields = ['goodreadsId', 'description', 'title.titleOfficial', 'genres.genreName', 'author.authors.authorName', 'quotes.quoteText', 'author.authorBio', 'title.titleGreytext']
 	mlt_fields  = {1:'description', 2:'title.titleOfficial', 3:'genres.genreName', 4:'author.authors.authorName', 5:'quotes.quoteText'}
 	defaults = {'echoParams' : 'none',
-							'fl' : ','.join(solr_fields),#'goodreadsId,'+ mlt_fields[1],
+							'fl' : 'goodreadsId,'+ mlt_fields[1], #','.join(solr_fields),
 							'rows' : 100,
 							'mlt.fl' : mlt_fields[1],
 							'mlt.boost' : 'false', #def: false
@@ -151,11 +151,11 @@ def option2_tuning(data_path, solr):
 		if param=='mlt.fl':
 			for i in mlt_fields.values():
 				defaults['mlt.fl'] = i
-				# defaults['fl'] = 'goodreadsId,'+ i
+				defaults['fl'] = 'goodreadsId,'+ i
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['mlt.fl'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
 			defaults['mlt.fl']  = opt_value(results=results['mlt.fl'], metric='ndcg')
-			# defaults['fl'] = 'goodreadsId,'+ defaults['mlt.fl']
+			defaults['fl'] = 'goodreadsId,'+ defaults['mlt.fl']
 
 		if param=='mlt.minwl':
 			for i in range(0, 11):
@@ -213,11 +213,11 @@ def option2_tuning(data_path, solr):
 				results['mlt.boost'][i] = option2Job(data_path=data_path, solr=solr, params=defaults)
 			defaults['mlt.boost']  = opt_value(results=results['mlt.boost'], metric='ndcg')
 
-	with open('TwitterRatings/CB/opt_params.txt', 'w') as f:
+	with open('TwitterRatings/CB/opt_params_with_fl.txt', 'w') as f:
 		for param in defaults:
 			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
 
-	with open('TwitterRatings/CB/option2_params.txt', 'w') as f:
+	with open('TwitterRatings/CB/option2_params_with_fl.txt', 'w') as f:
 		for param in param_names:
 			for value in results[param]:
 				f.write( "{param}={value}\t : {nDCG}\n".format(param=param, value=value, nDCG=results[param][value]) )
