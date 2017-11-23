@@ -461,6 +461,7 @@ def evaluation_set(db_conn, M, N, out_path):
 
 
 	eval_test_set = {}
+	eval_train_set = {}
 	for user_id in users:
 		user_train_set = {} 
 		user_test_set = {}
