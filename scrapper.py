@@ -12,32 +12,27 @@ X) Mientras hace todo, crea y guarda en DB (SQLite) todo
 #--------------------------------#
 # Parsear los JSON (dataset de Hamid)
 import json
-
 # Ingresar en directorios
 from os import listdir
 from os.path import isfile, join
-
 # Para scrapping
 # import urllib.request
 # import urlparse
 # import httplib
-
 # Logging
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-
 # Conexion con BD
 import sqlite3
-
 # Parsear HTML descargado
 from bs4 import BeautifulSoup
-
-# Random numbers para fechas desconocidas
-from random import randint
-
-from jojFunkSvd import mean, stddev
+# Random numbers para fechas desconocidas. Sample para selección random de ítems candidatos en caso que sobren
+from random import randint, sample
+from jojFunkSvd import consumption
+from statistics import mean, stdev
 #--------------------------------#
 
+#-----"PRIVATE" METHODS----------#
 # Esto no es estrictamente necesario, es sólo para
 # que los nombres de archivos de los HTML guardados
 # sean consistentes.
@@ -65,6 +60,13 @@ def chunks(seq, num):
     out.append(seq[int(last):int(last + avg)])
     last += avg
   return out
+
+def relevance(user, q):
+	ratings = [ v[0] for k, v in user.items() ]
+	if q>=10:
+		return mean(ratings)
+	return ((0.5**q) * stdev(ratings)) + mean(ratings)
+#--------------------------------#
 
 def reviews_wgetter(path_jsons, db_conn):
 	"""
@@ -170,7 +172,6 @@ def reviews_wgetter(path_jsons, db_conn):
 		# Manda los cambios al final de pasar por todos los tweets de cada usuario
 		db_conn.commit()
 
-
 def add_column_book_url(db_conn, alter_table=False):
 
 	db_conn.row_factory = lambda cursor, row: row[0]
@@ -218,7 +219,6 @@ def add_column_book_url(db_conn, alter_table=False):
 
 
 	db_conn.commit()
-
 
 def books_wgetter(db_conn):
 	"""
@@ -380,7 +380,6 @@ def create_users_table(path_jsons, db_conn):
 		# Manda los cambios al final de pasar por todos los tweets de cada usuario
 		db_conn.commit()
 
-
 def ratings_maker(db_conn, folds, out_path):
 	"""
 	Guarda un set de entrenamiento y un set de test a partir
@@ -389,28 +388,23 @@ def ratings_maker(db_conn, folds, out_path):
 	c = db_conn.cursor()
 	table_name = 'user_reviews'
 
-	c.execute( "SELECT * FROM {0} ORDER BY timestamp asc".format(table_name) )
+	
+	c.execute( "SELECT DISTINCT *\
+							FROM {table_name}\
+							WHERE timestamp IS NOT NULL\
+							AND url_book IS NOT NULL\
+							GROUP BY url_review\
+							ORDER BY timestamp asc".format(table_name=table_name) ) 
 	all_rows = c.fetchall()
 
 	interactions = []
 	logging.info("-> Iterando sobre resultado de la consulta..")
 	for tupl in all_rows:
 		user_id, url_review, rating, url_book, timestamp = tupl
-		try:
 		# Book ID es el número incluido en la URI del libro en GR
 		# Hay veces que luego deĺ número le sigue un punto o un guión,
 		# y luego el nombre del libro separado con guiones
-			book_id = url_book.split('/')[-1].split('-')[0].split('.')[0]
-		except AttributeError as e:
-			logging.info( "url_book es NULL en la DB! Tratado de obtener desde la review {0}".format(url_review) )
-			continue
-		if timestamp==None or timestamp=='':
-			# Si no hay fecha, pero se sabe el consumo y rating, 
-			# la seteamos a una de las últimas para tenerla en 
-			# set de test (últimos consumos: 2014-oct)
-			randday = str(randint(1,28))
-			if randday==1: randday = "0" + randday 
-			timestamp = int( "201410" + randday )
+		book_id = url_book.split('/')[-1].split('-')[0].split('.')[0]
 		interactions.append( (user_id, book_id, rating, int(timestamp)) )
 	
 	lists = chunks(seq=interactions, num=folds)
@@ -434,6 +428,81 @@ def ratings_maker(db_conn, folds, out_path):
 	logging.info("Guardando total..")
 	with open(out_path+'ratings.total', 'w') as f:
 		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in interactions) )
+
+
+def evaluation_set(db_conn, M, N, out_path):
+	"""
+	Guarda un set de entrenamiento y un set de test a partir
+	de datos de la DB
+	"""
+	c = db_conn.cursor()
+	table_name = 'user_reviews'
+	c.execute( "SELECT DISTINCT *\
+							FROM {table_name}\
+							WHERE user_id IN (SELECT user_id\
+											FROM user_reviews\
+											GROUP BY user_id\
+											HAVING COUNT(*) > {M})\
+							AND timestamp IS NOT NULL\
+							AND url_book IS NOT NULL\
+							GROUP BY url_review\
+							ORDER BY timestamp asc".format(table_name=table_name, M=M) )
+	all_rows = c.fetchall()
+
+	users = {}
+	logging.info("-> Iterando sobre resultado de la consulta..")
+	for tupl in all_rows:
+		user_id, url_review, rating, url_book, timestamp = tupl
+		book_id = url_book.split('/')[-1].split('-')[0].split('.')[0]
+		if user_id not in users:
+			users[user_id] = {}
+		users[user_id][int(timestamp)] = ( rating, book_id )
+
+
+	eval_test_set = {}
+	for user_id in users:
+		user_train_set = {} 
+		user_test_set = {}
+		od = collections.OrderedDict(sorted(users[user_id].items(), reverse=True))
+		user_ratings = { v[1] : v[0] for k, v in od.items() }
+		step = 0
+		while len(user_test_set) != N:
+			
+			last_items_selected = {}
+			for timestamp, tupl in od.items():
+				if (tupl[0] >= relevance(user= od, q= step)) and (tupl[1] not in user_test_set.keys()): #hacer que a step=10 sea sólo el término r(prom)_u
+					last_items_selected[tupl[1]] = tupl[0]
+
+			user_test_set.update( dict(sample( last_items_selected.items(), k= N-len(user_test_set) )) )
+
+			step += 1
+			if step == 11:
+				break
+
+		if len(user_test_set) != N:
+			continue 
+
+		eval_test_set[user_id] = user_test_set 
+		eval_train_set[user_id] = { item_id : user_ratings[item_id] for item_id in set(user_ratings) - set(user_test_set) }
+
+	logging.info("Guardando test..")
+	with open(out_path+'eval_test_N'+str(N)+'.data', 'w') as f:
+		for user, d in eval_test_set:
+			for item, rating in d:
+				f.write( '{user},{item},{rating}\n'.format(user=user, item=item, rating=rating) )
+
+	logging.info("Guardando train..")
+	with open(out_path+'eval_train_N'+str(N)+'.data', 'w') as f:
+		for user, d in eval_train_set:
+			for item, rating in d:
+				f.write( '{user},{item},{rating}\n'.format(user=user, item=item, rating=rating) )
+
+	eval_all_set = eval_train_set.update(eval_test_set)
+	logging.info("Guardando total..")
+	with open(out_path+'eval_all_N'+str(N)+'.data', 'w') as f:
+		for user, d in eval_all_set:
+			for item, rating in d:
+				f.write( '{user},{item},{rating}\n'.format(user=user, item=item, rating=rating) )
 
 def users_wgetter(user_twitter_path):
 	pass
@@ -502,9 +571,14 @@ path_jsons = 'TwitterRatings/goodreads_renamed/'
 # add_column_timestamp(db_conn= conn, alter_table= True)
 # 5)
 # ratings_maker(db_conn= conn, folds= 5, out_path='TwitterRatings/funkSVD/data/')
+# 5.1)
+evaluation_set(db_conn=conn, M=10, N=5, out_path='TwitterRatings/funkSVD/data/')
+evaluation_set(db_conn=conn, M=20, N=10, out_path='TwitterRatings/funkSVD/data/')
+evaluation_set(db_conn=conn, M=30, N=15, out_path='TwitterRatings/funkSVD/data/')
+evaluation_set(db_conn=conn, M=40, N=20, out_path='TwitterRatings/funkSVD/data/')
 # 6)
 # create_users_table(path_jsons= path_jsons, db_conn= conn)
 # 7)
-statistics(db_conn= conn)
+# statistics(db_conn= conn)
 # Cerramos la conexion a la BD
 conn.close()
