@@ -474,7 +474,15 @@ def evaluation_set(db_conn, M, N, out_path):
 				if (tupl[0] >= relevance(user= od, q= step)) and (tupl[1] not in user_test_set.keys()): #hacer que a step=10 sea sólo el término r(prom)_u
 					last_items_selected[tupl[1]] = tupl[0]
 
-			user_test_set.update( dict(sample( last_items_selected.items(), k= N-len(user_test_set) )) )
+			while True:
+				i = 0
+				try:
+					user_test_set.update( dict(sample( last_items_selected.items(), k= N-len(user_test_set)-i )) )
+				except ValueError as e:
+					i += 1
+					print("Sample larger than population. Trying with k={}".format(i))
+				else:
+					break
 
 			step += 1
 			if step == 11:
