@@ -30,6 +30,7 @@ from bs4 import BeautifulSoup
 from random import randint, sample
 from jojFunkSvd import consumption
 from statistics import mean, stdev
+import collections
 #--------------------------------#
 
 #-----"PRIVATE" METHODS----------#
