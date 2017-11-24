@@ -497,20 +497,20 @@ def evaluation_set(db_conn, M, N, out_path):
 
 	logging.info("Guardando test..")
 	with open(out_path+'eval_test_N'+str(N)+'.data', 'w') as f:
-		for user, d in eval_test_set:
+		for user, d in eval_test_set.items():
 			for item, rating in d:
 				f.write( '{user},{item},{rating}\n'.format(user=user, item=item, rating=rating) )
 
 	logging.info("Guardando train..")
 	with open(out_path+'eval_train_N'+str(N)+'.data', 'w') as f:
-		for user, d in eval_train_set:
+		for user, d in eval_train_set.items():
 			for item, rating in d:
 				f.write( '{user},{item},{rating}\n'.format(user=user, item=item, rating=rating) )
 
 	eval_all_set = eval_train_set.update(eval_test_set)
 	logging.info("Guardando total..")
 	with open(out_path+'eval_all_N'+str(N)+'.data', 'w') as f:
-		for user, d in eval_all_set:
+		for user, d in eval_all_set.items():
 			for item, rating in d:
 				f.write( '{user},{item},{rating}\n'.format(user=user, item=item, rating=rating) )
 
