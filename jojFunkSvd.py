@@ -162,6 +162,7 @@ def SVDJob(data_path, f, mi, lr, lamb):
 	# 		f.write( "%s\t%s\n" % (rmses[j], maes[j]) )
 	return mean(maes), mean(rmses)
 #--------------------------------#
+
 def boosting(data_path):
 
 	defaults = {'f': 1000, 'mi': 100, 'lr': 0.01, 'lamb': 0.1}
@@ -366,7 +367,6 @@ def nDCGMAP_calculator(data_path, params, topN, output_filename):
 
 
 def protocol_nDCGMAP_evaluation(data_path, params, N, output_filename):
-
 	user_consumption = consumption(ratings_path=data_path+'eval_all_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	svd = pyreclab.SVD( dataset   = data_path+'eval_train_N'+str(N)+'.data',
 											dlmchar   = b',',
@@ -450,29 +450,6 @@ def main():
 		protocol_nDCGMAP_evaluation(data_path=data_path, params=opt_params, N=N, output_filename='ptc_topN_evals.txt')
 	# generate_recommends(params=opt_params)
 
-	# svd = pyreclab.SVD( dataset   = 'TwitterRatings/funkSVD/ratings.total',
-	# 										dlmchar   = b',',
-	# 										header    = False,
-	# 										usercol   = 0,
-	# 										itemcol   = 1,
-	# 										ratingcol = 2 )
-	# svd.train( factors= 1000, maxiter= 100, lr= 0.01, lamb= 0.1 )
-	# # svd.train( factors= defaults['f'], maxiter= defaults['mi'], lr= defaults['lr'], lamb= defaults['lamb'] )
-	# predlist, mae, rmse = svd.test( input_file  = 'TwitterRatings/funkSVD/ratings.test',
-	#                                 dlmchar     = b',',
-	#                                 header      = False,
-	#                                 usercol     = 0,
-	#                                 itemcol     = 1,
-	#                                 ratingcol   = 2)
-
-	# recommendationList = svd.testrec( input_file    = 'TwitterRatings/funkSVD/ratings.test',
-	#                                     dlmchar     = b',',
-	#                                     header      = False,
-	#                                     usercol     = 0,
-	#                                     itemcol     = 1,
-	#                                     ratingcol   = 2,
-	#                                     topn        = 10,
-	#                                     includeRated= True )
 
 if __name__ == '__main__':
 	main()
