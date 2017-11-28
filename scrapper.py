@@ -481,7 +481,7 @@ def evaluation_set(db_conn, M, N, out_path):
 					user_test_set.update( dict(sample( last_items_selected.items(), k= N-len(user_test_set)-i )) )
 				except ValueError as e:
 					i += 1
-					print("Sample larger than population. Trying with k={}".format(i))
+					print("Sample larger than population. Trying with k={}".format(N-len(user_test_set)-i))
 				else:
 					break
 
