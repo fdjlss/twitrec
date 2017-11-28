@@ -402,9 +402,8 @@ def protocol_nDCGMAP_evaluation(data_path, params, N, output_filename):
 		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
 
 	with open('TwitterRatings/funkSVD/'+output_filename, 'a') as file:
-		for n in topN:
-			file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
-				(n, mean(nDCGs_normal), mean(nDCGs_altform[n]), mean(nDCGs_bin), mean(APs), mean(MRRs), mean(Rprecs)) )	
+		file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(N, mean(nDCGs_normal), mean(nDCGs_altform), mean(nDCGs_bin), mean(APs), mean(MRRs), mean(Rprecs)) )	
 
 
 def generate_recommends(params):
