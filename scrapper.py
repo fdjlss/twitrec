@@ -469,7 +469,7 @@ def evaluation_set(db_conn, M, N, folds, out_path):
 	for tupl in all_rows:
 		user_id, url_review, rating, url_book, timestamp = tupl
 		book_id = url_book.split('/')[-1].split('-')[0].split('.')[0]
-		if user_id not in users:
+		if user_id not in everything:
 			everything[user_id] = {}
 		everything[user_id][book_id] = rating		
 
