@@ -442,9 +442,9 @@ def generate_recommends(params):
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	# opt_params = boosting(data_path= data_path)
+	opt_params = boosting(data_path= data_path)
 	# RMSEMAE_distr(output_filename="results_8020.txt")
-	opt_params = {'f': 425, 'mi': 130, 'lr': 0.01, 'lamb': 0.05}
+	# opt_params = {'f': 425, 'mi': 130, 'lr': 0.01, 'lamb': 0.05}
 	# PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
 	# nDCGMAP_calculator(data_path= data_path, params=opt_params, topN=[10, 15, 20, 50], output_filename="nDCGMAP.txt")
 	for N in [5, 10, 15, 20]:
