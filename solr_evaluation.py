@@ -34,10 +34,11 @@ def remove_consumed(user_consumption, rec_list):
 def option1Job(data_path, solr, params):
 	val_folds = os.listdir(data_path+'val/')
 	nDCGs = []
-	for i in range(1, len(val_folds)+1):
+	"""HARDCODED AS FUCK: 4+1"""
+	for i in range(1, 4+1):
 		users_nDCGs = []
-		train_c = consumption(ratings_path=data_path+'train/train.'+str(i), rel_thresh=0, with_ratings=False)
-		val_c   = consumption(ratings_path=data_path+'val/val.'+str(i), rel_thresh=0, with_ratings=True)
+		train_c = consumption(ratings_path=data_path+'train/train_N10.'+str(i), rel_thresh=0, with_ratings=False)
+		val_c   = consumption(ratings_path=data_path+'val/val_N10.'+str(i), rel_thresh=0, with_ratings=True)
 		for userId in train_c:
 			book_recs = []
 			for itemId in train_c[userId]:
@@ -69,10 +70,11 @@ def option2Job(data_path, solr, params):
 	Calcula las métricas comparando con <training>"""
 	val_folds = os.listdir(data_path+'val/')
 	nDCGs = []
-	for i in range(1, len(val_folds)+1):
+	"""HARDCODED AS FUCK: 4+1"""
+	for i in range(1, 4+1):
 		users_nDCGs = []
-		train_c = consumption(ratings_path=data_path+'train/train.'+str(i), rel_thresh=0, with_ratings=False)
-		val_c   = consumption(ratings_path=data_path+'val/val.'+str(i), rel_thresh=0, with_ratings=True)
+		train_c = consumption(ratings_path=data_path+'train/train_N10.'+str(i), rel_thresh=0, with_ratings=False)
+		val_c   = consumption(ratings_path=data_path+'val/val_N10.'+str(i), rel_thresh=0, with_ratings=True)
 		for userId in train_c:
 			stream_url     = solr + '/query?q=goodreadsId:{ids}'
 			ids_string     = encoded_itemIds(item_list=train_c[userId])
@@ -244,6 +246,49 @@ def option1_testing(data_path, solr, topN, params):
 			file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG(rel_thresh=4)=%s, bin nDCG(rel_thresh=3)=%s, MAP(rel_thresh=4)=%s, MAP(rel_thresh=3)=%s, MAP(rel_thresh=2)=%s, MRR(rel_thresh=4)=%s, MRR(rel_thresh=3)=%s\n" % \
 				(n, mean(nDCGs_normal[n]), mean(nDCGs_altform[n]), mean(nDCGs_bin_thresh4[n]), mean(nDCGs_bin_thresh3[n]), mean(APs_thresh4[n]), mean(APs_thresh3[n]), mean(APs_thresh2[n]), mean(MRR_thresh4), mean(MRR_thresh3)) )	
 
+def option1_protocol_evaluation(data_path, solr, N, params):
+	test_c  = consumption(ratings_path=data_path+'eval_test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
+	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
+	MRRs          = []
+	nDCGs_bin     = []
+	nDCGs_normal  = []
+	nDCGs_altform = []
+	APs           = []
+	Rprecs        = []
+
+	for userId in train_c:
+		book_recs = []
+		for itemId in train_c[userId]:
+			encoded_params = urlencode(params)
+			url            = solr + '/mlt?q=goodreadsId:'+ itemId + "&" + encoded_params
+			response       = json.loads( urlopen(url).read().decode('utf8') )
+			try:
+				docs         = response['response']['docs']
+			except TypeError as e:
+				continue
+			book_recs.append( [ str(doc['goodreadsId'][0]) for doc in docs ] )
+
+		book_recs = flatten_list(list_of_lists=book_recs, rows=params['rows'])
+		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+		try:
+			recs = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
+		except KeyError as e:
+			logging.info("Usuario {0} del fold de train (total) no encontrado en fold de 'test'".format(userId))
+			continue
+
+
+		mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
+		MRRs.append( MRR(recs=recs, rel_thresh=1) )
+		nDCGs_bin.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=1) )
+		nDCGs_normal.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
+		nDCGs_altform.append( nDCG(recs=mini_recs, alt_form=True, rel_thresh=False) )			
+		APs.append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
+		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
+
+	with open('TwitterRatings/CB/option1_protocol.txt', 'a') as file:
+		file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(N, mean(nDCGs_normal), mean(nDCGs_altform), mean(nDCGs_bin), mean(APs), mean(MRRs), mean(Rprecs)) )	
+
 def option2_tuning(data_path, solr):
 
 	param_names = ['mlt.fl', 'mlt.boost', 'mlt.mintf', 'mlt.mindf', 'mlt.minwl', 'mlt.maxdf', 'mlt.maxwl', 'mlt.maxqt', 'mlt.maxntp']
@@ -389,8 +434,45 @@ def option2_testing(data_path, solr, topN, params):
 			file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG(rel_thresh=4)=%s, bin nDCG(rel_thresh=3)=%s, MAP(rel_thresh=4)=%s, MAP(rel_thresh=3)=%s, MAP(rel_thresh=2)=%s, MRR(rel_thresh=4)=%s, MRR(rel_thresh=3)=%s\n" % \
 				(n, mean(nDCGs_normal[n]), mean(nDCGs_altform[n]), mean(nDCGs_bin_thresh4[n]), mean(nDCGs_bin_thresh3[n]), mean(APs_thresh4[n]), mean(APs_thresh3[n]), mean(APs_thresh2[n]), mean(MRR_thresh4), mean(MRR_thresh3)) )	
 
+def option2_protocol_evaluation(data_path, solr, N, params):
+	test_c  = consumption(ratings_path=data_path+'eval_test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
+	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
+	MRRs          = []
+	nDCGs_bin     = []
+	nDCGs_normal  = []
+	nDCGs_altform = []
+	APs           = []
+	Rprecs        = []
 
+	for userId in train_c:
+		stream_url     = solr + '/query?q=goodreadsId:{ids}'
+		ids_string     = encoded_itemIds(item_list=train_c[userId])
+		encoded_params = urlencode(params)
+		url            = solr + '/mlt?stream.url=' + stream_url.format(ids=ids_string) + "&" + encoded_params
+		response       = json.loads( urlopen(url).read().decode('utf8') )
+		try:
+			docs         = response['response']['docs']
+		except TypeError as e:
+			continue
+		book_recs      = [ str(doc['goodreadsId'][0]) for doc in docs] 
+		book_recs      = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+		try:
+			recs         = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
+		except KeyError as e:
+			logging.info("Usuario {0} del fold de train (total) no encontrado en fold de 'test'".format(userId))
+			continue
 
+		mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
+		MRRs.append( MRR(recs=recs, rel_thresh=1) )
+		nDCGs_bin.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=1) )
+		nDCGs_normal.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
+		nDCGs_altform.append( nDCG(recs=mini_recs, alt_form=True, rel_thresh=False) )			
+		APs.append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
+		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
+
+	with open('TwitterRatings/CB/option2_protocol.txt', 'a') as file:
+		file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(N, mean(nDCGs_normal), mean(nDCGs_altform), mean(nDCGs_bin), mean(APs), mean(MRRs), mean(Rprecs)) )
 
 def option2(data_path, solr, rows, fl, topN, mlt_field):
 	test_c  = consumption(ratings_path=data_path+'test/'+os.listdir(data_path+'test/')[0], rel_thresh=0, with_ratings=False)
@@ -448,10 +530,13 @@ def main():
 	# rows = 100
 	# fl = 'id,goodreadsId,title.titleOfficial,rating.ratingAvg,genres.genreName,description'
 	# option1(solr=solr, q=q, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50])
-	params_o2 = option2_tuning(data_path=data_path, solr=solr)
 	params_o1 = option1_tuning(data_path=data_path, solr=solr)
+	params_o2 = option2_tuning(data_path=data_path, solr=solr)
 	option1_testing(data_path=data_path, solr=solr, topN=[5, 10, 15, 20, 50], params=params_o1)
 	option2_testing(data_path=data_path, solr=solr, topN=[5, 10, 15, 20, 50], params=params_o2)
+	for N in [5, 10, 15, 20]:
+		option1_protocol_evaluation(data_path=data_path, solr=solr, N=N, params=params_o1)
+		option2_protocol_evaluation(data_path=data_path, solr=solr, N=N, params=params_o2)
 	# option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='description')
 	# option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='title.titleOfficial')
 	# option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='genres.genreName')
