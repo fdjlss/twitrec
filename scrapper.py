@@ -431,7 +431,7 @@ def ratings_maker(db_conn, folds, out_path):
 		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in interactions) )
 
 
-def evaluation_set(db_conn, M, N, out_path):
+def evaluation_set(db_conn, M, N, folds, out_path):
 	"""
 	Guarda un set de entrenamiento y un set de test a partir
 	de datos de la DB
@@ -449,9 +449,8 @@ def evaluation_set(db_conn, M, N, out_path):
 							GROUP BY url_review\
 							ORDER BY timestamp asc".format(table_name=table_name, M=M) )
 	all_rows = c.fetchall()
-
 	users = {}
-	logging.info("-> Iterando sobre resultado de la consulta..")
+	logging.info("-> Iterando sobre resultado de la consulta 1..")
 	for tupl in all_rows:
 		user_id, url_review, rating, url_book, timestamp = tupl
 		book_id = url_book.split('/')[-1].split('-')[0].split('.')[0]
@@ -459,20 +458,36 @@ def evaluation_set(db_conn, M, N, out_path):
 			users[user_id] = {}
 		users[user_id][int(timestamp)] = ( rating, book_id )
 
+	c.execute( "SELECT DISTINCT *\
+							FROM {table_name}\
+							WHERE timestamp IS NOT NULL\
+							AND url_book IS NOT NULL\
+							GROUP BY url_review\
+							ORDER BY timestamp asc".format(table_name=table_name) )
+	all_rows = c.fetchall()
+	everything = {}
+	for tupl in all_rows:
+		user_id, url_review, rating, url_book, timestamp = tupl
+		book_id = url_book.split('/')[-1].split('-')[0].split('.')[0]
+		if user_id not in users:
+			everything[user_id] = {}
+		everything[user_id][book_id] = rating		
 
 	eval_test_set = {}
 	eval_train_set = {}
+	"""Construcción Test Set"""
 	for user_id in users:
 		user_train_set = {} 
 		user_test_set = {}
 		od = collections.OrderedDict(sorted(users[user_id].items(), reverse=True))
 		user_ratings = { v[1] : v[0] for k, v in od.items() }
+
 		step = 0
 		while len(user_test_set) != N:
-			
+
 			last_items_selected = {}
 			for timestamp, tupl in od.items():
-				if (tupl[0] >= relevance(user= od, q= step)) and (tupl[1] not in user_test_set.keys()): #hacer que a step=10 sea sólo el término r(prom)_u
+				if (tupl[0] >= relevance(user= od, q= step)) and (tupl[1] not in user_test_set.keys()): 
 					last_items_selected[tupl[1]] = tupl[0]
 
 			i = 0
@@ -493,11 +508,29 @@ def evaluation_set(db_conn, M, N, out_path):
 			continue 
 
 		eval_test_set[user_id] = user_test_set 
-		eval_train_set[user_id] = { item_id : user_ratings[item_id] for item_id in set(user_ratings) - set(user_test_set) }
-		eval_all_set = {}
+		# eval_train_set[user_id] = { item_id : user_ratings[item_id] for item_id in set(user_ratings) - set(user_test_set) }
+	
+	"""Construcción Train Set: chanto todo lo que no esté en el Test Set"""
+	for user_id in everything:
+		if user_id in eval_test_set:
+			for item_id in everything[user_id]:
+				if item_id in eval_test_set[user_id]:
+					continue
+				else:
+					if user_id not in eval_train_set:
+						eval_train_set[user_id] = {}
+					eval_train_set[user_id][item_id] = everything[user_id][item_id]
+
+	"""Construcción Folds de train/validation"""
+	lists = [ [] for _ in range(0, folds-1) ]
+	i = randint(0, folds-1)
+	for user_id in eval_train_set:
+		for item_id in eval_train_set[user_id]:
+			i += 1
+			lists[ i%(folds-1) ].append( (user_id, item_id, eval_train_set[user_id][item_id]) )
 
 	logging.info("Guardando test..")
-	with open(out_path+'eval_test_N'+str(N)+'.data', 'w') as f:
+	with open(out_path+'test/test_N'+str(N)+'.data', 'w') as f:
 		for user, d in eval_test_set.items():
 			for item, rating in d.items():
 				f.write( '{user},{item},{rating}\n'.format(user=user, item=item, rating=rating) )
@@ -508,6 +541,15 @@ def evaluation_set(db_conn, M, N, out_path):
 			for item, rating in d.items():
 				f.write( '{user},{item},{rating}\n'.format(user=user, item=item, rating=rating) )
 
+	logging.info("Guardando validation folds y training aggregated folds..")
+	for i in range(0, folds-1):
+		with open(out_path+'val/val_N'+N+'.'+str(i+1), 'w') as f:
+			f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in lists[i]) ) # x[:-1] : no guardamos el timestamp
+
+		with open(out_path+'train/train_N'+N+'.'+str(i+1), 'w') as f:
+			f.write( '\n'.join('%s,%s,%s' % x[:-1] for l in lists[:i] + lists[i+1:] for x in l) )
+
+	eval_all_set = {}
 	eval_all_set.update(eval_test_set)
 	eval_all_set.update(eval_train_set)
 	logging.info("Guardando total..")
