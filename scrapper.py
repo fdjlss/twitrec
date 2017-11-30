@@ -544,10 +544,10 @@ def evaluation_set(db_conn, M, N, folds, out_path):
 	logging.info("Guardando validation folds y training aggregated folds..")
 	for i in range(0, folds-1):
 		with open(out_path+'val/val_N'+str(N)+'.'+str(i+1), 'w') as f:
-			f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in lists[i]) ) # x[:-1] : no guardamos el timestamp
+			f.write( '\n'.join('%s,%s,%s' % x[:] for x in lists[i]) )
 
 		with open(out_path+'train/train_N'+str(N)+'.'+str(i+1), 'w') as f:
-			f.write( '\n'.join('%s,%s,%s' % x[:-1] for l in lists[:i] + lists[i+1:] for x in l) )
+			f.write( '\n'.join('%s,%s,%s' % x[:] for l in lists[:i] + lists[i+1:] for x in l) )
 
 	eval_all_set = {}
 	eval_all_set.update(eval_test_set)
