@@ -140,15 +140,16 @@ def SVDJob(data_path, f, mi, lr, lamb):
 	# 		test.append( line.strip() )
 	val_folds   = os.listdir(data_path+'val/')
 	maes, rmses = [], []
-	for i in range(1, len(val_folds)+1):
-		svd = pyreclab.SVD( dataset   = data_path+'train/train.'+str(i),
+	"""HARDCODED AS FUCK: 4, N20"""
+	for i in range(1, 4+1):
+		svd = pyreclab.SVD( dataset   = data_path+'train/train_N20.'+str(i),
 												dlmchar   = b',',
 												header    = False,
 												usercol   = 0,
 												itemcol   = 1,
 												ratingcol = 2 )
 		svd.train( factors= f, maxiter= mi, lr= lr, lamb= lamb )
-		predlist, mae, rmse = svd.test( input_file  = data_path+'val/val.'+str(i),
+		predlist, mae, rmse = svd.test( input_file  = data_path+'val/val_N20.'+str(i),
 		                                dlmchar     = b',',
 		                                header      = False,
 		                                usercol     = 0,
@@ -447,7 +448,7 @@ def main():
 	# PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
 	# nDCGMAP_calculator(data_path= data_path, params=opt_params, topN=[10, 15, 20, 50], output_filename="nDCGMAP.txt")
 	for N in [5, 10, 15, 20]:
-		protocol_nDCGMAP_evaluation(data_path=data_path, params=opt_params, N=N, output_filename='ptc_topN_evals.txt')
+		protocol_nDCGMAP_evaluation(data_path=data_path, params=opt_params, N=N, output_filename='ptc_evals.txt')
 	# generate_recommends(params=opt_params)
 
 
