@@ -140,7 +140,7 @@ def SVDJob(data_path, f, mi, lr, lamb):
 	# 		test.append( line.strip() )
 	val_folds   = os.listdir(data_path+'val/')
 	maes, rmses = [], []
-	"""HARDCODED AS FUCK: 4, N20"""
+	"""HARDCODED AS FUCK: 4+1, N20""" #Rationale: N20 por ser folds más chicos. Así, ninguno de estos folds se interlapa con alguno de testing.
 	for i in range(1, 4+1):
 		svd = pyreclab.SVD( dataset   = data_path+'train/train_N20.'+str(i),
 												dlmchar   = b',',
@@ -204,21 +204,21 @@ def boosting(data_path):
 			defaults['mi'] = opt_value(results=results['mi'], metric='rmse')
 
 	# Real testing
-	svd = pyreclab.SVD( dataset   = data_path+'ratings.train',
+	svd = pyreclab.SVD( dataset   = data_path+'eval_train_N20.data',
 											dlmchar   = b',',
 											header    = False,
 											usercol   = 0,
 											itemcol   = 1,
 											ratingcol = 2 )
 	svd.train( factors= defaults['f'], maxiter= defaults['mi'], lr= defaults['lr'], lamb= defaults['lamb'] )
-	predlist, mae, rmse = svd.test( input_file  = data_path+'test/'+os.listdir(data_path+'test/')[0],
+	predlist, mae, rmse = svd.test( input_file  = data_path+'test/test_N20.data',
 	                                dlmchar     = b',',
 	                                header      = False,
 	                                usercol     = 0,
 	                                itemcol     = 1,
 	                                ratingcol   = 2 )
 
-	with open('TwitterRatings/funkSVD/opt_params.txt', 'w') as f:
+	with open('TwitterRatings/funkSVD/opt_params_ptcdssplit.txt', 'w') as f:
 		for param in defaults:
 			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
 		f.write( "RMSE:{rmse}, MAE:{mae}".format(rmse=rmse, mae=mae) )
@@ -376,7 +376,7 @@ def protocol_nDCGMAP_evaluation(data_path, params, N, output_filename):
 											itemcol   = 1,
 											ratingcol = 2 )
 	svd.train( factors= params['f'], maxiter= params['mi'], lr= params['lr'], lamb= params['lamb'] )
-	recommendationList = svd.testrec( input_file    = data_path+'eval_test_N'+str(N)+'.data',
+	recommendationList = svd.testrec( input_file    = data_path+'test/test_N'+str(N)+'.data',
                                       dlmchar     = b',',
                                       header      = False,
                                       usercol     = 0,
@@ -393,13 +393,13 @@ def protocol_nDCGMAP_evaluation(data_path, params, N, output_filename):
 
 	for userId in recommendationList[0]:
 		recs      = user_ranked_recs(user_recs=recommendationList[0][userId], user_consumpt=user_consumption[userId])
-		mini_recs = dict((k, recs[k]) for k in recs.keys()[:N]) #DEVUELVO SÓLO 5 RECOMENDACIONES
+		mini_recs = dict((k, recs[k]) for k in recs.keys()[:N]) #DEVUELVO SÓLO N RECOMENDACIONES
 
-		MRRs.append( MRR(recs=recs, rel_thresh=1) )
-		nDCGs_bin.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=1) )
 		nDCGs_normal.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
+		nDCGs_bin.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=1) )
 		nDCGs_altform.append( nDCG(recs=mini_recs, alt_form=True, rel_thresh=False) )			
 		APs.append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
+		MRRs.append( MRR(recs=recs, rel_thresh=1) )
 		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
 
 	with open('TwitterRatings/funkSVD/'+output_filename, 'a') as file:
