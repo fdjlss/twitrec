@@ -35,7 +35,7 @@ def book_list(db_conn):
 	return book_list
 #--------------------------------#
 
-def random_eval(db_conn, N):
+def random_eval(data_path, db_conn, N):
 	total_c = consumption(ratings_path=data_path+'eval_all_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
@@ -70,7 +70,7 @@ def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	conn = sqlite3.connect(sqlite_file)
 	for N in [5, 10, 15, 20]:
-		random_eval(db_conn=conn, N=N)
+		random_eval(data_path=data_path, db_conn=conn, N=N)
 	conn.close()
 
 if __name__ == '__main__':
