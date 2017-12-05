@@ -15,9 +15,11 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 #-----"PRIVATE" METHODS----------#
 def mean(lst):
 	return float(sum(lst)) / len(lst)
+
 def stdev(lst):
   m = mean(lst)
   return sqrt(float(reduce(lambda x, y: x + y, map(lambda x: (x - m) ** 2, lst))) / len(lst))
+
 def opt_value(results, metric):
 	for val in results:
 		if metric=='rmse':
@@ -27,6 +29,7 @@ def opt_value(results, metric):
 			if results[val] == max( list(results.values()) ): 
 				opt_value = val
 	return opt_value
+
 def ratingsSampler(rats, fout, n):
 	l = len(rats)
 	K = l*n
@@ -34,6 +37,7 @@ def ratingsSampler(rats, fout, n):
 	with open(fout, 'w') as f:
 		f.write( '\n'.join('%s' % x for x in ratings_sampled) )
 	del ratings_sampled
+
 def MRR(recs, rel_thresh):
 	res = 0.0
 	for place in recs:
@@ -41,11 +45,13 @@ def MRR(recs, rel_thresh):
 			res = 1.0/int(place)
 			break
 	return res
+
 def rel_div(relevance_i, i, alt_form):
 	if alt_form:
 		return ( 2.0**relevance_i - 1) / log(1.0 + i, 2)
 	else:
 		return relevance_i / log(1.0 + i, 2)
+
 def DCG(recs, alt_form, rel_thresh):
 	s = 0.0
 	if rel_thresh==False:
@@ -58,6 +64,7 @@ def DCG(recs, alt_form, rel_thresh):
 			else:
 				s += rel_div(0, place, alt_form)
 	return s
+
 def iDCG(recs, alt_form, rel_thresh):
 	place = 0
 	i_recs = {}
@@ -65,11 +72,13 @@ def iDCG(recs, alt_form, rel_thresh):
 		place += 1
 		i_recs[place] = relevance
 	return DCG(i_recs, alt_form, rel_thresh)
+
 def nDCG(recs, alt_form, rel_thresh):
 	try:
 		return DCG(recs, alt_form, rel_thresh) / iDCG(recs, alt_form, rel_thresh)
 	except ZeroDivisionError as e:
 		return 0.0
+
 def P_at_N(n, recs, rel_thresh):
 	s = 0.0
 	for place in recs:
@@ -79,6 +88,7 @@ def P_at_N(n, recs, rel_thresh):
 		else:
 			break
 	return s / n
+
 def AP_at_N(n, recs, rel_thresh):
 	s = 0.0
 	relevants_count = 0
@@ -93,12 +103,14 @@ def AP_at_N(n, recs, rel_thresh):
 		return s / min(n, relevants_count) 
 	except ZeroDivisionError as e:
 		return 0.0
+
 def R_precision(n_relevants, recs):
 	s = 0.0
 	for place in recs:
 		if recs[place] != 0:
 			s += 1
 	return s/n_relevants
+
 def consumption(ratings_path, rel_thresh, with_ratings):
 	c = {}
 	with open(ratings_path, 'r') as f:
@@ -117,6 +129,7 @@ def consumption(ratings_path, rel_thresh, with_ratings):
 				if int( rating ) >= rel_thresh:
 					c[userId].append(itemId)
 	return c
+
 def user_ranked_recs(user_recs, user_consumpt):
 	recs = {}
 	place = 1
@@ -128,11 +141,13 @@ def user_ranked_recs(user_recs, user_consumpt):
 		recs[place] = rating
 		place += 1
 	return recs
+
 def relevance(user, q):
 	ratings = [ int(r) for r in user.values() ]
 	if q>=10:
 		return mean(ratings)
 	return ((0.5**q) * stdev(ratings)) + mean(ratings)
+
 def SVDJob(data_path, f, mi, lr, lamb):
 	# test = [] 
 	# with open(data_path+'test/test.fold', 'r') as f:
@@ -157,10 +172,6 @@ def SVDJob(data_path, f, mi, lr, lamb):
 		                                ratingcol   = 2 )
 		maes.append(mae)
 		rmses.append(rmse)
-	# # Escribe 1 archivo por cada valor de cada parámetro
-	# with open('TwitterRatings/funkSVD/params/'+param+'/'+str(i)+'.txt', 'w') as f:
-	# 	for j in range(0, folds):
-	# 		f.write( "%s\t%s\n" % (rmses[j], maes[j]) )
 	return mean(maes), mean(rmses)
 #--------------------------------#
 
@@ -368,7 +379,7 @@ def nDCGMAP_calculator(data_path, params, topN, output_filename):
 
 
 def protocol_nDCGMAP_evaluation(data_path, params, N, output_filename):
-	user_consumption = consumption(ratings_path=data_path+'eval_all_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
+	user_consumption = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True) #debiera ser el test_c, pero como includeRated=False, da lo mismo
 	svd = pyreclab.SVD( dataset   = data_path+'eval_train_N'+str(N)+'.data',
 											dlmchar   = b',',
 											header    = False,
@@ -394,7 +405,6 @@ def protocol_nDCGMAP_evaluation(data_path, params, N, output_filename):
 	for userId in recommendationList[0]:
 		recs      = user_ranked_recs(user_recs=recommendationList[0][userId], user_consumpt=user_consumption[userId])
 		mini_recs = dict((k, recs[k]) for k in recs.keys()[:N]) #DEVUELVO SÓLO N RECOMENDACIONES
-
 		nDCGs_normal.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
 		nDCGs_bin.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=1) )
 		nDCGs_altform.append( nDCG(recs=mini_recs, alt_form=True, rel_thresh=False) )			
@@ -442,9 +452,10 @@ def generate_recommends(params):
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	opt_params = boosting(data_path= data_path)
+	# opt_params = boosting(data_path= data_path)
 	# RMSEMAE_distr(output_filename="results_8020.txt")
 	# opt_params = {'f': 425, 'mi': 130, 'lr': 0.01, 'lamb': 0.05}
+	opt_params = {'f': 675, 'mi': 110, 'lr': 0.009, 'lamb': 0.05}
 	# PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
 	# nDCGMAP_calculator(data_path= data_path, params=opt_params, topN=[10, 15, 20, 50], output_filename="nDCGMAP.txt")
 	for N in [5, 10, 15, 20]:
