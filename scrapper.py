@@ -608,31 +608,35 @@ def statistics(db_conn):
   # SELECT DISTINCT COUNT(url_book) FROM user_reviews WHERE rating IS NOT 0;
   # SELECT COUNT(rating) FROM user_reviews WHERE rating IS NOT 0; 
 
-# Creando la conexion a la BD
-sqlite_file = 'db/goodreads.sqlite'
-conn = sqlite3.connect(sqlite_file)
 
-# Direccion de los archivos del dataset de Hamid
-path_jsons = 'TwitterRatings/goodreads_renamed/'
+def main():
+	# Creando la conexion a la BD
+	sqlite_file = 'db/goodreads.sqlite'
+	conn = sqlite3.connect(sqlite_file)
 
-# 1)
-# reviews_wgetter(path_jsons, conn)
-# 2)
-# add_column_book_url(conn)
-# 3)
-# books_wgetter(conn)
-# 4)
-# add_column_timestamp(db_conn= conn, alter_table= True)
-# 5)
-# ratings_maker(db_conn= conn, folds= 5, out_path='TwitterRatings/funkSVD/data/')
-# 5.1)
-evaluation_set(db_conn=conn, M=10, N=5, folds=5, out_path='TwitterRatings/funkSVD/data/')
-evaluation_set(db_conn=conn, M=20, N=10, folds=5, out_path='TwitterRatings/funkSVD/data/')
-evaluation_set(db_conn=conn, M=30, N=15, folds=5, out_path='TwitterRatings/funkSVD/data/')
-evaluation_set(db_conn=conn, M=40, N=20, folds=5, out_path='TwitterRatings/funkSVD/data/')
-# 6)
-# create_users_table(path_jsons= path_jsons, db_conn= conn)
-# 7)
-# statistics(db_conn= conn)
-# Cerramos la conexion a la BD
-conn.close()
+	# Direccion de los archivos del dataset de Hamid
+	path_jsons = 'TwitterRatings/goodreads_renamed/'
+	# 1)
+	# reviews_wgetter(path_jsons, conn)
+	# 2)
+	# add_column_book_url(conn)
+	# 3)
+	# books_wgetter(conn)
+	# 4)
+	# add_column_timestamp(db_conn= conn, alter_table= True)
+	# 5)
+	# ratings_maker(db_conn= conn, folds= 5, out_path='TwitterRatings/funkSVD/data/')
+	# 5.1)
+	evaluation_set(db_conn=conn, M=10, N=5, folds=5, out_path='TwitterRatings/funkSVD/data/')
+	evaluation_set(db_conn=conn, M=20, N=10, folds=5, out_path='TwitterRatings/funkSVD/data/')
+	evaluation_set(db_conn=conn, M=30, N=15, folds=5, out_path='TwitterRatings/funkSVD/data/')
+	evaluation_set(db_conn=conn, M=40, N=20, folds=5, out_path='TwitterRatings/funkSVD/data/')
+	# 6)
+	# create_users_table(path_jsons= path_jsons, db_conn= conn)
+	# 7)
+	# statistics(db_conn= conn)
+	# Cerramos la conexion a la BD
+	conn.close()
+
+if __name__ == '__main__':
+	main()
