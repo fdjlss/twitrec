@@ -55,7 +55,7 @@ def get_data(data_path, all_c, idcoder, fold, N):
 	# col  = coords['users'].cat.codes.copy()
 	return ones, arrays['items'], arrays['users']
 
-def get_ndcg(data_path, idcoder, model, matrix_T, N):
+def get_ndcg(data_path, idcoder, fold, N, model, matrix_T):
 	users_nDCGs = []
 	val_c = consumption(ratings_path=data_path+'val/val_N'+str(N)+'.'+str(i), rel_thresh=0, with_ratings=True)
 	for userId in val_c:
@@ -73,7 +73,7 @@ def implicitJob(data_path, all_c, idcoder, params, N):
 		user_items     = matrix.T.tocsr()
 		model          = implicit.als.AlternatingLeastSquares(factors= params['f'], regularization= params['lamb'], iterations= params['mi'], dtype= np.float64)
 		model.fit(matrix)
-		ndcg = get_ndcg(data_path= data_path, idcoder= idcoder, model= model, matrix_T= user_items, N= N)
+		ndcg           = get_ndcg(data_path= data_path, idcoder= idcoder, fold= i, N= N, model= model, matrix_T= user_items)
 		nDCGs.append( ndcg )
 	return mean(nDCGs)
 #--------------------------------#
