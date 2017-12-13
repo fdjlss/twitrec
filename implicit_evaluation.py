@@ -31,8 +31,11 @@ class IdCoder(object):
 		elif category=="user":
 			return self.user_table[str(ID)]
 
-def get_data(data_path, all_c, idcoder, fold, N):
-	train_c = consumption(ratings_path=data_path+'train/train_N'+str(N)+'.'+str(fold), rel_thresh=0, with_ratings=True)
+def get_data(data_path, all_c, idcoder, fold, N, mode):
+	if mode=="tuning":
+		train_c = consumption(ratings_path=data_path+'train/train_N'+str(N)+'.'+str(fold), rel_thresh=0, with_ratings=True)
+	elif mode=="testing":
+		train_c = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= False)
 	arrays  = {'items':[], 'users':[], 'data':[]}
 	for userId in train_c:
 		r_u = mean( map( int, all_c[userId].values() ) )
@@ -45,14 +48,7 @@ def get_data(data_path, all_c, idcoder, fold, N):
 				arrays['items'].append(int( idcoder.coder('item', itemId) ))
 				arrays['users'].append(int( idcoder.coder('user', userId) ))
 				arrays['data'].append(0)
-	# coords = pd.DataFrame()
-	# coords['users'] = arrays['users']
-	# coords['items'] = arrays['items']
-	# coords['users'] = coords['users'].astype('category')
-	# coords['items'] = coords['items'].astype('category')
 	ones = np.array( arrays['data'] )
-	# row  = coords['items'].cat.codes.copy()
-	# col  = coords['users'].cat.codes.copy()
 	return ones, arrays['items'], arrays['users']
 
 def get_ndcg(data_path, idcoder, fold, N, model, matrix_T):
@@ -65,10 +61,10 @@ def get_ndcg(data_path, idcoder, fold, N, model, matrix_T):
 		users_nDCGs.append( nDCG(recs=recs, alt_form=False, rel_thresh=False) )
 	return mean(users_nDCGs)
 
-def implicitJob(data_path, all_c, idcoder, params, N):
+def implicitJob(data_path, all_c, idcoder, params, N, mode):
 	nDCGs = []
 	for i in range(1, 4+1):
-		ones, row, col = get_data(data_path= data_path, all_c= all_c, idcoder= idcoder, fold= i, N= N)
+		ones, row, col = get_data(data_path= data_path, all_c= all_c, idcoder= idcoder, fold= i, N= N, mode= "tuning")
 		matrix         = csr_matrix((ones, (row, col)), dtype=np.float64 )
 		user_items     = matrix.T.tocsr()
 		model          = implicit.als.AlternatingLeastSquares(factors= params['f'], regularization= params['lamb'], iterations= params['mi'], dtype= np.float64)
@@ -126,10 +122,47 @@ def ALS_tuning(data_path, N):
 	return defaults
 
 
+
+
+def ALS_protocol_evaluation(datapat, params, N, output_filename):
+	all_c     = consumption(ratings_path= data_path+'eval_all_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
+	test_c    = consumption(ratings_path= data_path+'test/test_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
+	train_c   = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= False)
+	idcoder   = IdCoder(items_ids, all_c.keys())
+	items_ids = list(set( [ itemId for userId, itemsDict in all_c.items() for itemId in itemsDict ] ))
+	MRRs          = []
+	nDCGs_bin     = []
+	nDCGs_normal  = []
+	nDCGs_altform = []
+	APs           = []
+	Rprecs        = []
+	ones, row, col = get_data(data_path= data_path, all_c= all_c, idcoder= idcoder, fold= 0, N= N, mode= "testing")
+	matrix         = csr_matrix((ones, (row, col)), dtype=np.float64 )
+	user_items     = matrix.T.tocsr()
+	model          = implicit.als.AlternatingLeastSquares(factors= params['f'], regularization= params['lamb'], iterations= params['mi'], dtype= np.float64)
+	model.fit(matrix)
+
+	for userId in test_c:
+		recommends = model.recommend(userid= int(idcoder.coder('user', userId)), user_items= matrix_T, N= N)
+		book_recs  = [ str(tupl[0]) for tupl in recommends ]
+		recs       = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
+
+		MRRs.append( MRR(recs=recs, rel_thresh=1) )
+		nDCGs_bin.append( nDCG(recs=recs, alt_form=False, rel_thresh=1) )
+		nDCGs_normal.append( nDCG(recs=recs, alt_form=False, rel_thresh=False) )
+		nDCGs_altform.append( nDCG(recs=recs, alt_form=True, rel_thresh=False) )			
+		APs.append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
+		Rprecs.append( R_precision(n_relevants=N, recs=recs) )
+
+	with open('TwitterRatings/implicit/protocol.txt', 'a') as file:
+		file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(N, mean(nDCGs_normal), mean(nDCGs_altform), mean(nDCGs_bin), mean(APs), mean(MRRs), mean(Rprecs)) )
+
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	opt_params = ALS_tuning(data_path= data_path, N= 20)
-
+	for N in [5, 10, 15, 20]:
+		ALS_protocol_evaluation(data_path= datapath, params= opt_params, N= N)
 
 if __name__ == '__main__':
 	main()
