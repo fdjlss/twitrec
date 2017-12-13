@@ -80,7 +80,7 @@ def implicitJob(data_path, all_c, idcoder, params, N):
 
 
 
-def ALS_tuning(data_path):
+def ALS_tuning(data_path, N):
 	all_c     = consumption(ratings_path= data_path+'eval_all_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
 	items_ids = list(set( [ itemId for userId, itemsDict in all_c.items() for itemId in itemsDict ] ))
 	idcoder   = IdCoder(items_ids, all_c.keys())
@@ -95,7 +95,7 @@ def ALS_tuning(data_path):
 			for i in defaults['f']:
 				defaults['f'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
-				results['f'][i] = implicitJob(data_path= data_path, all_c= all_c, idcoder= idcoder, params= defaults, N= 20)
+				results['f'][i] = implicitJob(data_path= data_path, all_c= all_c, idcoder= idcoder, params= defaults, N= N)
 			defaults['f'] = opt_value(results= results['f'], metric= 'ndcg')
 
 		elif param=='lamb':
@@ -103,7 +103,7 @@ def ALS_tuning(data_path):
 			for i in defaults['lamb']:
 				defaults['lamb'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
-				results['lamb'][i] = implicitJob(data_path= data_path, all_c= all_c, idcoder= idcoder, params= defaults, N= 20)
+				results['lamb'][i] = implicitJob(data_path= data_path, all_c= all_c, idcoder= idcoder, params= defaults, N= N)
 			defaults['lamb'] = opt_value(results= results['lamb'], metric= 'ndcg')
 
 		elif param=='mi':
@@ -111,7 +111,7 @@ def ALS_tuning(data_path):
 			for i in defaults['mi']:
 				defaults['mi'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
-				results['mi'][i] = implicitJob(data_path= data_path, all_c= all_c, idcoder= idcoder, params= defaults, N= 20)
+				results['mi'][i] = implicitJob(data_path= data_path, all_c= all_c, idcoder= idcoder, params= defaults, N= N)
 			defaults['mi'] = opt_value(results= results['mi'], metric= 'ndcg')
 
 	with open('TwitterRatings/implicit/opt_params.txt', 'w') as f:
@@ -128,7 +128,7 @@ def ALS_tuning(data_path):
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	opt_params = ALS_tuning(data_path= data_path)
+	opt_params = ALS_tuning(data_path= data_path, N= 20)
 
 
 if __name__ == '__main__':
