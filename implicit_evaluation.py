@@ -57,7 +57,7 @@ def get_data(data_path, all_c, idcoder, fold, N):
 
 def get_ndcg(data_path, idcoder, fold, N, model, matrix_T):
 	users_nDCGs = []
-	val_c = consumption(ratings_path=data_path+'val/val_N'+str(N)+'.'+str(i), rel_thresh=0, with_ratings=True)
+	val_c = consumption(ratings_path=data_path+'val/val_N'+str(N)+'.'+str(fold), rel_thresh=0, with_ratings=True)
 	for userId in val_c:
 		recommends = model.recommend(userid= userId, user_items= matrix_T, N= N)
 		book_recs  = [ str(tupl[0]) for tupl in recommends ]
