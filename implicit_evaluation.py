@@ -61,7 +61,7 @@ def get_ndcg(data_path, idcoder, fold, N, model, matrix_T):
 		users_nDCGs.append( nDCG(recs=recs, alt_form=False, rel_thresh=False) )
 	return mean(users_nDCGs)
 
-def implicitJob(data_path, all_c, idcoder, params, N, mode):
+def implicitJob(data_path, all_c, idcoder, params, N):
 	nDCGs = []
 	for i in range(1, 4+1):
 		ones, row, col = get_data(data_path= data_path, all_c= all_c, idcoder= idcoder, fold= i, N= N, mode= "tuning")
