@@ -466,6 +466,7 @@ def evaluation_set(db_conn, M, N, folds, out_path):
 							ORDER BY timestamp asc".format(table_name=table_name) )
 	all_rows = c.fetchall()
 	everything = {}
+	logging.info("-> Iterando sobre resultado de la consulta 2..")	
 	for tupl in all_rows:
 		user_id, url_review, rating, url_book, timestamp = tupl
 		book_id = url_book.split('/')[-1].split('-')[0].split('.')[0]
