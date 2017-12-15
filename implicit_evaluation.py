@@ -87,7 +87,7 @@ def ALS_tuning(data_path, N):
 	for param in ['f', 'lamb', 'mi']:
 		
 		if param=='f':
-			defaults['f'] = list(range(20, 1520, 20))
+			defaults['f'] = list(range(20, 2020, 20))
 			for i in defaults['f']:
 				defaults['f'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
@@ -103,7 +103,7 @@ def ALS_tuning(data_path, N):
 			defaults['lamb'] = opt_value(results= results['lamb'], metric= 'ndcg')
 
 		elif param=='mi':
-			defaults['mi'] = list(range(5, 515, 15))
+			defaults['mi'] = [5, 10, 15, 20, 30, 45, 70, 100]
 			for i in defaults['mi']:
 				defaults['mi'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
