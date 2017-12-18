@@ -120,7 +120,7 @@ def ALS_tuning(data_path, N):
 
 
 
-def ALS_protocol_evaluation(datapat, params, N, output_filename):
+def ALS_protocol_evaluation(data_path, params, N, output_filename):
 	all_c     = consumption(ratings_path= data_path+'eval_all_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
 	test_c    = consumption(ratings_path= data_path+'test/test_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
 	train_c   = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= False)
