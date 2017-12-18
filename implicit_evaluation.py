@@ -1,9 +1,5 @@
 # coding=utf-8
 
-import sqlite3
-import re, json
-import os
-from random import sample
 from jojFunkSvd import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, user_ranked_recs, opt_value
 from solr_evaluation import remove_consumed
 import logging
@@ -160,9 +156,10 @@ def ALS_protocol_evaluation(datapat, params, N, output_filename):
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	opt_params = ALS_tuning(data_path= data_path, N= 20)
+	# opt_params = ALS_tuning(data_path= data_path, N= 20)
+	opt_params = {'f': 1180, 'lamb': 0.04, 'mi': 10}
 	for N in [5, 10, 15, 20]:
-		ALS_protocol_evaluation(data_path= datapath, params= opt_params, N= N)
+		ALS_protocol_evaluation(data_path= data_path, params= opt_params, N= N)
 
 if __name__ == '__main__':
 	main()
