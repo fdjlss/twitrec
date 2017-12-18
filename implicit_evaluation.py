@@ -138,17 +138,19 @@ def ALS_protocol_evaluation(data_path, params, N):
 	model          = implicit.als.AlternatingLeastSquares(factors= params['f'], regularization= params['lamb'], iterations= params['mi'], dtype= np.float64)
 	model.fit(matrix)
 
-	for userId in test_c:
-		recommends = model.recommend(userid= int(idcoder.coder('user', userId)), user_items= user_items, N= N)
+	for userId in train_c:
+		recommends = model.recommend(userid= int(idcoder.coder('user', userId)), user_items= user_items, N= 200)
 		book_recs  = [ str(tupl[0]) for tupl in recommends ]
+		book_recs  = remove_consumed(user_consumption= train_c[userId], rec_list= book_recs)
 		recs       = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
+		mini_recs  = dict((k, recs[k]) for k in recs.keys()[:N])
 
 		MRRs.append( MRR(recs=recs, rel_thresh=1) )
-		nDCGs_bin.append( nDCG(recs=recs, alt_form=False, rel_thresh=1) )
-		nDCGs_normal.append( nDCG(recs=recs, alt_form=False, rel_thresh=False) )
-		nDCGs_altform.append( nDCG(recs=recs, alt_form=True, rel_thresh=False) )			
+		nDCGs_bin.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=1) )
+		nDCGs_normal.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
+		nDCGs_altform.append( nDCG(recs=mini_recs, alt_form=True, rel_thresh=False) )			
 		APs.append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
-		Rprecs.append( R_precision(n_relevants=N, recs=recs) )
+		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
 
 	with open('TwitterRatings/implicit/protocol.txt', 'a') as file:
 		file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
