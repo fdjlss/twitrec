@@ -31,7 +31,7 @@ def get_data(data_path, all_c, idcoder, fold, N, mode):
 	if mode=="tuning":
 		train_c = consumption(ratings_path=data_path+'train/train_N'+str(N)+'.'+str(fold), rel_thresh=0, with_ratings=True)
 	elif mode=="testing":
-		train_c = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= False)
+		train_c = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
 	arrays  = {'items':[], 'users':[], 'data':[]}
 	for userId in train_c:
 		r_u = mean( map( int, all_c[userId].values() ) )
