@@ -139,7 +139,7 @@ def ALS_protocol_evaluation(data_path, params, N):
 	model.fit(matrix)
 
 	for userId in test_c:
-		recommends = model.recommend(userid= int(idcoder.coder('user', userId)), user_items= matrix_T, N= N)
+		recommends = model.recommend(userid= int(idcoder.coder('user', userId)), user_items= user_items, N= N)
 		book_recs  = [ str(tupl[0]) for tupl in recommends ]
 		recs       = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
 
