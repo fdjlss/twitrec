@@ -124,8 +124,8 @@ def ALS_protocol_evaluation(data_path, params, N):
 	all_c     = consumption(ratings_path= data_path+'eval_all_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
 	test_c    = consumption(ratings_path= data_path+'test/test_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
 	train_c   = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= False)
-	idcoder   = IdCoder(items_ids, all_c.keys())
 	items_ids = list(set( [ itemId for userId, itemsDict in all_c.items() for itemId in itemsDict ] ))
+	idcoder   = IdCoder(items_ids, all_c.keys())
 	MRRs          = []
 	nDCGs_bin     = []
 	nDCGs_normal  = []
