@@ -179,7 +179,7 @@ def pyFM_protocol_evaluation(data_path, params, N):
 	# Separacion matrices
 	for userId in test_c:
 		t_r_u  = t_r.loc[t_r['User ID_'+str(userId)] == 1] #t_r.loc[t_r['User ID_422541286'] == 1]t
-		t_r_u  = t_r_u.reset_index(drop=True) #prevenir que el viejo index se añada como nueva columna
+		t_r_u  = t_r_u.reset_index(drop=True) #prevenir que el viejo index se agregue como nueva columna
 		X_te_u = np.array(t_r_u, dtype=np.float64)
 		X_te_u = csr_matrix(X_te_u)
 		preds  = fm.predict(X_te_u)
