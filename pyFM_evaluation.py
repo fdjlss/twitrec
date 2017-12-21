@@ -137,7 +137,7 @@ def pyFM_tuning(data_path, N):
 
 	with open('TwitterRatings/pyFM/opt_params.txt', 'w') as f:
 		for param in defaults:
-			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
+			f.write( "{param}:{value}\nMAE:{MAE}".format(param=param, value=defaults[param], MAE=results['seed'][ defaults['seed'] ]) )
 
 	with open('TwitterRatings/pyFM/params_maes.txt', 'w') as f:
 		for param in results:
@@ -146,6 +146,66 @@ def pyFM_tuning(data_path, N):
 
 	return defaults
 
+def pyFM_protocol_evaluation(data_path, params, N):
+	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
+	MRRs          = []
+	nDCGs_bin     = []
+	nDCGs_normal  = []
+	nDCGs_altform = []
+	APs           = []
+	Rprecs        = []
+
+	ratings = open(data_path+'eval_train_N'+str(N)+'.data', 'r')
+	df   = pd.read_csv(ratings, names=['User ID', 'Item ID', 'Rating'], dtype={'User ID': 'str', 'Item ID': 'str', 'Rating': 'float32'})
+	y_tr = np.array(df['Rating'].as_matrix(), dtype=np.float64)
+	df   = df.drop('Rating', 1)
+	t_r  = pd.get_dummies(df)
+	X_tr = np.array(t_r, dtype=np.float64)
+	X_tr = csr_matrix(X_tr)
+	fm   = pylibfm.FM(num_factors=params['f'], num_iter=params['mi'], k0=params['bias'], k1=params['oneway'], init_stdev=params['init_stdev'], \
+									validation_size=params['val_size'], learning_rate_schedule=params['lr_s'], initial_learning_rate=params['lr'], \
+									power_t=params['invscale_pow'], t0=params['optimal_denom'], shuffle_training=params['shuffle'], seed=params['seed'], \
+									task='regression', verbose=True)
+	fm.fit(X_tr, y_tr)
+
+	ratings = open(data_path+'test/test_N'+str(N)+'.data', 'r')
+	df   = pd.read_csv(ratings, names=['User ID', 'Item ID', 'Rating'], dtype={'User ID': 'str', 'Item ID': 'str', 'Rating': 'float32'})
+	y_te = np.array(df['Rating'].as_matrix(), dtype=np.float64)
+	df   = df.drop('Rating', 1)
+	t_r  = pd.get_dummies(df)
+	# X_te = np.array(t_r, dtype=np.float64)
+	# X_te = csr_matrix(X_te)
+	# preds = fm.predict(X_te)
+	# Separación matrices
+	for userId in test_c:
+		t_r_u  = t_r.loc[t_r['User ID_'+str(userId)] == 1] #t_r.loc[t_r['User ID_422541286'] == 1]t
+		t_r_u  = t_r_u.reset_index(drop=True) #prevenir que el viejo index se añada como nueva columna
+		X_te_u = np.array(t_r_u, dtype=np.float64)
+		X_te_u = csr_matrix(X_te_u)
+		preds  = fm.predict(X_te_u)
+		for i in range(0, len(preds)):
+			item_rows = t_r_u.filter(regex="Item ID.*")
+			col_name  = item_rows.columns[ (item_rows==1).iloc[i] ][0]
+			itemId    = col_name.split('_')[-1]
+			rating    = preds[i]
+
+
+
+	####################################
+	for userId in recommendationList[0]:
+		recs      = user_ranked_recs(user_recs=recommendationList[0][userId], user_consumpt=user_consumption[userId])
+		mini_recs = dict((k, recs[k]) for k in recs.keys()[:N]) #DEVUELVO SÓLO N RECOMENDACIONES
+		nDCGs_normal.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
+		nDCGs_bin.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=1) )
+		nDCGs_altform.append( nDCG(recs=mini_recs, alt_form=True, rel_thresh=False) )			
+		APs.append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
+		MRRs.append( MRR(recs=recs, rel_thresh=1) )
+		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
+
+	with open('TwitterRatings/funkSVD/'+output_filename, 'a') as file:
+		file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(N, mean(nDCGs_normal), mean(nDCGs_altform), mean(nDCGs_bin), mean(APs), mean(MRRs), mean(Rprecs)) )	
+	####################################
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
