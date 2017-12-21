@@ -1,3 +1,5 @@
+# coding=utf-8
+
 from sklearn.model_selection import train_test_split
 from jojFunkSvd import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, user_ranked_recs, opt_value
 from solr_evaluation import remove_consumed
