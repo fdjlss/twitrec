@@ -39,7 +39,7 @@ def FMJob(data_path, params, N):
 		X_va = csr_matrix(X_va)
 		preds = fm.predict(X_va)
 		rmse = sqrt( mean_squared_error(y_va, preds) )
-		print("FM RMSE: %.4f" % rmses)
+		print("FM RMSE: %.4f" % rmse)
 		rmses.append(rmse)
 	return mean(rmses)
 #--------------------------------#
