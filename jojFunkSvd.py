@@ -148,7 +148,7 @@ def relevance(user, q):
 		return mean(ratings)
 	return ((0.5**q) * stdev(ratings)) + mean(ratings)
 
-def SVDJob(data_path, f, mi, lr, lamb):
+def SVDJob(data_path, params):
 	# test = [] 
 	# with open(data_path+'test/test.fold', 'r') as f:
 	# 	for line in f:
@@ -163,7 +163,7 @@ def SVDJob(data_path, f, mi, lr, lamb):
 												usercol   = 0,
 												itemcol   = 1,
 												ratingcol = 2 )
-		svd.train( factors= f, maxiter= mi, lr= lr, lamb= lamb )
+		svd.train( factors= params['f'], maxiter= params['mi'], lr= params['lr'], lamb= params['lamb'] )
 		predlist, mae, rmse = svd.test( input_file  = data_path+'val/val_N20.'+str(i),
 		                                dlmchar     = b',',
 		                                header      = False,
@@ -180,39 +180,39 @@ def boosting(data_path):
 	defaults = {'f': 1000, 'mi': 100, 'lr': 0.01, 'lamb': 0.1}
 	results  = {'f': {}, 'mi': {}, 'lr': {}, 'lamb': {}}
 
-	for param in ['f', 'lamb', 'lr', 'mi']: #oops! antes "for param in defaults", pero defaults no tiene los params ordenados
+	for param in ['f', 'lamb', 'lr', 'mi']:
 
 		if param=='f':
-			defaults['f'] = list(range(100, 1525, 25))
-			for i in defaults['f']:
-				logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=i, lamb=defaults['lamb'], lr=defaults['lr'], mi=defaults['mi']) )
-				mae, rmse = SVDJob(data_path= data_path, f= i, mi= defaults['mi'], lr= defaults['lr'], lamb= defaults['lamb'])
+			for i in range(100, 1525, 25):
+				defaults['f'] = i
+				logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=defaults['lamb'], lr=defaults['lr'], mi=defaults['mi']) )
+				mae, rmse = SVDJob(data_path= data_path, params= defaults)
 				results['f'][i] = rmse
 			defaults['f']  = opt_value(results=results['f'], metric='rmse')
 
+		elif param=='mi':
+			for i in range(10, 520, 20):
+				defaults['mi'] = i
+				logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=defaults['lamb'], lr=defaults['lr'], mi=defaults['mi']) )
+				mae, rmse = SVDJob(data_path= data_path, params= defaults)
+				results['mi'][i] = rmse
+			defaults['mi'] = opt_value(results=results['mi'], metric='rmse')
+
 		elif param=='lamb':
-			defaults['lamb'] = [0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]		
-			for i in defaults['lamb']:
-				logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=i, lr=defaults['lr'], mi=defaults['mi']) )
-				mae, rmse = SVDJob(data_path= data_path, f= defaults['f'], mi= defaults['mi'], lr= defaults['lr'], lamb= i)
+			for i in [0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]:
+				defaults['lamb'] = i		
+				logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=defaults['lamb'], lr=defaults['lr'], mi=defaults['mi']) )
+				mae, rmse = SVDJob(data_path= data_path, params= defaults)
 				results['lamb'][i] = rmse
 			defaults['lamb'] = opt_value(results=results['lamb'], metric='rmse')
 
 		elif param=='lr':
-			defaults['lr']   = [0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
-			for i in defaults['lr']:
-				logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=defaults['lamb'], lr=i, mi=defaults['mi']) )
-				mae, rmse = SVDJob(data_path= data_path, f= defaults['f'], mi= defaults['mi'], lr= i, lamb= defaults['lamb'])
+			for i in [0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]:
+				defaults['lr'] = i
+				logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=defaults['lamb'], lr=defaults['lr'], mi=defaults['mi']) )
+				mae, rmse = SVDJob(data_path= data_path, params= defaults)
 				results['lr'][i] = rmse
 			defaults['lr'] = opt_value(results=results['lr'], metric='rmse')
-
-		elif param=='mi':
-			defaults['mi'] = list(range(10, 520, 20))
-			for i in defaults['mi']:
-				logging.info("Entrenando con f={f}, lamb={lamb}, lr={lr}, mi={mi}".format(f=defaults['f'], lamb=defaults['lamb'], lr=defaults['lr'], mi=i) )
-				mae, rmse = SVDJob(data_path= data_path, f= defaults['f'], mi= i, lr= defaults['lr'], lamb= defaults['lamb'])
-				results['mi'][i] = rmse
-			defaults['mi'] = opt_value(results=results['mi'], metric='rmse')
 
 	# Real testing
 	svd = pyreclab.SVD( dataset   = data_path+'eval_train_N20.data',
@@ -459,7 +459,7 @@ def main():
 	# PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
 	# nDCGMAP_calculator(data_path= data_path, params=opt_params, topN=[10, 15, 20, 50], output_filename="nDCGMAP.txt")
 	for N in [5, 10, 15, 20]:
-		protocol_nDCGMAP_evaluation(data_path=data_path, params=opt_params, N=N, output_filename='ptc_evals.txt')
+		protocol_nDCGMAP_evaluation(data_path=data_path, params=opt_params, N=N, output_filename='protocol.txt')
 	# generate_recommends(params=opt_params)
 
 
