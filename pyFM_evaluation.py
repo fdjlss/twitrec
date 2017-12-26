@@ -12,10 +12,11 @@ from implicit_evaluation import IdCoder
 from pyfm import pylibfm
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.metrics import mean_squared_error, mean_absolute_error
+from math import sqrt
 
 #-----"PRIVATE" METHODS----------#
 def FMJob(data_path, params, N):
-	maes = []
+	rmses = []
 	for i in range(1, 4+1):
 		ratings = open(data_path+'train/train_N'+str(N)+'.'+str(i), 'r')
 		df   = pd.read_csv(ratings, names=['User ID', 'Item ID', 'Rating'], dtype={'User ID': 'str', 'Item ID': 'str', 'Rating': 'float32'})
@@ -37,10 +38,10 @@ def FMJob(data_path, params, N):
 		X_va = np.array(t_r, dtype=np.float64)
 		X_va = csr_matrix(X_va)
 		preds = fm.predict(X_va)
-		mae = mean_absolute_error(y_va, preds)
-		print("FM MAE: %.4f" % mean_absolute_error(y_va, preds))
-		maes.append(mae)
-	return mean(maes)
+		rmse = sqrt( mean_squared_error(y_va, preds) )
+		print("FM RMSE: %.4f" % rmses)
+		rmses.append(rmse)
+	return mean(rmses)
 #--------------------------------#
 
 def pyFM_tuning(data_path, N):
@@ -137,14 +138,39 @@ def pyFM_tuning(data_path, N):
 				results['seed'][i] = FMJob(data_path= data_path, params= defaults, N=N)
 			defaults['seed'] = opt_value(results= results['seed'], metric= 'rmse')
 
+
+	# Real testing
+	ratings = open(data_path+'eval_train_N20.data', 'r')
+	df   = pd.read_csv(ratings, names=['User ID', 'Item ID', 'Rating'], dtype={'User ID': 'str', 'Item ID': 'str', 'Rating': 'float32'})
+	y_tr = np.array(df['Rating'].as_matrix(), dtype=np.float64)
+	df   = df.drop('Rating', 1)
+	t_r  = pd.get_dummies(df)
+	X_tr = np.array(t_r, dtype=np.float64)
+	X_tr = csr_matrix(X_tr)
+	fm   = pylibfm.FM(num_factors=defaults['f'], num_iter=defaults['mi'], k0=defaults['bias'], k1=defaults['oneway'], init_stdev=defaults['init_stdev'], \
+									validation_size=defaults['val_size'], learning_rate_schedule=defaults['lr_s'], initial_learning_rate=defaults['lr'], \
+									power_t=defaults['invscale_pow'], t0=defaults['optimal_denom'], shuffle_training=defaults['shuffle'], seed=defaults['seed'], \
+									task='regression', verbose=True)
+	fm.fit(X_tr, y_tr)
+	ratings = open(data_path+'test/test_N20.data', 'r')
+	df   = pd.read_csv(ratings, names=['User ID', 'Item ID', 'Rating'], dtype={'User ID': 'str', 'Item ID': 'str', 'Rating': 'float32'})
+	y_va = np.array(df['Rating'].as_matrix(), dtype=np.float64)
+	df   = df.drop('Rating', 1)
+	t_r  = pd.get_dummies(df)
+	X_va = np.array(t_r, dtype=np.float64)
+	X_va = csr_matrix(X_va)
+	preds = fm.predict(X_va)
+	rmse = sqrt( mean_squared_error(y_va, preds) )
+	print("FM RMSE: %.4f" % rmse)
+
 	with open('TwitterRatings/pyFM/opt_params.txt', 'w') as f:
 		for param in defaults:
-			f.write( "{param}:{value}\nMAE:{MAE}".format(param=param, value=defaults[param], MAE=results['seed'][ defaults['seed'] ]) )
+			f.write( "{param}:{value}\nRMSE:{RMSE}".format(param=param, value=defaults[param], RMSE=results['seed'][ defaults['seed'] ]) )
 
 	with open('TwitterRatings/pyFM/params_maes.txt', 'w') as f:
 		for param in results:
 			for value in results[param]:
-				f.write( "{param}={value}\t : {MAE}\n".format(param=param, value=value, MAE=results[param][value]) )
+				f.write( "{param}={value}\t : {RMSE}\n".format(param=param, value=value, RMSE=results[param][value]) )
 
 	return defaults
 
