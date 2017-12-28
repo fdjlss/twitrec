@@ -25,10 +25,14 @@ def FMJob(data_path, params, N):
 		t_r  = pd.get_dummies(df)
 		X_tr = np.array(t_r, dtype=np.float64)
 		X_tr = csr_matrix(X_tr)
+		
+		logging.info("Evaluando con params: {0}\nFold {1}".format(params, i))
+
 		fm   = pylibfm.FM(num_factors=params['f'], num_iter=params['mi'], k0=params['bias'], k1=params['oneway'], init_stdev=params['init_stdev'], \
 										validation_size=params['val_size'], learning_rate_schedule=params['lr_s'], initial_learning_rate=params['lr'], \
 										power_t=params['invscale_pow'], t0=params['optimal_denom'], shuffle_training=params['shuffle'], seed=params['seed'], \
 										task='regression', verbose=True)
+
 		fm.fit(X_tr, y_tr)
 		ratings = open(data_path+'val/val_N'+str(N)+'.'+str(i), 'r')
 		df   = pd.read_csv(ratings, names=['User ID', 'Item ID', 'Rating'], dtype={'User ID': 'str', 'Item ID': 'str', 'Rating': 'float32'})
@@ -55,44 +59,8 @@ def pyFM_tuning(data_path, N):
 		if param=='f': 
 			for i in range(20, 2020, 20):
 				defaults['f'] = i
-				logging.info("Evaluando con params: {}".format(defaults))
 				results['f'][i] = FMJob(data_path= data_path, params= defaults, N=N)
 			defaults['f'] = opt_value(results= results['f'], metric= 'rmse')
-
-		elif param=='mi':
-			for i in [1, 5, 10, 20, 50, 100, 150, 200]: 
-				defaults['mi'] = i
-				logging.info("Evaluando con params: {}".format(defaults))
-				results['mi'][i] = FMJob(data_path= data_path, params= defaults, N=N)
-			defaults['mi'] = opt_value(results= results['mi'], metric= 'rmse')
-
-		elif param=='bias':
-			for i in [True, False]: 
-				defaults['bias'] = i
-				logging.info("Evaluando con params: {}".format(defaults))
-				results['bias'][i] = FMJob(data_path= data_path, params= defaults, N=N)
-			defaults['bias'] = opt_value(results= results['bias'], metric= 'rmse')
-
-		elif param=='oneway':
-			for i in [True, False]: 
-				defaults['oneway'] = i
-				logging.info("Evaluando con params: {}".format(defaults))
-				results['oneway'][i] = FMJob(data_path= data_path, params= defaults, N=N)
-			defaults['oneway'] = opt_value(results= results['oneway'], metric= 'rmse')
-
-		elif param=='init_stdev':
-			for i in [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]: 
-				defaults['init_stdev'] = i
-				logging.info("Evaluando con params: {}".format(defaults))
-				results['init_stdev'][i] = FMJob(data_path= data_path, params= defaults, N=N)
-			defaults['init_stdev'] = opt_value(results= results['init_stdev'], metric= 'rmse')
-
-		elif param=='val_size':
-			for i in [0.001, 0.01, 0.1, 0.5, 0.8, 0.9]: 
-				defaults['val_size'] = i
-				logging.info("Evaluando con params: {}".format(defaults))
-				results['val_size'][i] = FMJob(data_path= data_path, params= defaults, N=N)
-			defaults['val_size'] = opt_value(results= results['val_size'], metric= 'rmse')
 
 		elif param=='lr_s':
 			for i in ['constant', 'optimal', 'invscaling']: 
@@ -101,40 +69,67 @@ def pyFM_tuning(data_path, N):
 				if i=='optimal':
 					for j in [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5]:
 						defaults['optimal_denom'] = j
-						logging.info("Evaluando con params: {}".format(defaults))
-						results['optimal_denom'][i] = FMJob(data_path= data_path, params= defaults, N=N)
+						results['optimal_denom'][j] = FMJob(data_path= data_path, params= defaults, N=N)
 					defaults['optimal_denom'] = opt_value(results= results['optimal_denom'], metric= 'rmse')
 					results['lr_s'][i] = results['optimal_denom'][ defaults['optimal_denom'] ]
+
 				elif i=='invscaling':
 					for j in [0.001, 0.05, 0.1, 0.5, 0.8, 1.0]:
 						defaults['invscale_pow'] = j
-						logging.info("Evaluando con params: {}".format(defaults))
-						results['invscale_pow'][i] = FMJob(data_path= data_path, params= defaults, N=N)
+						results['invscale_pow'][j] = FMJob(data_path= data_path, params= defaults, N=N)
 					defaults['invscale_pow'] = opt_value(results= results['invscale_pow'], metric= 'rmse')
 					results['lr_s'][i] = results['invscale_pow'][ defaults['invscale_pow'] ]
+					
 				elif i=='constant':
 					results['lr_s'][i] = FMJob(data_path= data_path, params= defaults, N=N)
 
 			defaults['lr_s'] = opt_value(results= results['lr_s'], metric= 'rmse')
 
+		elif param=='mi':
+			for i in [1, 5, 10, 20, 50, 100, 150, 200]: 
+				defaults['mi'] = i
+				results['mi'][i] = FMJob(data_path= data_path, params= defaults, N=N)
+			defaults['mi'] = opt_value(results= results['mi'], metric= 'rmse')
+
+		elif param=='bias':
+			for i in [True, False]: 
+				defaults['bias'] = i
+				results['bias'][i] = FMJob(data_path= data_path, params= defaults, N=N)
+			defaults['bias'] = opt_value(results= results['bias'], metric= 'rmse')
+
+		elif param=='oneway':
+			for i in [True, False]: 
+				defaults['oneway'] = i
+				results['oneway'][i] = FMJob(data_path= data_path, params= defaults, N=N)
+			defaults['oneway'] = opt_value(results= results['oneway'], metric= 'rmse')
+
+		elif param=='init_stdev':
+			for i in [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]: 
+				defaults['init_stdev'] = i
+				results['init_stdev'][i] = FMJob(data_path= data_path, params= defaults, N=N)
+			defaults['init_stdev'] = opt_value(results= results['init_stdev'], metric= 'rmse')
+
+		elif param=='val_size':
+			for i in [0.001, 0.01, 0.1, 0.5, 0.8, 0.9]: 
+				defaults['val_size'] = i
+				results['val_size'][i] = FMJob(data_path= data_path, params= defaults, N=N)
+			defaults['val_size'] = opt_value(results= results['val_size'], metric= 'rmse')
+
 		elif param=='lr':
 			for i in [0.001, 0.003, 0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.07, 0.08, 0.1]: 
 				defaults['lr'] = i
-				logging.info("Evaluando con params: {}".format(defaults))
 				results['lr'][i] = FMJob(data_path= data_path, params= defaults, N=N)
 			defaults['lr'] = opt_value(results= results['lr'], metric= 'rmse')
 
 		elif param=='shuffle':
 			for i in [True, False]: 
 				defaults['shuffle'] = i
-				logging.info("Evaluando con params: {}".format(defaults))
 				results['shuffle'][i] = FMJob(data_path= data_path, params= defaults, N=N)
 			defaults['shuffle'] = opt_value(results= results['shuffle'], metric= 'rmse')
 
 		elif param=='seed':
 			for i in [10, 20, 28, 30, 50]: 
 				defaults['seed'] = i
-				logging.info("Evaluando con params: {}".format(defaults))
 				results['seed'][i] = FMJob(data_path= data_path, params= defaults, N=N)
 			defaults['seed'] = opt_value(results= results['seed'], metric= 'rmse')
 
@@ -204,6 +199,17 @@ def pyFM_protocol_evaluation(data_path, params, N):
 	df   = df.drop('Rating', 1)
 	t_r  = pd.get_dummies(df)
 
+	item_matrix = t_r.filter(regex="Item ID.*")
+	item_cols = item_matrix.shape[1]
+	# item_matrix.iloc[:item_cols, :] = np.diag( np.repeat(1, item_cols) )
+
+	for i in range(0, item_cols):
+		for j in range(0, item_cols):
+			if i==j:
+				item_matrix.iloc[i,j] = 1
+			else:
+				item_matrix.iloc[i,j] = 0
+
 	# ratings_test = open(data_path+'test/test_N'+str(N)+'.data', 'r')
 	# df   = pd.read_csv(ratings_test, names=['User ID', 'Item ID', 'Rating'], dtype={'User ID': 'str', 'Item ID': 'str', 'Rating': 'float32'})
 	# y_te = np.array(df['Rating'].as_matrix(), dtype=np.float64)
@@ -212,10 +218,15 @@ def pyFM_protocol_evaluation(data_path, params, N):
 
 	# Separacion matrices
 	for userId in test_c:
-		t_r_u = t_r.filter(regex="Item ID.*|User ID_"+str(userId))
-		t_r_u["User ID_"+str(userId)] = np.repeat(1, t_r_u.shape[0])
+		t_r_u  = t_r.filter(regex="Item ID.*|User ID_"+str(userId)) 	#dejamos como df la col del AU y la de los ítems 
+		t_r_u  = t_r_u.iloc[:t_r_u.shape[1]-1, :] 										#sliceamos el df para que quede una matrix (n°items) x (n°items + 1)
+		t_r_u["User ID_"+str(userId)] = np.repeat(1, t_r_u.shape[0]) 	#llenamos de unos la col del AU
 		t_r_u  = t_r_u.reset_index(drop=True)
-		X_te_u = csr_matrix(X_te_u)
+
+		np.diag( np.repeat(1, t_r_u.shape[0]) )
+		t_r_u.iloc[:, 1:] = np.diag( np.repeat(1, t_r_u.shape[0]) )
+
+		X_te_u = csr_matrix(t_r_u, dtype=np.float64)
 		preds  = fm.predict(X_te_u)
 
 		# t_r_u  = t_r.loc[t_r['User ID_'+str(userId)] == 1] #t_r.loc[t_r['User ID_422541286'] == 1]
