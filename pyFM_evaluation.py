@@ -17,6 +17,7 @@ from math import sqrt
 #-----"PRIVATE" METHODS----------#
 def FMJob(data_path, params, N):
 	rmses = []
+	logging.info("Evaluando con params: {0}".format(params))
 	for i in range(1, 4+1):
 		ratings = open(data_path+'train/train_N'+str(N)+'.'+str(i), 'r')
 		df   = pd.read_csv(ratings, names=['User ID', 'Item ID', 'Rating'], dtype={'User ID': 'str', 'Item ID': 'str', 'Rating': 'float32'})
@@ -26,7 +27,6 @@ def FMJob(data_path, params, N):
 		X_tr = np.array(t_r, dtype=np.float64)
 		X_tr = csr_matrix(X_tr)
 		
-		logging.info("Evaluando con params: {0}\nFold {1}".format(params, i))
 
 		fm   = pylibfm.FM(num_factors=params['f'], num_iter=params['mi'], k0=params['bias'], k1=params['oneway'], init_stdev=params['init_stdev'], \
 										validation_size=params['val_size'], learning_rate_schedule=params['lr_s'], initial_learning_rate=params['lr'], \
@@ -79,7 +79,7 @@ def pyFM_tuning(data_path, N):
 						results['invscale_pow'][j] = FMJob(data_path= data_path, params= defaults, N=N)
 					defaults['invscale_pow'] = opt_value(results= results['invscale_pow'], metric= 'rmse')
 					results['lr_s'][i] = results['invscale_pow'][ defaults['invscale_pow'] ]
-					
+
 				elif i=='constant':
 					results['lr_s'][i] = FMJob(data_path= data_path, params= defaults, N=N)
 
@@ -200,15 +200,24 @@ def pyFM_protocol_evaluation(data_path, params, N):
 	t_r  = pd.get_dummies(df)
 
 	item_matrix = t_r.filter(regex="Item ID.*")
-	item_cols = item_matrix.shape[1]
-	# item_matrix.iloc[:item_cols, :] = np.diag( np.repeat(1, item_cols) )
-
-	for i in range(0, item_cols):
-		for j in range(0, item_cols):
-			if i==j:
-				item_matrix.iloc[i,j] = 1
-			else:
-				item_matrix.iloc[i,j] = 0
+	del t_r
+	# item_cols   = item_matrix.shape[1]
+	# item_matrix = item_matrix.iloc[:item_cols, :] #cuadramos la matrix de ítems
+	
+	# a)
+	# item_matrix = np.identity(item_cols, dtype=np.int32 )
+	# b)
+	# for i in range(0, item_cols):
+	# 	for j in range(0, item_cols):
+	# 		if i==j:
+	# 			item_matrix.iloc[i,j] = 1
+	# 		else:
+	# 			item_matrix.iloc[i,j] = 0
+	# c)
+	# c_item_matrix = csr_matrix(item_matrix)
+	# d)
+	item_matrix = pd.DataFrame( np.identity(item_cols, dtype=np.int32 ), columns= item_matrix.columns.values)
+	
 
 	# ratings_test = open(data_path+'test/test_N'+str(N)+'.data', 'r')
 	# df   = pd.read_csv(ratings_test, names=['User ID', 'Item ID', 'Rating'], dtype={'User ID': 'str', 'Item ID': 'str', 'Rating': 'float32'})
@@ -218,16 +227,21 @@ def pyFM_protocol_evaluation(data_path, params, N):
 
 	# Separacion matrices
 	for userId in test_c:
-		t_r_u  = t_r.filter(regex="Item ID.*|User ID_"+str(userId)) 	#dejamos como df la col del AU y la de los ítems 
-		t_r_u  = t_r_u.iloc[:t_r_u.shape[1]-1, :] 										#sliceamos el df para que quede una matrix (n°items) x (n°items + 1)
-		t_r_u["User ID_"+str(userId)] = np.repeat(1, t_r_u.shape[0]) 	#llenamos de unos la col del AU
-		t_r_u  = t_r_u.reset_index(drop=True)
+		# t_r_u  = t_r.filter(regex="Item ID.*|User ID_"+str(userId)) 	#dejamos como df la col del AU y la de los ítems 
+		# t_r_u  = t_r_u.iloc[:t_r_u.shape[1]-1, :] 										#sliceamos el df para que quede una matrix (n°items) x (n°items + 1)
+		# t_r_u["User ID_"+str(userId)] = np.repeat(1, t_r_u.shape[0]) 	#llenamos de unos la col del AU
+		# t_r_u  = t_r_u.reset_index(drop=True)
 
-		np.diag( np.repeat(1, t_r_u.shape[0]) )
-		t_r_u.iloc[:, 1:] = np.diag( np.repeat(1, t_r_u.shape[0]) )
+		# np.diag( np.repeat(1, t_r_u.shape[0]) )
+		# t_r_u.iloc[:, 1:] = np.diag( np.repeat(1, t_r_u.shape[0]) )
 
-		X_te_u = csr_matrix(t_r_u, dtype=np.float64)
-		preds  = fm.predict(X_te_u)
+		# X_te_u = csr_matrix(t_r_u, dtype=np.float64)
+
+		user_array = pd.DataFrame( np.repeat(1, item_cols), columns= [userId])
+		user_items = user_array.join(item_matrix)
+		X_te = csr_matrix(user_items, dtype=np.float64)
+
+		preds  = fm.predict(X_te)
 
 		# t_r_u  = t_r.loc[t_r['User ID_'+str(userId)] == 1] #t_r.loc[t_r['User ID_422541286'] == 1]
 		# t_r_u  = t_r_u.reset_index(drop=True) #prevenir que el viejo index se agregue como nueva columna
