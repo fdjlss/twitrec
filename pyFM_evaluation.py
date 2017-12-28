@@ -199,74 +199,25 @@ def pyFM_protocol_evaluation(data_path, params, N):
 	df   = df.drop('Rating', 1)
 	t_r  = pd.get_dummies(df)
 
+	# Separación de matriz de ítems: identidad con tamaño (N° ítems)
 	item_matrix = t_r.filter(regex="Item ID.*")
+	item_cols   = item_matrix.shape[1]
+	item_names  = item_matrix.columns.values
+	item_ids    = [ it.split('_')[-1] for it in item_names ]
 	del t_r
-	# item_cols   = item_matrix.shape[1]
-	# item_matrix = item_matrix.iloc[:item_cols, :] #cuadramos la matrix de ítems
-	
-	# a)
-	# item_matrix = np.identity(item_cols, dtype=np.int32 )
-	# b)
-	# for i in range(0, item_cols):
-	# 	for j in range(0, item_cols):
-	# 		if i==j:
-	# 			item_matrix.iloc[i,j] = 1
-	# 		else:
-	# 			item_matrix.iloc[i,j] = 0
-	# c)
-	# c_item_matrix = csr_matrix(item_matrix)
-	# d)
-	item_matrix = pd.DataFrame( np.identity(item_cols, dtype=np.int32 ), columns= item_matrix.columns.values)
-	
+	item_matrix = pd.DataFrame( np.identity(item_cols, dtype=np.int32 ), columns= item_names) 
 
-	# ratings_test = open(data_path+'test/test_N'+str(N)+'.data', 'r')
-	# df   = pd.read_csv(ratings_test, names=['User ID', 'Item ID', 'Rating'], dtype={'User ID': 'str', 'Item ID': 'str', 'Rating': 'float32'})
-	# y_te = np.array(df['Rating'].as_matrix(), dtype=np.float64)
-	# df   = df.drop('Rating', 1)
-	# t_r  = pd.get_dummies(df)
-
-	# Separacion matrices
+	# Unión matrices: matriz de ítems con array de usuario de unos
 	for userId in test_c:
-		# t_r_u  = t_r.filter(regex="Item ID.*|User ID_"+str(userId)) 	#dejamos como df la col del AU y la de los ítems 
-		# t_r_u  = t_r_u.iloc[:t_r_u.shape[1]-1, :] 										#sliceamos el df para que quede una matrix (n°items) x (n°items + 1)
-		# t_r_u["User ID_"+str(userId)] = np.repeat(1, t_r_u.shape[0]) 	#llenamos de unos la col del AU
-		# t_r_u  = t_r_u.reset_index(drop=True)
-
-		# np.diag( np.repeat(1, t_r_u.shape[0]) )
-		# t_r_u.iloc[:, 1:] = np.diag( np.repeat(1, t_r_u.shape[0]) )
-
-		# X_te_u = csr_matrix(t_r_u, dtype=np.float64)
-
 		user_array = pd.DataFrame( np.repeat(1, item_cols), columns= [userId])
 		user_items = user_array.join(item_matrix)
-		X_te = csr_matrix(user_items, dtype=np.float64)
-
-		preds  = fm.predict(X_te)
-
-		# t_r_u  = t_r.loc[t_r['User ID_'+str(userId)] == 1] #t_r.loc[t_r['User ID_422541286'] == 1]
-		# t_r_u  = t_r_u.reset_index(drop=True) #prevenir que el viejo index se agregue como nueva columna
-		# X_te_u = np.array(t_r_u, dtype=np.float64)
-		# X_te_u = csr_matrix(X_te_u)
-		# preds  = fm.predict(X_te_u)
-
-		#AHORA SÍ TENGO LAS PREDICCIONES.
-		#SEGUIR POR ACÁ 2017/12/27
-		for i in range(0, len(preds)):
-			item_rows = t_r_u.filter(regex="Item ID.*")
-			col_name  = item_rows.columns[ (item_rows==1).iloc[i] ][0]
-			itemId    = col_name.split('_')[-1]
-			rating    = preds[i]
-
-		# en alguna parte...
-		book_recs  = [ str(tupl[0]) for tupl in recommends ]
+		X_te       = csr_matrix(user_items, dtype=np.float64)
+		preds      = fm.predict(X_te)
+		book_recs  = [itemId for _, itemId in sorted(zip(preds, item_ids))]
 		book_recs  = remove_consumed(user_consumption= train_c[userId], rec_list= book_recs)
 		recs       = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
 
-
-
 	####################################
-	for userId in recommendationList[0]:
-		recs      = user_ranked_recs(user_recs=recommendationList[0][userId], user_consumpt=user_consumption[userId])
 		mini_recs = dict((k, recs[k]) for k in recs.keys()[:N]) #DEVUELVO SÓLO N RECOMENDACIONES
 		nDCGs_normal.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
 		nDCGs_bin.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=1) )
@@ -275,7 +226,7 @@ def pyFM_protocol_evaluation(data_path, params, N):
 		MRRs.append( MRR(recs=recs, rel_thresh=1) )
 		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
 
-	with open('TwitterRatings/funkSVD/'+output_filename, 'a') as file:
+	with open('TwitterRatings/pyFM/'+output_filename, 'a') as file:
 		file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs_normal), mean(nDCGs_altform), mean(nDCGs_bin), mean(APs), mean(MRRs), mean(Rprecs)) )	
 	####################################
@@ -283,6 +234,8 @@ def pyFM_protocol_evaluation(data_path, params, N):
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	opt_params = pyFM_tuning(data_path=data_path, N=20)
+	for N in [5, 10, 15, 20]:
+		pyFM_protocol_evaluation(data_path=data_path, params=opt_params, N=N)
 
 if __name__ == '__main__':
 	main()
