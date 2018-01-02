@@ -29,7 +29,7 @@ class IdCoder(object):
 
 def get_data(data_path, all_c, idcoder, fold, N, mode):
 	if mode=="tuning":
-		train_c = consumption(ratings_path=data_path+'train/train_N'+str(N)+'.'+str(fold), rel_thresh=0, with_ratings=True)
+		train_c = consumption(ratings_path= data_path+'train/train_N'+str(N)+'.'+str(fold), rel_thresh=0, with_ratings=True)
 	elif mode=="testing":
 		train_c = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
 	arrays  = {'items':[], 'users':[], 'data':[]}
@@ -80,35 +80,33 @@ def ALS_tuning(data_path, N):
 	defaults = {'f': 100, 'lamb': 0.01, 'mi': 15}
 	results  = {'f': {}, 'lamb': {}, 'mi': {}}
 
-	for param in ['f', 'lamb', 'mi']:
+	for param in ['f', 'mi', 'lamb']:
 		
 		if param=='f':
-			defaults['f'] = list(range(20, 2020, 20))
-			for i in defaults['f']:
+			for i in range(20, 2020, 20):
 				defaults['f'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['f'][i] = implicitJob(data_path= data_path, all_c= all_c, idcoder= idcoder, params= defaults, N= N)
 			defaults['f'] = opt_value(results= results['f'], metric= 'ndcg')
 
-		elif param=='lamb':
-			defaults['lamb'] = [0.001, 0.002, 0.003, 0.004, 0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-			for i in defaults['lamb']:
-				defaults['lamb'] = i
-				logging.info("Evaluando con params: {}".format(defaults))
-				results['lamb'][i] = implicitJob(data_path= data_path, all_c= all_c, idcoder= idcoder, params= defaults, N= N)
-			defaults['lamb'] = opt_value(results= results['lamb'], metric= 'ndcg')
-
 		elif param=='mi':
-			defaults['mi'] = [5, 10, 15, 20, 30, 45, 70, 100]
-			for i in defaults['mi']:
+			for i in [5, 10, 15, 20, 30, 45, 70, 100]:
 				defaults['mi'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['mi'][i] = implicitJob(data_path= data_path, all_c= all_c, idcoder= idcoder, params= defaults, N= N)
 			defaults['mi'] = opt_value(results= results['mi'], metric= 'ndcg')
 
+		elif param=='lamb':
+			for i in [0.001, 0.002, 0.003, 0.004, 0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]:
+				defaults['lamb'] = i
+				logging.info("Evaluando con params: {}".format(defaults))
+				results['lamb'][i] = implicitJob(data_path= data_path, all_c= all_c, idcoder= idcoder, params= defaults, N= N)
+			defaults['lamb'] = opt_value(results= results['lamb'], metric= 'ndcg')
+
 	with open('TwitterRatings/implicit/opt_params.txt', 'w') as f:
 		for param in defaults:
 			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
+		f.write( "nDCG:{nDCG}".format(nDCG=results['lamb'][ defaults['lamb'] ]) )
 
 	with open('TwitterRatings/implicit/params_ndcgs.txt', 'w') as f:
 		for param in results:
@@ -138,7 +136,7 @@ def ALS_protocol_evaluation(data_path, params, N):
 	model          = implicit.als.AlternatingLeastSquares(factors= params['f'], regularization= params['lamb'], iterations= params['mi'], dtype= np.float64)
 	model.fit(matrix)
 
-	for userId in train_c:
+	for userId in test_c: 
 		recommends = model.recommend(userid= int(idcoder.coder('user', userId)), user_items= user_items, N= 200)
 		book_recs  = [ str(tupl[0]) for tupl in recommends ]
 		book_recs  = remove_consumed(user_consumption= train_c[userId], rec_list= book_recs)

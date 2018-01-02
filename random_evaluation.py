@@ -48,7 +48,7 @@ def random_eval(data_path, db_conn, N):
 	APs           = []
 	Rprecs        = []
 
-	for userId in train_c:
+	for userId in test_c:
 		book_recs = sample(books, k=200)
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		recs      = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])

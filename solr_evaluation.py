@@ -402,7 +402,7 @@ def option1_protocol_evaluation(data_path, solr, N, params):
 	APs           = []
 	Rprecs        = []
 
-	for userId in train_c:
+	for userId in test_c:
 		book_recs = []
 		for itemId in train_c[userId]:
 			encoded_params = urlencode(params)
@@ -445,7 +445,7 @@ def option2_protocol_evaluation(data_path, solr, N, params):
 	APs           = []
 	Rprecs        = []
 
-	for userId in train_c:
+	for userId in test_c:
 		stream_url     = solr + '/query?q=goodreadsId:{ids}'
 		ids_string     = encoded_itemIds(item_list=train_c[userId])
 		encoded_params = urlencode(params)
