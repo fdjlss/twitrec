@@ -161,7 +161,7 @@ def pyFM_tuning(data_path, N):
 	with open('TwitterRatings/pyFM/opt_params.txt', 'w') as f:
 		for param in defaults:
 			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
-		f.write( "RMSE:{RMSE}".format(rmse) )
+		f.write( "RMSE:{rmse}".format(rmse= rmse) )
 
 	with open('TwitterRatings/pyFM/params_rmses.txt', 'w') as f:
 		for param in results:
