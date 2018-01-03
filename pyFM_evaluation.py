@@ -171,7 +171,7 @@ def pyFM_tuning(data_path, N):
 	return defaults
 
 def pyFM_protocol_evaluation(data_path, params, N):
-	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
+	test_c  = consumption(ratings_path= data_path+'test/test_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
 	train_c = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= False)
 	all_c   = consumption(ratings_path= data_path+'eval_all_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
 	MRRs          = []
@@ -229,14 +229,26 @@ def pyFM_protocol_evaluation(data_path, params, N):
 		MRRs.append( MRR(recs=recs, rel_thresh=1) )
 		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
 
-	with open('TwitterRatings/pyFM/'+output_filename, 'a') as file:
+	with open('TwitterRatings/pyFM/protocol.txt', 'a') as file:
 		file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs_normal), mean(nDCGs_altform), mean(nDCGs_bin), mean(APs), mean(MRRs), mean(Rprecs)) )	
 	####################################
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	opt_params = pyFM_tuning(data_path=data_path, N=20)
+	# opt_params = pyFM_tuning(data_path=data_path, N=20)
+	opt_params = {'f': 20,
+								'mi': 5, 
+								'bias': True, 
+								'oneway': True , 
+								'init_stdev': 0.05, 
+								'val_size': 0.1, 
+								'lr_s': 'invscaling', 
+								'lr': 0.005,
+								'invscale_pow': 0.05, 
+								'optimal_denom': 0.01, 
+								'shuffle': False,
+								'seed': 50}
 	for N in [5, 10, 15, 20]:
 		pyFM_protocol_evaluation(data_path=data_path, params=opt_params, N=N)
 
