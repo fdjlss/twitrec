@@ -229,8 +229,8 @@ def pyFM_protocol_evaluation(data_path, params, N):
 		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
 
 	with open('TwitterRatings/pyFM/protocol.txt', 'a') as file:
-		file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
-				(N, mean(nDCGs_normal), mean(nDCGs_altform), mean(nDCGs_bin), mean(APs), mean(MRRs), mean(Rprecs)) )	
+		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(N, mean(nDCGs_normal) mean(APs), mean(MRRs), mean(Rprecs)) )	
 	####################################
 
 def main():
