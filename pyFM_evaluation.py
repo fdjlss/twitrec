@@ -175,9 +175,7 @@ def pyFM_protocol_evaluation(data_path, params, N):
 	train_c = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= False)
 	all_c   = consumption(ratings_path= data_path+'eval_all_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
 	MRRs          = []
-	nDCGs_bin     = []
 	nDCGs_normal  = []
-	nDCGs_altform = []
 	APs           = []
 	Rprecs        = []
 
@@ -211,7 +209,10 @@ def pyFM_protocol_evaluation(data_path, params, N):
 	del item_matrix
 
 	# Unión matrices: matriz de ítems con array de usuario de unos
+	k=0
 	for userId in test_c:
+		logging.info("#u: {0}/{1}".format(k, len(test_c)))
+		k=+1
 		user_array = pd.DataFrame(np.repeat(1, item_cols), columns= [userId])
 		X_te_um    = csr_matrix(user_array, dtype=np.float64)
 		X_te       = hstack([X_te_um, X_te_im]).tocsr()
@@ -223,10 +224,8 @@ def pyFM_protocol_evaluation(data_path, params, N):
 	####################################
 		mini_recs = dict((k, recs[k]) for k in recs.keys()[:N]) #DEVUELVO SÓLO N RECOMENDACIONES
 		nDCGs_normal.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
-		nDCGs_bin.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=1) )
-		nDCGs_altform.append( nDCG(recs=mini_recs, alt_form=True, rel_thresh=False) )			
-		APs.append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
-		MRRs.append( MRR(recs=recs, rel_thresh=1) )
+		APs.append( AP_at_N(n=N, recs=mini_recs, rel_thresh=1) )
+		MRRs.append( MRR(recs=mini_recs, rel_thresh=1) )
 		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
 
 	with open('TwitterRatings/pyFM/protocol.txt', 'a') as file:
