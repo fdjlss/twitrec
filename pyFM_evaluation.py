@@ -230,7 +230,7 @@ def pyFM_protocol_evaluation(data_path, params, N):
 
 	with open('TwitterRatings/pyFM/protocol.txt', 'a') as file:
 		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
-				(N, mean(nDCGs_normal) mean(APs), mean(MRRs), mean(Rprecs)) )	
+				(N, mean(nDCGs_normal), mean(APs), mean(MRRs), mean(Rprecs)) )	
 	####################################
 
 def main():
