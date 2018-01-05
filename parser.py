@@ -31,7 +31,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		goodreadsId = soup.find('input', id="book_id").get('value') # string
 		
 		"""Title"""
-		print("viendo título..", end=' ')
+		print("viendo título..\n")
 		title_el = soup.find('h1', id="bookTitle")
 		titleOfficial = title_el.get_text().strip().split('\n')[0] # string
 		try:
@@ -46,7 +46,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		titleOg = soup.find('meta', {"property":'og:title'}).get('content') # string
 
 		"""Authors"""
-		print("viendo autores..", end=' ')
+		print("viendo autores..\n")
 		authors_element = soup.find_all("a", class_="authorName")
 		nAuthors = len( authors_element ) # int
 		authorMulti = False # bool
@@ -104,7 +104,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			authors.append(author) # array
 
 		"""Ratings"""
-		print("viendo ratings..", end=' ')
+		print("viendo ratings..\n")
 		ratingStarscore = 0 # int
 		for el in soup.find("span", class_="stars staticStars").contents:
 			ratingStarscore += int( el.get("class")[1].strip('p') )
@@ -141,7 +141,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 				pass
 
 		"""Description"""
-		print("viendo descripción..", end=' ')
+		print("viendo descripción..\n")
 		descr_el = soup.find("div", id="description")
 		try:
 			if descr_el.find("a") != None:
@@ -155,7 +155,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 				pass
 
 		"""Details"""
-		print("viendo detalles..", end=' ')
+		print("viendo detalles..\n")
 		try:
 			detailBookFormatType = soup.find("span", itemprop="bookFormatType").get_text() # string
 		except AttributeError as e:
@@ -173,7 +173,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 				pass
 
 		"""Also Enjoyed By Readers"""
-		print("viendo AEBR..", end=' ')
+		print("viendo AEBR..\n")
 		readersBookIds = []
 		readers_el = soup.find("div", {"id" : re.compile("relatedWorks-*")} )
 		try:		
@@ -183,13 +183,13 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			pass
 
 		"""Books By Same Author"""
-		print("viendo BBSA..", end=' ')
+		print("viendo BBSA..\n")
 		booksBySameAuthor = []
 		for el in soup.find_all("div", class_="tooltipTrigger"):
 			booksBySameAuthor.append( el.get("data-resource-id") ) # array of strings
 
 		"""Genres"""
-		print("viendo géneros..", end=' ')
+		print("viendo géneros..\n")
 		genres = []
 		try:
 			genres_el = soup.find("div", class_="h2Container", text=re.compile("Genres")).find_next_sibling(class_="bigBoxBody")
