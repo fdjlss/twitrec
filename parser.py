@@ -7,9 +7,7 @@ import os
 from bs4 import BeautifulSoup
 import re
 
-DATA_PATH = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/"
-BOOKS_PATH = "books_data/"
-REVIEWS_PATH = "user_reviews/"
+
 
 def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 	data = []
@@ -318,8 +316,16 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 	with open( os.path.join(save_path, "books.json" ), 'w' ) as outfile:
 		json.dump( data, outfile )
 
+def main():
+	DATA_PATH = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/"
+	BOOKS_PATH = "books_data/"
+	REVIEWS_PATH = "user_reviews/"
 
-books_parse(os.path.join(DATA_PATH, "books_data_parsed"), DATA_PATH, BOOKS_PATH)
+	books_parse(os.path.join(DATA_PATH, "books_data_parsed"), DATA_PATH, BOOKS_PATH)
+
+if __name__ == '__main__':
+	main()
+
 
 # Para la consola:
 # import json
