@@ -41,7 +41,7 @@ def FMJob(data_path, params, N, vectorizer):
 		fm.fit(X_tr, y_tr)
 
 		val_data, y_va, _ = loadData('val/val_N'+str(N)+'.'+str(i))
-		X_va = v.transform(val_data)
+		X_va = vectorizer.transform(val_data)
 
 		preds = fm.predict(X_va)
 		rmse  = sqrt( mean_squared_error(y_va, preds) )
