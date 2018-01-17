@@ -56,8 +56,8 @@ def pyFM_tuning(data_path, N):
 	v = DictVectorizer()
 	X_all = v.fit_transform(all_data)
 
-	defaults = {'f': 10, 'mi': 1, 'bias': True, 'oneway': True , 'init_stdev': 0.1, 'val_size': 0.01, 'lr_s': 'optimal', 'lr': 0.01, \
-							'invscale_pow': 0.5, 'optimal_denom': 0.001, 'shuffle': True, 'seed': 28}
+	defaults = {'f': 100, 'mi': 20, 'bias': True, 'oneway': True , 'init_stdev': 0.1, 'val_size': 0.01, 'lr_s': 'optimal', 'lr': 0.01, \
+							'invscale_pow': 0.5, 'optimal_denom': 0.001, 'shuffle': True, 'seed': 28} #cambio del original: f:20, mi:1
 	results  = dict((param, {}) for param in defaults.keys())
 
 	for param in ['f', 'mi', 'bias', 'oneway', 'init_stdev', 'val_size', 'lr_s', 'lr', 'invscale_pow', 'optimal_denom', 'shuffle', 'seed']:
