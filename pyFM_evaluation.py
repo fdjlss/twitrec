@@ -62,17 +62,17 @@ def pyFM_tuning(data_path, N):
 
 	for param in ['f', 'mi', 'bias', 'oneway', 'init_stdev', 'val_size', 'lr_s', 'lr', 'invscale_pow', 'optimal_denom', 'shuffle', 'seed']:
 
-		if param=='f': 
-			for i in range(20, 2020, 20):
-				defaults['f'] = i
-				results['f'][i] = FMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
-			defaults['f'] = opt_value(results= results['f'], metric= 'rmse')
-
-		elif param=='mi':
+		if param=='mi':
 			for i in [1, 5, 10, 20, 50, 100, 150, 200]: 
 				defaults['mi'] = i
 				results['mi'][i] = FMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
 			defaults['mi'] = opt_value(results= results['mi'], metric= 'rmse')
+
+		elif param=='f': 
+			for i in range(20, 2020, 20):
+				defaults['f'] = i
+				results['f'][i] = FMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
+			defaults['f'] = opt_value(results= results['f'], metric= 'rmse')
 
 		elif param=='bias':
 			for i in [True, False]: 
@@ -197,8 +197,8 @@ def pyFM_protocol_evaluation(data_path, params, N):
 		X_te      = v.transform(user_rows)
 		preds     = fm.predict(X_te)
 		book_recs = [itemId for _, itemId in sorted(zip(preds, items), reverse=True)]
-		book_recs  = remove_consumed(user_consumption= train_c[userId], rec_list= book_recs)
-		recs       = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
+		book_recs = remove_consumed(user_consumption= train_c[userId], rec_list= book_recs)
+		recs      = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
 
 	####################################
 		mini_recs = dict((k, recs[k]) for k in recs.keys()[:N]) #DEVUELVO SÓLO N RECOMENDACIONES
