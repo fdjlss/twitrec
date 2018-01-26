@@ -310,9 +310,9 @@ def fastFM_tuning(data_path, N, solver):
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	opt_params_sgd = fastFM_tuning(data_path=data_path, N=20, solver="sgd")
-	opt_params_bpr = fastFM_bpr_tuning(data_path=data_path, N=20, solver="bpr")
-	for N in [5, 10, 15, 20]:
-		fastFM_protocol_evaluation(data_path=data_path, params=opt_params, N=N)
+	# opt_params_bpr = fastFM_tuning_bpr(data_path=data_path, N=20, solver="bpr")
+	# for N in [5, 10, 15, 20]:
+		# fastFM_protocol_evaluation(data_path=data_path, params=opt_params, N=N)
 
 
 if __name__ == '__main__':
