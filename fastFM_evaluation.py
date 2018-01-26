@@ -224,7 +224,7 @@ def fastFM_tuning(data_path, N, solver):
 	if solver!="mcmc":
 		for param in ['l2_reg_w', 'l2_reg_V', 'l2_reg']:
 
-			elif param=='l2_reg_w':
+			if param=='l2_reg_w':
 				for i in [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]: 
 					defaults['l2_reg_w'] = i
 					results['l2_reg_w'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
