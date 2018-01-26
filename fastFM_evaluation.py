@@ -152,7 +152,7 @@ def fastFM_tuning_bpr(data_path, N):
 				results['l2_reg'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
 			defaults['l2_reg'] = opt_value(results= results['l2_reg'], metric= 'ndcg')
 
-		elif param=='step_size'
+		elif param=='step_size':
 			for i in [0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.5]: 
 				defaults['step_size'] = i
 				results['step_size'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
