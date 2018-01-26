@@ -206,19 +206,19 @@ def fastFM_tuning(data_path, N, solver):
 		if param=='mi':
 			for i in [1, 5, 10, 20, 50, 100, 150, 200]: 
 				defaults['mi'] = i
-				results['mi'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
+				results['mi'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, solver= solver)
 			defaults['mi'] = opt_value(results= results['mi'], metric= 'rmse')
 
 		elif param=='f': 
 			for i in [1, 5, 8, 10] + range(20, 2020, 20):
 				defaults['f'] = i
-				results['f'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
+				results['f'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, solver= solver)
 			defaults['f'] = opt_value(results= results['f'], metric= 'rmse')
 
 		elif param=='init_stdev':
 			for i in [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]: 
 				defaults['init_stdev'] = i
-				results['init_stdev'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
+				results['init_stdev'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, solver= solver)
 			defaults['init_stdev'] = opt_value(results= results['init_stdev'], metric= 'rmse')
 
 	if solver!="mcmc":
@@ -227,25 +227,25 @@ def fastFM_tuning(data_path, N, solver):
 			if param=='l2_reg_w':
 				for i in [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]: 
 					defaults['l2_reg_w'] = i
-					results['l2_reg_w'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
+					results['l2_reg_w'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, solver= solver)
 				defaults['l2_reg_w'] = opt_value(results= results['l2_reg_w'], metric= 'rmse')
 
 			elif param=='l2_reg_V':
 				for i in [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]: 
 					defaults['l2_reg_V'] = i
-					results['l2_reg_V'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
+					results['l2_reg_V'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, solver= solver)
 				defaults['l2_reg_V'] = opt_value(results= results['l2_reg_V'], metric= 'rmse')
 
 			elif param=='l2_reg':
 				for i in [0.0, 0.001, 0.003, 0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.07, 0.08, 0.1]: 
 					defaults['l2_reg'] = i
-					results['l2_reg'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
+					results['l2_reg'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, solver= solver)
 				defaults['l2_reg'] = opt_value(results= results['l2_reg'], metric= 'rmse')
 
 	if solver=="sgd":
 		for i in [0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.5]: 
 			defaults['step_size'] = i
-			results['step_size'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
+			results['step_size'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, solver= solver)
 		defaults['step_size'] = opt_value(results= results['step_size'], metric= 'rmse')
 
 
