@@ -8,6 +8,7 @@ from time import sleep
 import os
 from os.path import isfile, join
 from math import sqrt, log
+from solr_evaluation import remove_consumed
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
@@ -380,6 +381,7 @@ def nDCGMAP_calculator(data_path, params, topN, output_filename):
 
 def protocol_nDCGMAP_evaluation(data_path, params, N, output_filename):
 	user_consumption = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True) #debiera ser el test_c, pero como includeRated=False, da lo mismo
+	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
 	svd = pyreclab.SVD( dataset   = data_path+'eval_train_N'+str(N)+'.data',
 											dlmchar   = b',',
 											header    = False,
@@ -403,8 +405,9 @@ def protocol_nDCGMAP_evaluation(data_path, params, N, output_filename):
 	Rprecs        = []
 
 	for userId in recommendationList[0]:
-		recs      = user_ranked_recs(user_recs=recommendationList[0][userId], user_consumpt=user_consumption[userId])
-		mini_recs = dict((k, recs[k]) for k in recs.keys()[:N]) #DEVUELVO SÓLO N RECOMENDACIONES
+		book_recs  = remove_consumed(user_consumption= train_c[userId], rec_list= recommendationList[0][userId])
+		recs       = user_ranked_recs(user_recs=book_recs, user_consumpt=user_consumption[userId])
+		mini_recs  = dict((k, recs[k]) for k in recs.keys()[:N]) #DEVUELVO SÓLO N RECOMENDACIONES
 		nDCGs_normal.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
 		nDCGs_bin.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=1) )
 		nDCGs_altform.append( nDCG(recs=mini_recs, alt_form=True, rel_thresh=False) )			
@@ -452,10 +455,10 @@ def generate_recommends(params):
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	opt_params = boosting(data_path= data_path)
+	# opt_params = boosting(data_path= data_path)
 	# RMSEMAE_distr(output_filename="results_8020.txt")
 	# opt_params = {'f': 425, 'mi': 130, 'lr': 0.01, 'lamb': 0.05}
-	# opt_params = {'f': 675, 'mi': 110, 'lr': 0.009, 'lamb': 0.05}
+	opt_params = {'f': 675, 'mi': 110, 'lr': 0.009, 'lamb': 0.05}
 	# PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
 	# nDCGMAP_calculator(data_path= data_path, params=opt_params, topN=[10, 15, 20, 50], output_filename="nDCGMAP.txt")
 	for N in [5, 10, 15, 20]:
