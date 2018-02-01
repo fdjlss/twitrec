@@ -8,12 +8,16 @@ from time import sleep
 import os
 from os.path import isfile, join
 from math import sqrt, log
-from solr_evaluation import remove_consumed
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 
 #-----"PRIVATE" METHODS----------#
+def remove_consumed(user_consumption, rec_list):
+	l = rec_list
+	for itemId in rec_list:
+		if itemId in user_consumption: l.remove(itemId)
+	return l
 def mean(lst):
 	return float(sum(lst)) / len(lst)
 
