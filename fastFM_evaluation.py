@@ -14,8 +14,50 @@ import pandas as pd
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from math import sqrt
+from random import sample
+import re
 
 #-----"PRIVATE" METHODS----------#
+def loadData_bpr(filename, data_path='TwitterRatings/funkSVD/data/', test=False, userId_va='0'):
+  data = []
+  y = []
+  items=set()
+  users=set()
+  with open(data_path+'eval_train_N5.data', 'r') as f: #antes +filename
+	  for line in f:
+	    (userId,itemId,rating)=line.split(',')
+	    items.add(itemId)
+	    users.add(userId)
+  if not test:
+	  with open(data_path+filename, 'r') as f:
+	    for line in f:
+	      (userId,itemId,rating)=line.split(',')
+	      data.append({ "user_id": str(userId), "item_id": str(itemId)})
+	      y.append(float(rating))
+	      while True:
+	      	random_itemId = sample(items, 1)[0]
+	      	if { "user_id": str(userId), "item_id": str(random_itemId) } not in data:
+	      		data.append({ "user_id": str(userId), "item_id": str(random_itemId)})
+	      		y.append(float(0))
+	      		break
+	      	else:
+		      	continue  	
+  else:
+  	N = filename.split('_')[-1].split('.')[0][1:]
+  	i = filename.split('_')[-1].split('.')[-1]
+
+  	all_train_c = consumption(ratings_path= data_path+'eval_train_N5.data', rel_thresh= 0, with_ratings= True)
+  	val_c       = consumption(ratings_path= data_path+filename, rel_thresh= 0, with_ratings= True)
+		train_c     = consumption(ratings_path= data_path+'train/train_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= False)
+  	for itemId in items:
+  		if itemId not in train_c[userId_va]:
+  			data.append({ "user_id": str(userId_va), "item_id": str(itemId)})
+	  		if itemId not in val_c[userId_va]:
+	  			y.append(float(all_train_c[userId_va][itemId]))
+	  		else:
+	  			y.append(float(1))
+  return data, np.array(y), items
+
 def user_items_pairing(ratings, ind_left, ind_right):
 	user_pairs = []
 	for i in xrange(ind_left, ind_right+1):
@@ -45,28 +87,74 @@ def make_pairs(sparse_matrix, ratings):
 			pairs += user_pairs
 	return np.array(pairs)
 
-#TODO: CAMBIAR DE MÉTRICA
+def ndcg_bpr(preds, truth, vectorizer, matrix, user_data):
+
+	book_recs = []
+	for i in range(len(preds)):
+		pred_row = preds[i]
+		l = vectorizer.inverse_transform( matrix[pred_row,:] )[0].keys()
+		pred_itemId = [s for s in l if "item" in s][0].split('=')[-1]
+		book_recs.append(pred_itemId)
+
+		truth_row = truth[i]
+		l = vectorizer.inverse_transform( matrix[truth_row,:] )[0].keys()
+		truth_itemId = [s for s in l if "item" in s][0].split('=')[-1]
+
+
+
+
+
+		#En alguna parte:
+		book_recs = remove_consumed(user_consumption=user_data, rec_list=book_recs)
+		try:
+			recs = user_ranked_recs(user_recs=book_recs, user_consumpt=val_c[userId]) #...puede que en val no esté el mismo usuario...
+		except KeyError as e:
+			logging.info("Usuario {0} del fold de train {1} no encontrado en fold de val.".format(userId, i))
+			continue
+		mini_recs = dict((k, recs[k]) for k in recs.keys()[:10]) # Metric for tuning: nDCG at 10. Igual que en Solr
+		ndcg = nDCG(recs=mini_recs, alt_form=False, rel_thresh=False)
+
+
+
+
+
+
 def fastFMJob_bpr(data_path, params, N, vectorizer):
-	rmses = []
+	ndcgs = []
 	logging.info("Evaluando con params: {0}".format(params))
 	for i in range(1, 4+1):
-		train_data, y_tr, _ = loadData('train/train_N'+str(N)+'.'+str(i))
-		val_data, y_va, _   = loadData('val/val_N'+str(N)+'.'+str(i))
+		train_data, y_tr, items = loadData_bpr('train/train_N'+str(N)+'.'+str(i))
 		X_tr = vectorizer.transform(train_data)
-		X_va = vectorizer.transform(val_data)
 
 		fm = bpr.FMRecommender(n_iter=params['mi'], init_stdev=params['init_stdev'], rank=params['f'], random_state=123, \
 													 l2_reg_w=params['l2_reg_w'], l2_reg_V=params['l2_reg_V'], l2_reg=params['l2_reg'], step_size=params['step_size'])
 		pairs_tr = make_pairs(X_tr, y_tr)
-		fm.fit(X_tr, y_tr)
-		preds = fm.predict(X_va)
-		order = np.argsort(-preds)
-		#metric = wea(order)
+		fm.fit(X_tr, pairs_tr)
+
+
+
+
+
+		val_c = consumption(ratings_path= data_path+'val/val_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= True)
+		train_c = consumption(ratings_path= data_path+'train/train_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= True)
+		for userId in val_c:
+			val_data, y_va, _  = loadData_bpr('val/val_N'+str(N)+'.'+str(i), test=True, userId_va=userId)
+			X_va = vectorizer.transform(val_data)
+			preds = fm.predict(X_va)
+			preds = np.argsort(-preds)
+			truth = np.argsort(-y_va)
+		
+			# Lo que necesito:
+			users_ndcgs.append(ndcg_bpr(prefs=preds, truth=truth, vectorizer=v, matrix=X_va, user_data=train_c[userId]) )
+
+
+
+
 
 
 		logging.info("FM RMSE: {0}. Solver: {1}".format(rmse, solver) )
-		rmses.append(rmse)
-	return mean(rmses)
+		ndcgs.append(ndcg)
+	return mean(ndcgs)
 
 def fastFMJob(data_path, params, N, vectorizer, solver):
 	rmses = []
@@ -301,10 +389,7 @@ def fastFM_tuning(data_path, N, solver):
 				for value in results[param]:
 					f.write( "{param}={value}\t : {RMSE}\n".format(param=param, value=value, RMSE=results[param][value]) )
 
-
 	return defaults
-
-
 
 
 def main():
@@ -325,7 +410,7 @@ if __name__ == '__main__':
 # N=5
 # i=1
 # train_c = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
-# all_data, y_all, _ = loadData("eval_all_N"+str(N)+".data")
+# all_data, y_all, items = loadData("eval_all_N"+str(N)+".data")
 # v = DictVectorizer()
 # X_all = v.fit_transform(all_data)
 
