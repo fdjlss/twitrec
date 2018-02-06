@@ -81,7 +81,7 @@ def make_pairs(sparse_matrix, ratings):
 			pairs += user_pairs
 	return np.array(pairs)
 
-def ndcg_bpr(preds, truth, vectorizer, matrix, user_data, user_val):
+def ndcg_bpr(preds, vectorizer, matrix, user_data, user_val, N):
 	book_recs = []
 	for i in range(len(preds)):
 		pred_row = preds[i]
@@ -89,16 +89,12 @@ def ndcg_bpr(preds, truth, vectorizer, matrix, user_data, user_val):
 		pred_itemId = [s for s in l if "item" in s][0].split('=')[-1]
 		book_recs.append(pred_itemId)
 		if i==100: break
-
 	book_recs = remove_consumed(user_consumption=user_data, rec_list=book_recs)
 	recs      = user_ranked_recs(user_recs=book_recs, user_consumpt=user_val)
-	mini_recs = dict((k, recs[k]) for k in recs.keys()[:10]) # Metric for tuning: nDCG at 10. Igual que en Solr
+	mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
 	ndcg      = nDCG(recs=mini_recs, alt_form=False, rel_thresh=False)
 
 	return ndcg
-
-
-
 
 def fastFMJob_bpr(data_path, params, N, vectorizer):
 	ndcgs = []
@@ -119,8 +115,7 @@ def fastFMJob_bpr(data_path, params, N, vectorizer):
 			X_va = vectorizer.transform(val_data)
 			preds = fm.predict(X_va)
 			preds = np.argsort(-preds)
-			truth = np.argsort(-y_va)
-			users_ndcgs.append(ndcg_bpr(prefs=preds, truth=truth, vectorizer=v, matrix=X_va, user_data=train_c[userId], user_val=val_c[userId]) )
+			users_ndcgs.append(ndcg_bpr(prefs=preds, vectorizer=v, matrix=X_va, user_data=train_c[userId], user_val=val_c[userId], N=N) )
 
 		logging.info("FM RMSE: {0}. Solver: {1}".format(rmse, solver) )
 		ndcgs.append(ndcg)
@@ -215,34 +210,16 @@ def fastFM_tuning_bpr(data_path, N):
 				results['step_size'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
 			defaults['step_size'] = opt_value(results= results['step_size'], metric= 'ndcg')
 
+	with open('TwitterRatings/fastFM/bpr/opt_params.txt', 'w') as f:
+		for param in defaults:
+			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
 
-	# # Real testing
-	# train_data, y_tr, _ = loadData('eval_train_N'+str(N)+'.data')
-	# X_tr = v.transform(train_data)
-	# fm   = pylibfm.FM(num_factors=defaults['f'], num_iter=defaults['mi'], k0=defaults['bias'], k1=defaults['oneway'], init_stdev=defaults['init_stdev'], \
-	# 								validation_size=defaults['val_size'], learning_rate_schedule=defaults['lr_s'], initial_learning_rate=defaults['lr'], \
-	# 								power_t=defaults['invscale_pow'], t0=defaults['optimal_denom'], shuffle_training=defaults['shuffle'], seed=defaults['seed'], \
-	# 								task='regression', verbose=True)
-	# fm.fit(X_tr, y_tr)
+	with open('TwitterRatings/fastFM/bpr/params_ndcgs.txt', 'w') as f:
+		for param in results:
+			for value in results[param]:
+				f.write( "{param}={value}\t : {nDCG}\n".format(param=param, value=value, nDCG=results[param][value]) )
 
-	# test_data, y_te, _ = loadData('test/test_N'+str(N)+'.data')
-	# X_te  = v.transform(test_data)
-	# preds = fm.predict(X_te)
-	# rmse  = sqrt( mean_squared_error(y_te, preds) )
-	# print("FM RMSE: %.4f" % rmse)
-
-
-	# with open('TwitterRatings/pyFM/opt_params.txt', 'w') as f:
-	# 	for param in defaults:
-	# 		f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
-	# 	f.write( "RMSE:{rmse}".format(rmse= rmse) )
-
-	# with open('TwitterRatings/pyFM/params_rmses.txt', 'w') as f:
-	# 	for param in results:
-	# 		for value in results[param]:
-	# 			f.write( "{param}={value}\t : {RMSE}\n".format(param=param, value=value, RMSE=results[param][value]) )
-
-	# return defaults
+	return defaults
 
 def fastFM_tuning(data_path, N, solver):
 	all_data, y_all, _ = loadData("eval_all_N"+str(N)+".data")
@@ -360,14 +337,102 @@ def fastFM_tuning(data_path, N, solver):
 
 	return defaults
 
+def fastFM_protocol_evaluation(data_path, params, N):
+	all_data, y_all, items = loadData("eval_all_N"+str(N)+".data")
+	v = DictVectorizer()
+	X_all = v.fit_transform(all_data)
+
+	test_c  = consumption(ratings_path= data_path+'test/test_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
+	train_c = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= False)
+	all_c   = consumption(ratings_path= data_path+'eval_all_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
+	nDCGs  = []
+	APs    = []
+	MRRs   = []
+	Rprecs = []
+
+	train_data, y_tr, _ = loadData('eval_train_N'+str(N)+'.data')
+	X_tr = v.transform(train_data)
+	fm = sgd.FMRegression(n_iter=params['mi'], init_stdev=params['init_stdev'], rank=params['f'], random_state=123, \
+												l2_reg_w=params['l2_reg_w'], l2_reg_V=params['l2_reg_V'], l2_reg=params['l2_reg'], step_size=params['step_size'])
+	fm.fit(X_tr, y_tr)
+
+	p=0
+	for userId in test_c:
+		logging.info("#u: {0}/{1}".format(p, len(test_c)))
+		p=+1
+		user_rows = [ {'user_id': str(userId), 'item_id': str(itemId)} for itemId in items ]
+		X_te      = v.transform(user_rows)
+		preds     = fm.predict(X_te)
+		book_recs = [ itemId for _, itemId in sorted(zip(preds, items), reverse=True) ]
+		book_recs = remove_consumed(user_consumption= train_c[userId], rec_list= book_recs)
+		recs      = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
+
+	####################################
+		mini_recs = dict((k, recs[k]) for k in recs.keys()[:N]) #DEVUELVO SÓLO N RECOMENDACIONES
+		nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
+		APs.append( AP_at_N(n=N, recs=mini_recs, rel_thresh=1) )
+		MRRs.append( MRR(recs=mini_recs, rel_thresh=1) )
+		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
+
+	with open('TwitterRatings/fastFM/sgd/protocol.txt', 'a') as file:
+		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )	
+	####################################
+
+def fastFM_protocol_evaluation_bpr(data_path, params, N):
+	all_data, y_all, items = loadData_bpr("eval_all_N"+str(N)+".data")
+	v = DictVectorizer()
+	X_all = v.fit_transform(all_data)
+
+	test_c  = consumption(ratings_path= data_path+'test/test_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
+	train_c = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= False)
+	all_c   = consumption(ratings_path= data_path+'eval_all_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
+	nDCGs  = []
+	APs    = []
+	MRRs   = []
+	Rprecs = []
+
+	train_data, y_tr, _ = loadData('eval_train_N'+str(N)+'.data')
+	X_tr = v.transform(train_data)
+	fm = bpr.FMRecommender(n_iter=params['mi'], init_stdev=params['init_stdev'], rank=params['f'], random_state=123, \
+												 l2_reg_w=params['l2_reg_w'], l2_reg_V=params['l2_reg_V'], l2_reg=params['l2_reg'], step_size=params['step_size'])
+	pairs_tr = make_pairs(X_tr, y_tr)
+	fm.fit(X_tr, pairs_tr)
+
+	p=0
+	for userId in test_c:
+		logging.info("#u: {0}/{1}".format(p, len(test_c)))
+		p=+1
+		user_rows = [ {'user_id': str(userId), 'item_id': str(itemId)} for itemId in items ]
+		X_te      = v.transform(user_rows)
+		preds     = fm.predict(X_te)
+		book_recs = []
+		for i in range(len(preds)):
+			pred_row = preds[i]
+			l = vectorizer.inverse_transform( matrix[pred_row,:] )[0].keys()
+			pred_itemId = [s for s in l if "item" in s][0].split('=')[-1]
+			book_recs.append(pred_itemId)
+			if i==100: break
+		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+		recs      = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
+		mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
+		nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
+		APs.append( AP_at_N(n=N, recs=mini_recs, rel_thresh=1) )
+		MRRs.append( MRR(recs=mini_recs, rel_thresh=1) )
+		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
+	
+	with open('TwitterRatings/fastFM/bpr/protocol.txt', 'a') as file:
+		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )	
+
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	opt_params_sgd = fastFM_tuning(data_path=data_path, N=20, solver="sgd")
-	# opt_params_bpr = fastFM_tuning_bpr(data_path=data_path, N=20, solver="bpr")
-	# for N in [5, 10, 15, 20]:
-		# fastFM_protocol_evaluation(data_path=data_path, params=opt_params, N=N)
-
+	opt_params_bpr = fastFM_tuning_bpr(data_path=data_path, N=10) # Solr evaluation: N=10
+	for N in [5, 10, 15, 20]:
+		fastFM_protocol_evaluation(data_path=data_path, params=opt_params_sgd, N=N)
+		fastFM_protocol_evaluation_bpr(data_path=data_path, params=opt_params_bpr, N=N)
 
 if __name__ == '__main__':
 	main()
