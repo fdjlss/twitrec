@@ -43,19 +43,13 @@ def loadData_bpr(filename, data_path='TwitterRatings/funkSVD/data/', test=False,
 	      	else:
 		      	continue  	
   else:
-  	N = filename.split('_')[-1].split('.')[0][1:]
-  	i = filename.split('_')[-1].split('.')[-1]
-
   	all_train_c = consumption(ratings_path= data_path+'eval_train_N5.data', rel_thresh= 0, with_ratings= True)
-  	val_c       = consumption(ratings_path= data_path+filename, rel_thresh= 0, with_ratings= True)
-		train_c     = consumption(ratings_path= data_path+'train/train_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= False)
   	for itemId in items:
-  		if itemId not in train_c[userId_va]:
-  			data.append({ "user_id": str(userId_va), "item_id": str(itemId)})
-	  		if itemId not in val_c[userId_va]:
-	  			y.append(float(all_train_c[userId_va][itemId]))
-	  		else:
-	  			y.append(float(1))
+  		data.append({ "user_id": str(userId_va), "item_id": str(itemId)})
+  		if itemId in all_train_c[userId_va]:
+  			y.append(float(all_train_c[userId_va][itemId]))
+  		else:
+  			y.append(float(1))
   return data, np.array(y), items
 
 def user_items_pairing(ratings, ind_left, ind_right):
@@ -87,34 +81,21 @@ def make_pairs(sparse_matrix, ratings):
 			pairs += user_pairs
 	return np.array(pairs)
 
-def ndcg_bpr(preds, truth, vectorizer, matrix, user_data):
-
+def ndcg_bpr(preds, truth, vectorizer, matrix, user_data, user_val):
 	book_recs = []
 	for i in range(len(preds)):
 		pred_row = preds[i]
 		l = vectorizer.inverse_transform( matrix[pred_row,:] )[0].keys()
 		pred_itemId = [s for s in l if "item" in s][0].split('=')[-1]
 		book_recs.append(pred_itemId)
+		if i==100: break
 
-		truth_row = truth[i]
-		l = vectorizer.inverse_transform( matrix[truth_row,:] )[0].keys()
-		truth_itemId = [s for s in l if "item" in s][0].split('=')[-1]
+	book_recs = remove_consumed(user_consumption=user_data, rec_list=book_recs)
+	recs      = user_ranked_recs(user_recs=book_recs, user_consumpt=user_val)
+	mini_recs = dict((k, recs[k]) for k in recs.keys()[:10]) # Metric for tuning: nDCG at 10. Igual que en Solr
+	ndcg      = nDCG(recs=mini_recs, alt_form=False, rel_thresh=False)
 
-
-
-
-
-		#En alguna parte:
-		book_recs = remove_consumed(user_consumption=user_data, rec_list=book_recs)
-		try:
-			recs = user_ranked_recs(user_recs=book_recs, user_consumpt=val_c[userId]) #...puede que en val no esté el mismo usuario...
-		except KeyError as e:
-			logging.info("Usuario {0} del fold de train {1} no encontrado en fold de val.".format(userId, i))
-			continue
-		mini_recs = dict((k, recs[k]) for k in recs.keys()[:10]) # Metric for tuning: nDCG at 10. Igual que en Solr
-		ndcg = nDCG(recs=mini_recs, alt_form=False, rel_thresh=False)
-
-
+	return ndcg
 
 
 
@@ -131,10 +112,6 @@ def fastFMJob_bpr(data_path, params, N, vectorizer):
 		pairs_tr = make_pairs(X_tr, y_tr)
 		fm.fit(X_tr, pairs_tr)
 
-
-
-
-
 		val_c = consumption(ratings_path= data_path+'val/val_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= True)
 		train_c = consumption(ratings_path= data_path+'train/train_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= True)
 		for userId in val_c:
@@ -143,14 +120,7 @@ def fastFMJob_bpr(data_path, params, N, vectorizer):
 			preds = fm.predict(X_va)
 			preds = np.argsort(-preds)
 			truth = np.argsort(-y_va)
-		
-			# Lo que necesito:
-			users_ndcgs.append(ndcg_bpr(prefs=preds, truth=truth, vectorizer=v, matrix=X_va, user_data=train_c[userId]) )
-
-
-
-
-
+			users_ndcgs.append(ndcg_bpr(prefs=preds, truth=truth, vectorizer=v, matrix=X_va, user_data=train_c[userId], user_val=val_c[userId]) )
 
 		logging.info("FM RMSE: {0}. Solver: {1}".format(rmse, solver) )
 		ndcgs.append(ndcg)
@@ -192,7 +162,6 @@ def fastFMJob(data_path, params, N, vectorizer, solver):
 #--------------------------------#	 
 
 
-#TODO: LA MÉTRICA QLA
 def fastFM_tuning_bpr(data_path, N):
 	all_data, y_all, _ = loadData("eval_all_N"+str(N)+".data")
 	v = DictVectorizer()
