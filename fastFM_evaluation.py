@@ -93,20 +93,16 @@ def ndcg_bpr(preds, vectorizer, matrix, user_data, user_val, N):
 	recs      = user_ranked_recs(user_recs=book_recs, user_consumpt=user_val)
 	mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
 	ndcg      = nDCG(recs=mini_recs, alt_form=False, rel_thresh=False)
-
 	return ndcg
 
-def fastFMJob_bpr(data_path, params, N, vectorizer):
+def fastFMJob_bpr(data_path, params, N, vectorizer, train_sets, pairs, items):
 	ndcgs = []
 	logging.info("Evaluando con params: {0}".format(params))
 	for i in range(1, 4+1):
-		train_data, y_tr, items = loadData_bpr('train/train_N'+str(N)+'.'+str(i))
-		X_tr = vectorizer.transform(train_data)
-
 		fm = bpr.FMRecommender(n_iter=params['mi'], init_stdev=params['init_stdev'], rank=params['f'], random_state=123, \
 													 l2_reg_w=params['l2_reg_w'], l2_reg_V=params['l2_reg_V'], l2_reg=params['l2_reg'], step_size=params['step_size'])
-		pairs_tr = make_pairs(X_tr, y_tr)
-		fm.fit(X_tr, pairs_tr)
+		X_tr = vectorizer.transform(train_sets[i])
+		fm.fit(X_tr, pairs[i])
 
 		val_c = consumption(ratings_path= data_path+'val/val_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= True)
 		train_c = consumption(ratings_path= data_path+'train/train_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= True)
@@ -162,6 +158,15 @@ def fastFM_tuning_bpr(data_path, N):
 	v = DictVectorizer()
 	X_all = v.fit_transform(all_data)
 
+	## Train sets caching ## 
+	train_sets = dict((k, []) for k in range(1,5))
+	pairs = dict((k, []) for k in range(1,5))
+	for i in range(1, 5):
+		train_sets[i], y_tr, items = loadData_bpr('train/train_N'+str(N)+'.'+str(i))
+		X_tr = v.transform(train_sets[i])
+		pairs[i] = make_pairs(X_tr, y_tr)
+	########################
+
 	defaults = {'mi':100, 'init_stdev':0.1, 'f':8, 'l2_reg_w':0.1, 'l2_reg_V':0.1, 'l2_reg':0, 'step_size':0.1}
 
 	results  = dict((param, {}) for param in defaults.keys())
@@ -171,43 +176,43 @@ def fastFM_tuning_bpr(data_path, N):
 		if param=='mi':
 			for i in [1, 5, 10, 20, 50, 100, 150, 200]: 
 				defaults['mi'] = i
-				results['mi'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
+				results['mi'][i] = fastFMJob_bpr(data_path= data_path, params= defaults, N=N, vectorizer= v, train_sets= train_sets, pairs= pairs, items= items)
 			defaults['mi'] = opt_value(results= results['mi'], metric= 'ndcg')
 
 		elif param=='f': 
 			for i in [1, 5, 8, 10] + range(20, 2020, 20):
 				defaults['f'] = i
-				results['f'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
+				results['f'][i] = fastFMJob_bpr(data_path= data_path, params= defaults, N=N, vectorizer= v, train_sets= train_sets, pairs= pairs, items= items)
 			defaults['f'] = opt_value(results= results['f'], metric= 'ndcg')
 
 		elif param=='init_stdev':
 			for i in [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]: 
 				defaults['init_stdev'] = i
-				results['init_stdev'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
+				results['init_stdev'][i] = fastFMJob_bpr(data_path= data_path, params= defaults, N=N, vectorizer= v, train_sets= train_sets, pairs= pairs, items= items)
 			defaults['init_stdev'] = opt_value(results= results['init_stdev'], metric= 'ndcg')
 
 		elif param=='l2_reg_w':
 			for i in [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]: 
 				defaults['l2_reg_w'] = i
-				results['l2_reg_w'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
+				results['l2_reg_w'][i] = fastFMJob_bpr(data_path= data_path, params= defaults, N=N, vectorizer= v, train_sets= train_sets, pairs= pairs, items= items)
 			defaults['l2_reg_w'] = opt_value(results= results['l2_reg_w'], metric= 'ndcg')
 
 		elif param=='l2_reg_V':
 			for i in [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]: 
 				defaults['l2_reg_V'] = i
-				results['l2_reg_V'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
+				results['l2_reg_V'][i] = fastFMJob_bpr(data_path= data_path, params= defaults, N=N, vectorizer= v, train_sets= train_sets, pairs= pairs, items= items)
 			defaults['l2_reg_V'] = opt_value(results= results['l2_reg_V'], metric= 'ndcg')
 
 		elif param=='l2_reg':
 			for i in [0.0, 0.001, 0.003, 0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.07, 0.08, 0.1]: 
 				defaults['l2_reg'] = i
-				results['l2_reg'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
+				results['l2_reg'][i] = fastFMJob_bpr(data_path= data_path, params= defaults, N=N, vectorizer= v, train_sets= train_sets, pairs= pairs, items= items)
 			defaults['l2_reg'] = opt_value(results= results['l2_reg'], metric= 'ndcg')
 
 		elif param=='step_size':
 			for i in [0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.5]: 
 				defaults['step_size'] = i
-				results['step_size'][i] = fastFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v)
+				results['step_size'][i] = fastFMJob_bpr(data_path= data_path, params= defaults, N=N, vectorizer= v, train_sets= train_sets, pairs= pairs, items= items)
 			defaults['step_size'] = opt_value(results= results['step_size'], metric= 'ndcg')
 
 	with open('TwitterRatings/fastFM/bpr/opt_params.txt', 'w') as f:
