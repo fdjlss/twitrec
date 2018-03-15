@@ -103,7 +103,6 @@ def fastFMJob_bpr(data_path, params, N, vectorizer, train_sets, pairs, items):
 													 l2_reg_w=params['l2_reg_w'], l2_reg_V=params['l2_reg_V'], l2_reg=params['l2_reg'], step_size=params['step_size'])
 		X_tr = vectorizer.transform(train_sets[i])
 		fm.fit(X_tr, pairs[i])
-
 		val_c = consumption(ratings_path= data_path+'val/val_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= True)
 		train_c = consumption(ratings_path= data_path+'train/train_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= True)
 		for userId in val_c:
@@ -112,7 +111,6 @@ def fastFMJob_bpr(data_path, params, N, vectorizer, train_sets, pairs, items):
 			preds = fm.predict(X_va)
 			preds = np.argsort(-preds)
 			users_ndcgs.append(ndcg_bpr(prefs=preds, vectorizer=v, matrix=X_va, user_data=train_c[userId], user_val=val_c[userId], N=N) )
-
 		logging.info("FM RMSE: {0}. Solver: {1}".format(rmse, solver) )
 		ndcgs.append(ndcg)
 	return mean(ndcgs)
@@ -125,7 +123,6 @@ def fastFMJob(data_path, params, N, vectorizer, solver):
 		val_data, y_va, _   = loadData('val/val_N'+str(N)+'.'+str(i))
 		X_tr = vectorizer.transform(train_data)
 		X_va = vectorizer.transform(val_data)
-
 		if solver=="mcmc":
 			fm = mcmc.FMRegression(n_iter=params['mi'], init_stdev=params['init_stdev'], rank=params['f'], random_state=123, copy_X=True)
 			preds = fm.fit_predict(X_tr, y_tr, X_va)
@@ -148,7 +145,6 @@ def fastFMJob(data_path, params, N, vectorizer, solver):
 			rmse  = sqrt( mean_squared_error(y_va, preds) )
 			logging.info("FM RMSE: {0}. Solver: {1}".format(rmse, solver) )
 			rmses.append(rmse)
-
 	return mean(rmses)
 #--------------------------------#	 
 
@@ -434,7 +430,7 @@ def fastFM_protocol_evaluation_bpr(data_path, params, N):
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	opt_params_sgd = fastFM_tuning(data_path=data_path, N=20, solver="sgd")
-	opt_params_bpr = fastFM_tuning_bpr(data_path=data_path, N=10) # Solr evaluation: N=10
+	opt_params_bpr = fastFM_tuning_bpr(data_path=data_path, N=20) # Solr evaluation: N=10
 	for N in [5, 10, 15, 20]:
 		fastFM_protocol_evaluation(data_path=data_path, params=opt_params_sgd, N=N)
 		fastFM_protocol_evaluation_bpr(data_path=data_path, params=opt_params_bpr, N=N)
