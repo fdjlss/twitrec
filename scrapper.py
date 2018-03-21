@@ -476,6 +476,7 @@ def evaluation_set(db_conn, M, N, folds, out_path):
 
 	eval_test_set = {}
 	eval_train_set = {}
+	
 	"""Construcción Test Set"""
 	for user_id in users:
 		user_train_set = {} 

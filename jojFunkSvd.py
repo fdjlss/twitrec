@@ -409,7 +409,7 @@ def protocol_nDCGMAP_evaluation(data_path, params, N, output_filename):
 	Rprecs        = []
 
 	for userId in recommendationList[0]:
-		book_recs  = remove_consumed(user_consumption= train_c[userId], rec_list= recommendationList[0][userId])
+		book_recs  = remove_consumed(user_consumption= train_c[userId], rec_list= recommendationList[0][userId]) #da lo mismo este paso, según Gabriel el testrec no devuelve items consumidos
 		recs       = user_ranked_recs(user_recs=book_recs, user_consumpt=user_consumption[userId])
 		mini_recs  = dict((k, recs[k]) for k in recs.keys()[:N]) #DEVUELVO SÓLO N RECOMENDACIONES
 		nDCGs_normal.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
