@@ -107,14 +107,16 @@ def fastFMJob_bpr(data_path, params, N, vectorizer, train_sets, pairs, items):
 		fm.fit(X_tr, pairs[i])
 		val_c = consumption(ratings_path= data_path+'val/val_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= True)
 		train_c = consumption(ratings_path= data_path+'train/train_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= True)
+		users_ndcgs = []
 		for userId in val_c:
 			val_data, y_va, _  = loadData_bpr('val/val_N'+str(N)+'.'+str(i), test=True, userId_va=userId)
 			X_va = vectorizer.transform(val_data)
 			preds = fm.predict(X_va)
 			preds = np.argsort(-preds)
 			users_ndcgs.append(ndcg_bpr(prefs=preds, vectorizer=v, matrix=X_va, user_data=train_c[userId], user_val=val_c[userId], N=N) )
-		logging.info("FM RMSE: {0}. Solver: {1}".format(rmse, solver) )
-		ndcgs.append(ndcg)
+		fold_ndcg = mean(users_ndcgs)
+		logging.info("FM fold {0} nDCG: {1}. Solver: {2}".format(i, fold_ndcg, solver) )
+		ndcgs.append(fold_ndcg)
 	return mean(ndcgs)
 
 def fastFMJob(data_path, params, N, vectorizer, solver):
