@@ -19,38 +19,40 @@ import re
 
 #-----"PRIVATE" METHODS----------#
 def loadData_bpr(filename, data_path='TwitterRatings/funkSVD/data/', test=False, userId_va='0'):
-  data = []
-  y = []
-  items=set()
-  users=set()
-  with open(data_path+'eval_train_N5.data', 'r') as f: #antes +filename
-	  for line in f:
-	    (userId,itemId,rating)=line.split(',')
-	    items.add(itemId)
-	    users.add(userId)
-  if not test:
-	  with open(data_path+filename, 'r') as f:
-	    for line in f:
-	      (userId,itemId,rating)=line.split(',')
-	      data.append({ "user_id": str(userId), "item_id": str(itemId)})
-	      y.append(float(rating))
-	      while True:
-	      	random_itemId = sample(items, 1)[0]
-	      	if { "user_id": str(userId), "item_id": str(random_itemId) } not in data:
-	      		data.append({ "user_id": str(userId), "item_id": str(random_itemId)})
-	      		y.append(float(0))
-	      		break
-	      	else:
-		      	continue  	
-  else:
-  	all_train_c = consumption(ratings_path= data_path+'eval_train_N5.data', rel_thresh= 0, with_ratings= True)
-  	for itemId in items:
-  		data.append({ "user_id": str(userId_va), "item_id": str(itemId)})
-  		if itemId in all_train_c[userId_va]:
-  			y.append(float(all_train_c[userId_va][itemId]))
-  		else:
-  			y.append(float(1))
-  return data, np.array(y), items
+	data = []
+	y = []
+	items=set()
+	users=set()
+	with open(data_path+'eval_train_N5.data', 'r') as f: #antes +filename
+		for line in f:
+			(userId,itemId,rating)=line.split(',')
+			items.add(itemId)
+			users.add(userId)
+	if not test:
+		with open(data_path+filename, 'r') as f:
+			#Agregamos users con items consumidos
+			for line in f:
+				(userId,itemId,rating)=line.split(',')
+				data.append({ "user_id": str(userId), "item_id": str(itemId) })
+				y.append(float(rating))
+			#Agregamos users con items no consumidos (random sampling)
+			for line in f:
+				(userId,itemId,rating)=line.split(',')
+				random_itemId = sample(items, 1)[0]
+				while { "user_id": str(userId), "item_id": str(random_itemId) } in data:
+					random_itemId = sample(items, 1)[0]
+				else:
+					data.append({ "user_id": str(userId), "item_id": str(random_itemId) })
+					y.append(float(1)) #Si user no consumió item, rating=1
+	else:
+		all_train_c = consumption(ratings_path= data_path+'eval_train_N5.data', rel_thresh= 0, with_ratings= True)
+		for itemId in items:
+			data.append({ "user_id": str(userId_va), "item_id": str(itemId)})
+			if itemId in all_train_c[userId_va]:
+				y.append(float(all_train_c[userId_va][itemId]))
+			else:
+				y.append(float(1))
+	return data, np.array(y), items
 
 def user_items_pairing(ratings, ind_left, ind_right):
 	user_pairs = []
@@ -64,20 +66,20 @@ def user_items_pairing(ratings, ind_left, ind_right):
 
 def make_pairs(sparse_matrix, ratings):
 	pairs = []
-	first_u_ind, last_u_ind = 0,0
-	prev_u_ind = sparse_matrix[0,:].nonzero()[1][1]
-	for i in xrange(sparse_matrix.shape[0]):
-		i_ind, u_ind = sparse_matrix[i,:].nonzero()[1]	
+	first_user_idx, last_user_idx = 0,0
+	prev_user_idx = sparse_matrix[0,:].nonzero()[1][1]
+	for i in xrange(sparse_matrix.shape[0]): #recorremos por filas
+		item_idx, user_idx = sparse_matrix[i,:].nonzero()[1] #item_index, user_index
 		if i == xrange(sparse_matrix.shape[0])[-1]:
-			last_u_ind = i
-			user_pairs = user_items_pairing(ratings, first_u_ind, last_u_ind)
+			last_user_idx = i
+			user_pairs = user_items_pairing(ratings, first_user_idx, last_user_idx)
 			pairs += user_pairs
 			continue
-		if u_ind != prev_u_ind:
-			last_u_ind = i-1
-			user_pairs = user_items_pairing(ratings, first_u_ind, last_u_ind)
-			first_u_ind = i
-			prev_u_ind = u_ind
+		if user_idx != prev_user_idx:
+			last_user_idx = i-1
+			user_pairs = user_items_pairing(ratings, first_user_idx, last_user_idx)
+			first_user_idx = i
+			prev_user_idx = user_idx
 			pairs += user_pairs
 	return np.array(pairs)
 
@@ -157,10 +159,11 @@ def fastFM_tuning_bpr(data_path, N):
 	## Train sets caching ## 
 	train_sets = dict((k, []) for k in range(1,5))
 	pairs = dict((k, []) for k in range(1,5))
-	for i in range(1, 5):
-		train_sets[i], y_tr, items = loadData_bpr('train/train_N'+str(N)+'.'+str(i))
-		X_tr = v.transform(train_sets[i])
-		pairs[i] = make_pairs(X_tr, y_tr)
+	for j in range(1, 5):
+		print(j)
+		train_sets[j], y_tr, items = loadData_bpr('train/train_N'+str(N)+'.'+str(j))
+		X_tr = v.transform(train_sets[j])
+		pairs[j] = make_pairs(X_tr, y_tr)
 	########################
 
 	defaults = {'mi':100, 'init_stdev':0.1, 'f':8, 'l2_reg_w':0.1, 'l2_reg_V':0.1, 'l2_reg':0, 'step_size':0.1}
@@ -414,7 +417,7 @@ def fastFM_protocol_evaluation_bpr(data_path, params, N):
 			pred_itemId = [s for s in l if "item" in s][0].split('=')[-1]
 			book_recs.append(pred_itemId)
 			if i==100: break
-		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+		book_recs = you_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		recs      = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
 		mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
 		nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
@@ -442,7 +445,7 @@ if __name__ == '__main__':
 
 
 # data_path = 'TwitterRatings/funkSVD/data/'
-# N=5
+# N=20
 # i=1
 # train_c = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
 # all_data, y_all, items = loadData("eval_all_N"+str(N)+".data")
@@ -453,7 +456,6 @@ if __name__ == '__main__':
 # val_data, y_va, _   = loadData('val/val_N'+str(N)+'.'+str(i))
 # X_tr = v.transform(train_data)
 # X_va = v.transform(val_data)
-
 
 # # fm = mcmc.FMRegression(n_iter=100, init_stdev=0.1, rank=8, random_state=123, copy_X=True) #Illegal instruction (core dumped)
 # # preds = fm.fit_predict(X_tr, y_tr, X_va)
@@ -467,16 +469,10 @@ if __name__ == '__main__':
 # pairs_va  = make_pairs(X_va, y_va)
 # real_rank = np.argsort()
 
-
 # fm  = sgd.FMRegression(n_iter=100, init_stdev=0.1, rank=8, random_state=123, l2_reg_w=0.1, l2_reg_V=0.1, l2_reg=0, step_size=0.1)
 # fm.fit(X_tr, y_tr)
 # preds = fm.predict(X_va)
 # rmse = sqrt( mean_squared_error(y_va, preds) )
-
-
-
-
-
 
 
 
