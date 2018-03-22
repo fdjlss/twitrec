@@ -113,7 +113,7 @@ def fastFMJob_bpr(data_path, params, N, vectorizer, train_sets, pairs, items):
 			X_va = vectorizer.transform(val_data)
 			preds = fm.predict(X_va)
 			preds = np.argsort(-preds)
-			users_ndcgs.append(ndcg_bpr(prefs=preds, vectorizer=v, matrix=X_va, user_data=train_c[userId], user_val=val_c[userId], N=N) )
+			users_ndcgs.append(ndcg_bpr(prefs=preds, vectorizer=vectorizer, matrix=X_va, user_data=train_c[userId], user_val=val_c[userId], N=N) )
 		fold_ndcg = mean(users_ndcgs)
 		logging.info("FM fold {0} nDCG: {1}. Solver: {2}".format(i, fold_ndcg, solver) )
 		ndcgs.append(fold_ndcg)
