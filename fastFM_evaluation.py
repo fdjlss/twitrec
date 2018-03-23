@@ -181,7 +181,7 @@ def fastFM_tuning_bpr(data_path, N):
 			defaults['mi'] = opt_value(results= results['mi'], metric= 'ndcg')
 
 		elif param=='f': 
-			for i in [1, 5, 8, 10] + range(20, 2020, 20):
+			for i in [1, 5, 8, 10] + range(20, 1020, 20):
 				defaults['f'] = i
 				results['f'][i] = fastFMJob_bpr(data_path= data_path, params= defaults, N=N, vectorizer= v, train_sets= train_sets, pairs= pairs, items= items)
 			defaults['f'] = opt_value(results= results['f'], metric= 'ndcg')
