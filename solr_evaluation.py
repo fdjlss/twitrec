@@ -548,7 +548,7 @@ def main():
 	params_o2 = {'echoParams' : 'none',
 							'fl' : 'goodreadsId,description,title.titleOfficial,genres.genreName,author.authors.authorName,quotes.quoteText,author.authorBio,title.titleGreytext',
 							'rows' : 100,
-							'mlt.fl' : 'description,title.titleOfficial,genres.genreName,author.authors.authorName,quotes.quoteText',
+							'mlt.fl' : 'author.authors.authorName',
 							'mlt.boost' : 'false', #def: false
 							'mlt.mintf' : 1, #def: 2
 							'mlt.mindf' : 8, #def: 5
@@ -558,7 +558,7 @@ def main():
 							'mlt.maxqt' : 31, #def: 25
 							'mlt.maxntp' : 5000 }
 	for N in [5, 10, 15, 20]:
-		option1_protocol_evaluation(data_path=data_path, solr=solr, N=N, params=params_o1)
+		# option1_protocol_evaluation(data_path=data_path, solr=solr, N=N, params=params_o1)
 		option2_protocol_evaluation(data_path=data_path, solr=solr, N=N, params=params_o2)
 	# option1_testing(data_path=data_path, solr=solr, topN=[5, 10, 15, 20, 50], params=params_o1)
 	# option2_testing(data_path=data_path, solr=solr, topN=[5, 10, 15, 20, 50], params=params_o2)
