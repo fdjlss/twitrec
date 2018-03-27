@@ -29,7 +29,8 @@ from bs4 import BeautifulSoup
 # Random numbers para fechas desconocidas. Sample para selección random de ítems candidatos en caso que sobren
 from random import randint, sample
 from jojFunkSvd import consumption
-from statistics import mean, stdev
+# Solo en python 3.x
+# from statistics import mean, stdev 
 import collections
 #--------------------------------#
 
