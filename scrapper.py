@@ -608,7 +608,7 @@ def statistics(db_conn):
   # SELECT DISTINCT COUNT(url_book) FROM user_reviews WHERE rating IS NOT 0;
   # SELECT COUNT(rating) FROM user_reviews WHERE rating IS NOT 0; 
 
-def statistics_protocol(db_conn, N, folds):
+def statistics_protocol(data_path, N, folds):
 	logging.info( "N={N}".format(N=N) )
 
 	all_c = consumption(ratings_path= data_path+'eval_all_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
