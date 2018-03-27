@@ -420,7 +420,7 @@ def fastFM_protocol_evaluation_bpr(data_path, params, N):
 			pred_itemId = [s for s in l if "item" in s][0].split('=')[-1]
 			book_recs.append(pred_itemId)
 			if i==100: break
-		book_recs = you_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		recs      = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
 		mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
 		nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
