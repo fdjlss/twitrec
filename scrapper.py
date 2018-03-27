@@ -560,9 +560,6 @@ def evaluation_set(db_conn, M, N, folds, out_path):
 			for item, rating in d.items():
 				f.write( '{user},{item},{rating}\n'.format(user=user, item=item, rating=rating) )
 
-def users_wgetter(user_twitter_path):
-	pass
-
 def statistics(db_conn):
 	"""Hay que correrlo en python 2.x"""
 	c = db_conn.cursor()
@@ -610,6 +607,34 @@ def statistics(db_conn):
   # SELECT DISTINCT COUNT(url_book) FROM user_reviews WHERE rating IS NOT 0;
   # SELECT COUNT(rating) FROM user_reviews WHERE rating IS NOT 0; 
 
+def statistics_protocol(db_conn, N, folds):
+	logging.info( "N={N}".format(N=N) )
+
+	all_c = consumption(ratings_path= data_path+'eval_all_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
+	logging.info( "#users={users}".format(users= len(all_c)) )
+	items = []
+	ratings = []
+	for user in all_c:
+		for item in all_c[user]:
+			items.append(item)
+			ratings.append(all_c[user][item])
+	logging.info( "#items={items}".format(items= len(set(items))) )
+	logging.info( "#ratings={ratings}".format(ratings= len(ratings)) )
+
+	#Double check
+	items = set()
+	users = set()
+	ratings = []
+	with open(data_path+'eval_all_N'+str(N)+'.data', 'r') as f:
+		for line in f:
+			(userId,itemId,rating) = line.split(',')
+			items.add(itemId)
+			users.add(userId)
+			ratings.append(rating)
+	logging.info( "#users={users}".format(users= len(users)) )
+	logging.info( "#users={users}".format(users= len(items)) )
+	logging.info( "#ratings={ratings}".format(ratings= len(ratings)) )
+
 
 def main():
 	# Creando la conexion a la BD
@@ -629,14 +654,20 @@ def main():
 	# 5)
 	# ratings_maker(db_conn= conn, folds= 5, out_path='TwitterRatings/funkSVD/data/')
 	# 5.1)
-	evaluation_set(db_conn=conn, M=10, N=5, folds=5, out_path='TwitterRatings/funkSVD/data/')
-	evaluation_set(db_conn=conn, M=20, N=10, folds=5, out_path='TwitterRatings/funkSVD/data/')
-	evaluation_set(db_conn=conn, M=30, N=15, folds=5, out_path='TwitterRatings/funkSVD/data/')
-	evaluation_set(db_conn=conn, M=40, N=20, folds=5, out_path='TwitterRatings/funkSVD/data/')
+	# evaluation_set(db_conn=conn, M=10, N=5, folds=5, out_path='TwitterRatings/funkSVD/data/')
+	# evaluation_set(db_conn=conn, M=20, N=10, folds=5, out_path='TwitterRatings/funkSVD/data/')
+	# evaluation_set(db_conn=conn, M=30, N=15, folds=5, out_path='TwitterRatings/funkSVD/data/')
+	# evaluation_set(db_conn=conn, M=40, N=20, folds=5, out_path='TwitterRatings/funkSVD/data/')
 	# 6)
 	# create_users_table(path_jsons= path_jsons, db_conn= conn)
 	# 7)
 	# statistics(db_conn= conn)
+	# 8)
+	data_path = "TwitterRatings/funkSVD/data/"
+	statistics_protocol(data_path= data_path, N= 5, folds= 5)
+	statistics_protocol(data_path= data_path, N= 10, folds= 5)
+	statistics_protocol(data_path= data_path, N= 15, folds= 5)
+	statistics_protocol(data_path= data_path, N= 20, folds= 5)
 	# Cerramos la conexion a la BD
 	conn.close()
 
