@@ -416,7 +416,7 @@ def fastFM_protocol_evaluation_bpr(data_path, params, N):
 		book_recs = []
 		for i in range(len(preds)):
 			pred_row = preds[i]
-			l = v.inverse_transform( matrix[pred_row,:] )[0].keys()
+			l = v.inverse_transform( X_te[pred_row,:] )[0].keys()
 			pred_itemId = [s for s in l if "item" in s][0].split('=')[-1]
 			book_recs.append(pred_itemId)
 			if i==100: break
