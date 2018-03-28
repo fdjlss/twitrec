@@ -648,7 +648,7 @@ def statistics_protocol(data_path, N, folds):
 	count = 0
 	for freq in ratings_per_item:
 		count += freq / float( len(users) )
-	count = count / float ( len(users) )
+	count = count / float( len(items) )
 	count = count*100
 	logging.info( "sparsity: {}".format(count) )
 
