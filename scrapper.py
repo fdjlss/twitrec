@@ -623,7 +623,6 @@ def statistics_protocol(data_path, N, folds):
 			items.add(itemId)
 			users.add(userId)
 			ratings.append(int(rating))
-
 	logging.info( "#users={users}".format(users= len(users)) )
 	logging.info( "#users={users}".format(users= len(items)) )
 	logging.info( "#ratings={ratings}".format(ratings= len(ratings)) )
@@ -644,6 +643,14 @@ def statistics_protocol(data_path, N, folds):
 	for user in all_c:
 		ratings_per_user.append( len(all_c[user]) )
 	logging.info( "promedio de ratings por usuario: {mean}±{stdev}".format(mean= mean(ratings_per_user), stdev= stdev(ratings_per_user)) )
+
+	#Sparsity
+	count = 0
+	for freq in ratings_per_item:
+		count += freq / float( len(users) )
+	count = count / float ( len(users) )
+	count = count*100
+	logging.info( "sparsity: {}".format(count) )
 
 def main():
 	# Creando la conexion a la BD
