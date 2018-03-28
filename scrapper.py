@@ -28,7 +28,7 @@ import sqlite3
 from bs4 import BeautifulSoup
 # Random numbers para fechas desconocidas. Sample para selección random de ítems candidatos en caso que sobren
 from random import randint, sample
-from jojFunkSvd import consumption
+from jojFunkSvd import consumption, mean, stdev
 # Solo en python 3.x
 # from statistics import mean, stdev 
 import collections
@@ -612,17 +612,8 @@ def statistics_protocol(data_path, N, folds):
 	logging.info( "N={N}".format(N=N) )
 
 	all_c = consumption(ratings_path= data_path+'eval_all_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
-	logging.info( "#users={users}".format(users= len(all_c)) )
-	items = []
-	ratings = []
-	for user in all_c:
-		for item in all_c[user]:
-			items.append(item)
-			ratings.append(all_c[user][item])
-	logging.info( "#items={items}".format(items= len(set(items))) )
-	logging.info( "#ratings={ratings}".format(ratings= len(ratings)) )
 
-	#Double check
+	# #users, #items, #ratings, avg. rating
 	items = set()
 	users = set()
 	ratings = []
@@ -631,11 +622,28 @@ def statistics_protocol(data_path, N, folds):
 			(userId,itemId,rating) = line.split(',')
 			items.add(itemId)
 			users.add(userId)
-			ratings.append(rating)
+			ratings.append(int(rating))
+
 	logging.info( "#users={users}".format(users= len(users)) )
 	logging.info( "#users={users}".format(users= len(items)) )
 	logging.info( "#ratings={ratings}".format(ratings= len(ratings)) )
+	logging.info( "avg. rating={mean}±{stdev}".format(mean= mean(ratings), stdev= stdev(ratings)) )
 
+	# Ratings por item
+	item_ratings = dict((itemId, []) for itemId in items)
+	for user in all_c:
+		for item in all_c[user]:
+			item_ratings[item].append( all_c[user][item] )
+	ratings_per_item = []
+	for item in item_ratings:
+		ratings_per_item.append( len(item_ratings[item]) )
+	logging.info( "promedio de ratings por item: {mean}±{stdev}".format(mean= mean(ratings_per_item), stdev= stdev(ratings_per_item)) )
+
+	#Ratings por usuario
+	ratings_per_user = []
+	for user in all_c:
+		ratings_per_user.append( len(all_c[user]) )
+	logging.info( "promedio de ratings por usuario: {mean}±{stdev}".format(mean= mean(ratings_per_user), stdev= stdev(ratings_per_user)) )
 
 def main():
 	# Creando la conexion a la BD
