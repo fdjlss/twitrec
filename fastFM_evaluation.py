@@ -365,11 +365,18 @@ def fastFM_protocol_evaluation(data_path, params, N):
 	p=0
 	for userId in test_c:
 		logging.info("#u: {0}/{1}".format(p, len(test_c)))
-		p=+1
+		p+=1
 		user_rows = [ {'user_id': str(userId), 'item_id': str(itemId)} for itemId in items ]
 		X_te      = v.transform(user_rows)
 		preds     = fm.predict(X_te) #lista de ratings
-		book_recs = [ itemId for _, itemId in sorted(zip(preds, items), reverse=True) ] #agrupamos items con ratings predichos correspondientes y ordenamos
+		book_recs = []
+		for i in range(len(preds)):
+			l = v.inverse_transform( X_te[i,:] )[0].keys()
+			pred_itemId = [s for s in l if "item" in s][0].split('=')[-1]
+			book_recs.append( [preds[i], pred_itemId] )
+			if i==100: break #no necesitamos una lista de recomendaciones más larga que 100
+
+		book_recs = [ itemId for rating, itemId in sorted(book_recs, reverse=True) ] 
 		book_recs = remove_consumed(user_consumption= train_c[userId], rec_list= book_recs)
 		recs      = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
 
@@ -385,7 +392,6 @@ def fastFM_protocol_evaluation(data_path, params, N):
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )	
 	####################################
 
-
 def fastFM_protocol_evaluation_bpr(data_path, params, N):
 	all_data, y_all, items = loadData_bpr("eval_all_N"+str(N)+".data")
 	v = DictVectorizer()
@@ -399,7 +405,7 @@ def fastFM_protocol_evaluation_bpr(data_path, params, N):
 	MRRs   = []
 	Rprecs = []
 
-	train_data, y_tr, _ = loadData('eval_train_N'+str(N)+'.data')
+	train_data, y_tr, _ = loadData_bpr('eval_train_N'+str(N)+'.data')
 	X_tr = v.transform(train_data)
 	fm = bpr.FMRecommender(n_iter=params['mi'], init_stdev=params['init_stdev'], rank=params['f'], random_state=123, \
 												 l2_reg_w=params['l2_reg_w'], l2_reg_V=params['l2_reg_V'], l2_reg=params['l2_reg'], step_size=params['step_size'])
@@ -409,10 +415,11 @@ def fastFM_protocol_evaluation_bpr(data_path, params, N):
 	p=0
 	for userId in test_c:
 		logging.info("#u: {0}/{1}".format(p, len(test_c)))
-		p=+1
+		p+=1
 		user_rows = [ {'user_id': str(userId), 'item_id': str(itemId)} for itemId in items ]
 		X_te      = v.transform(user_rows)
 		preds     = fm.predict(X_te)
+		preds     = np.argsort(-preds)
 		book_recs = []
 		for i in range(len(preds)):
 			pred_row = preds[i]
@@ -420,6 +427,7 @@ def fastFM_protocol_evaluation_bpr(data_path, params, N):
 			pred_itemId = [s for s in l if "item" in s][0].split('=')[-1]
 			book_recs.append(pred_itemId)
 			if i==100: break
+
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		recs      = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
 		mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
@@ -435,10 +443,10 @@ def fastFM_protocol_evaluation_bpr(data_path, params, N):
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	# opt_params_sgd = fastFM_tuning(data_path=data_path, N=20, solver="sgd")
-	# opt_params_bpr = fastFM_tuning_bpr(data_path=data_path, N=20) # Solr evaluation: N=10
-	opt_params_sgd = {'mi':150, 'init_stdev':0.01, 'f':1, 'l2_reg_w':0.05, 'l2_reg_V':0.0001, 'l2_reg':0.04, 'step_size':0.07}
-	opt_params_bpr = {'mi':10, 'init_stdev':0.1, 'f':880, 'l2_reg_w':0.01, 'l2_reg_V':0.01, 'l2_reg':0.02, 'step_size':0.005}
+	opt_params_sgd = fastFM_tuning(data_path=data_path, N=20, solver="sgd")
+	opt_params_bpr = fastFM_tuning_bpr(data_path=data_path, N=20) # Solr evaluation: N=10
+	# opt_params_sgd = {'mi':150, 'init_stdev':0.01, 'f':1, 'l2_reg_w':0.05, 'l2_reg_V':0.0001, 'l2_reg':0.04, 'step_size':0.07}
+	# opt_params_bpr = {'mi':10, 'init_stdev':0.1, 'f':880, 'l2_reg_w':0.01, 'l2_reg_V':0.01, 'l2_reg':0.02, 'step_size':0.005}
 	for N in [5, 10, 15, 20]:
 		fastFM_protocol_evaluation(data_path=data_path, params=opt_params_sgd, N=N)
 		fastFM_protocol_evaluation_bpr(data_path=data_path, params=opt_params_bpr, N=N)
