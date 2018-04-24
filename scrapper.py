@@ -32,6 +32,7 @@ from jojFunkSvd import consumption, mean, stdev
 # Solo en python 3.x
 # from statistics import mean, stdev 
 import collections
+from pprint import pprint
 #--------------------------------#
 
 #-----"PRIVATE" METHODS----------#
@@ -608,6 +609,28 @@ def statistics(db_conn):
   # SELECT DISTINCT COUNT(url_book) FROM user_reviews WHERE rating IS NOT 0;
   # SELECT COUNT(rating) FROM user_reviews WHERE rating IS NOT 0; 
 
+def statistics_language(path_jsons):
+	langs = {}
+
+	json_titles = [ f for f in listdir(path_jsons) if isfile(join(path_jsons, f)) ]
+	for fname in json_titles:
+
+		with open(path_jsons+fname, 'r') as f:
+			data_json = json.load(f)
+
+		try:
+			lang = data_json[0]['user']['lang']
+		except KeyError as e:
+			continue
+
+		if lang not in langs:
+			langs[lang] = 0
+
+		langs[lang] += 1
+
+	for lang in sorted(langs, key=langs.get, reverse=True):
+		print(lang, langs[lang])
+
 def statistics_protocol(data_path, N, folds):
 	logging.info( "N={N}".format(N=N) )
 
@@ -650,7 +673,7 @@ def statistics_protocol(data_path, N, folds):
 		count += freq / float( len(users) )
 	count = count / float( len(items) )
 	count = count*100
-	logging.info( "sparsity: {}".format(count) )
+	logging.info( "density: {}".format(count) )
 
 def main():
 	# Creando la conexion a la BD
@@ -678,14 +701,14 @@ def main():
 	# create_users_table(path_jsons= path_jsons, db_conn= conn)
 	# 7)
 	# statistics(db_conn= conn)
+	# 7.5)
+	statistics_language(path_jsons=path_jsons)
 	# 8)
-	data_path = "TwitterRatings/funkSVD/data/"
-	statistics_protocol(data_path= data_path, N= 5, folds= 5)
-	statistics_protocol(data_path= data_path, N= 10, folds= 5)
-	statistics_protocol(data_path= data_path, N= 15, folds= 5)
-	statistics_protocol(data_path= data_path, N= 20, folds= 5)
-	# Cerramos la conexion a la BD
-	conn.close()
+	# data_path = "TwitterRatings/funkSVD/data/"
+	# for N in [5, 10, 15, 20]:
+	# 	statistics_protocol(data_path= data_path, N= N, folds= 5)
+	# # Cerramos la conexion a la BD
+	# conn.close()
 
 if __name__ == '__main__':
 	main()
