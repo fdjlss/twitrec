@@ -2,7 +2,7 @@
 
 import gensim.downloader as api
 from gensim.models.word2vec import Word2Vec
-from gensim.parsing.preprocessing import preprocess_string
+from gensim.parsing.preprocessing import preprocess_string, strip_tags, strip_punctuation, strip_multiple_whitespaces, strip_numeric
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 import os
