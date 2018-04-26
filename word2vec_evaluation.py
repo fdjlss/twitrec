@@ -20,11 +20,13 @@ class SmartCorpus(object):
         sentence = preprocess_string(line, CUSTOM_FILTERS)
         yield [w for w in sentence if w not in stop_words]
 
-model = api.load('word2vec-google-news-300')
-model.save('w2v-google-news')
+english_corpus = SmartCorpus('/home/jschellman/umbc_corpus/webbase_all/') # UMBC
+model = Word2Vec(sentences=english_corpus, size=300, min_count=5, sg=1, hs=1, negative=5, cbow_mean=1, iter=5)
+
+model.save('./w2v-tmp/w2v-umbc')
 
 spanish_corpus = SmartCorpus('/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/datasets/word2vec_corpus/SBWCE_corpus/spanish_billion_words/') # SBWCE
 
 model.build_vocab(spanish_corpus, update=True)
 model.train(spanish_corpus, total_examples=model.corpus_count, epochs=model.iter)
-model.save('w2v-bilingual')
+model.save('./w2v-tmp/w2v-bilingual')
