@@ -7,11 +7,13 @@ import re, json
 from urllib.parse import urlencode, quote_plus
 from urllib.request import urlopen
 from svd_evaluation import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, user_ranked_recs, opt_value
+import numpy as np
 from gensim.models import KeyedVectors
 from gensim.models.word2vec import Word2Vec
 from gensim.parsing.preprocessing import preprocess_string, strip_tags, strip_punctuation, strip_multiple_whitespaces, strip_numeric
 from nltk.corpus import stopwords
-stop_words = set(stopwords.words('spanish') + stopwords.words('english'))
+stop_words = set(stopwords.words('spanish') + stopwords.words('english') + stopwords.words('german') + \
+								 stopwords.words('french') + stopwords.words('italian') + stopwords.words('portuguese'))
 CUSTOM_FILTERS = [lambda x: x.lower(), strip_tags, strip_punctuation, strip_multiple_whitespaces, strip_numeric]
 
 #-----"PRIVATE" METHODS----------#
@@ -38,6 +40,25 @@ def remove_consumed(user_consumption, rec_list):
 	for itemId in rec_list:
 		if itemId in user_consumption: l.remove(itemId)
 	return l
+def doc2vec(document, model):
+	flat_doc = ""
+	for field in document:
+		if not isinstance(document[field], list): continue #No tomamos en cuenta los campos 'id' y '_version_': auto-generados por Solr
+		for value in document[field]:
+			flat_doc += str(value)+' '
+	flat_doc = preprocess_string(flat_doc, CUSTOM_FILTERS)
+	flat_doc = [w for w in flat_doc if w not in stop_words.union(['www', '"'])]
+	vec_doc = np.zeros((model.vector_size,), dtype=float)
+	for token in flat_doc:
+		#TODO: meter acá detección de idioma y traducción de tokens al inglés por NLTK
+		if token not in model.vocab: continue
+		vec_doc += model[token]
+	return vec_doc
+
+from textblob.blob import TextBlob
+descr_blob = TextBlob(document['description'][0])
+descr_blob.detect_language()
+str(descr_blob.translate(to='en')) #Powered by Google Translate API pero por alguna razón funciona cuando google no
 #--------------------------------#
 
 
@@ -60,11 +81,11 @@ def protocol_evaluation(data_path, solr, N, model):
 		except TypeError as e:
 			continue
 
-		# TODO:
-		# Procesar de tal forma de tener puro texto
-		# a ese texto preprocesarlo (stopwords, etc)
-		# pasar token por token al modelo e irlos sumando
+		vec_user = np.zeros((model.vector_size,), dtype=float)
 		for doc in docs:
+			vec_doc = doc2vec(document= doc, model= model)
+			vec_user += vec_doc
+
 
 
 		# book_recs  = [ str(doc['goodreadsId'][0]) for doc in docs] 
@@ -80,7 +101,6 @@ def main():
 	solr = 'http://localhost:8983/solr/grrecsys'
 	model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 	model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
-
 	for N in [5, 10, 15, 20]:
 		protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
 
