@@ -78,7 +78,7 @@ def all_doc2vec(solr, model):
 
 
 def protocol_evaluation(data_path, solr, N, model):
-	ids2vec =	all_doc2vec(solr= solr, model= model_eng)
+	ids2vec =	all_doc2vec(solr= solr, model= model)
 	np.save('./w2v-tmp/ids2vec.npy', ids2vec)
 
 	# userId='113447232'
