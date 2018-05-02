@@ -6,8 +6,10 @@ import os
 import re, json
 from urllib.parse import urlencode, quote_plus
 from urllib.request import urlopen
-from svd_evaluation import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, user_ranked_recs, opt_value
+from svd_evaluation import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, remove_consumed, user_ranked_recs, opt_value
 import numpy as np
+from scipy import spatial
+import operator
 from gensim.models import KeyedVectors
 from gensim.models.word2vec import Word2Vec
 from gensim.parsing.preprocessing import preprocess_string, strip_tags, strip_punctuation, strip_multiple_whitespaces, strip_numeric
@@ -46,22 +48,19 @@ def doc2vec(document, model):
 	for field in document:
 		if not isinstance(document[field], list): continue #No tomamos en cuenta los campos 'id' y '_version_': auto-generados por Solr
 		for value in document[field]:
-
 			## Detección y traducción ##
-			if field=='author.authors.authorName' or field=='author.authorBio' or field=='description' or field=='quotes.quoteText':
-				value_blob = TextBlob(value)
-				try:
-					if value_blob.detect_language() != 'en':
-						try: 
-							value = value_blob.translate(to='en')
-						except Exception as e: 
-							value = value #e = NotTranslated('Translation API returned the input string unchanged.',)
-				except Exception as e:
-					value = value #e = TranslatorError('Must provide a string with at least 3 characters.')
+			# if field=='author.authors.authorName' or field=='author.authorBio' or field=='description' or field=='quotes.quoteText':
+			# 	value_blob = TextBlob(value)
+			# 	try:
+			# 		if value_blob.detect_language() != 'en':
+			# 			try: 
+			# 				value = value_blob.translate(to='en')
+			# 			except Exception as e: 
+			# 				value = value #e = NotTranslated('Translation API returned the input string unchanged.',)
+			# 	except Exception as e:
+			# 		value = value #e = TranslatorError('Must provide a string with at least 3 characters.')
 			############################
-			
 			flat_doc += str(value)+' ' #Se aplana el documento en un solo string
-
 	flat_doc = preprocess_string(flat_doc, CUSTOM_FILTERS) #Preprocesa el string
 	flat_doc = [w for w in flat_doc if w not in stop_words.union(['www', '"'])] #Remueve stop words
 	vec_doc = np.zeros((model.vector_size,), dtype=float)
@@ -93,9 +92,10 @@ def protocol_evaluation(data_path, solr, N, model):
 	nDCGs  = []
 	APs    = []
 	Rprecs = []
+	ids2vec = np.load('./w2v-tmp/ids2vec.npy').item()
 
 	for userId in test_c:
-		stream_url = solr + '/query?q=goodreadsId:{ids}'
+		stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
 		ids_string = encoded_itemIds(item_list=train_c[userId])
 		url        = stream_url.format(ids=ids_string)
 		response   = json.loads( urlopen(url).read().decode('utf8') )
@@ -106,31 +106,46 @@ def protocol_evaluation(data_path, solr, N, model):
 
 		vec_user = np.zeros((model.vector_size,), dtype=float)
 		for doc in docs:
-			vec_doc = doc2vec(document= doc, model= model)
+			vec_doc = ids2vec[ str(doc['goodreadsId'][0]) ]
 			vec_user += vec_doc
 
+		cosines = dict((grId, 0.0) for grId in ids2vec)
+		for grId in ids2vec:
+			cosines[grId] = 1 - spatial.distance.cosine(vec_user, ids2vec[grId]) #1 - dist = similarity
 
-
-		book_recs  = [ str(doc['goodreadsId'][0]) for doc in docs] 
-		book_recs  = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+		sorted_sims = sorted(cosines.items(), key=operator.itemgetter(1), reverse=True) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
+		book_recs = [ grId for grId, sim in sorted_sims ]
+		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		try:
 			recs     = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
 		except KeyError as e:
 			logging.info("Usuario {0} del fold de train (total) no encontrado en fold de 'test'".format(userId))
 			continue
 
+		####################################
+		mini_recs = dict((k, recs[k]) for k in list(recs.keys())[:N]) #Python 3.x: .keys() devuelve una vista, no una lista
+		nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
+		APs.append( AP_at_N(n=N, recs=mini_recs, rel_thresh=1) )
+		MRRs.append( MRR(recs=mini_recs, rel_thresh=1) )
+		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
+		####################################
+
+	with open('TwitterRatings/word2vec/protocol.txt', 'a') as file:
+		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
+
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = 'http://localhost:8983/solr/grrecsys'
 	model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
-	ids2vec =	all_doc2vec(solr= solr, model= model_eng)
-	np.save('./w2v-tmp/ids2vec.npy', ids2vec)
+	## Sólo por ahora para guardar el diccionario de vectores:
+	# ids2vec =	all_doc2vec(solr= solr, model= model_eng)
+	# np.save('./w2v-tmp/ids2vec.npy', ids2vec)
 	#Por ahora no:
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
-	#Sólo por ahora para guardar el diccionario de vectores:
 
-	# for N in [5, 10, 15, 20]:
-	# 	protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
+	for N in [5, 10, 15, 20]:
+		protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
 
 if __name__ == '__main__':
 	main()
