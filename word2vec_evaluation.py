@@ -94,7 +94,10 @@ def protocol_evaluation(data_path, solr, N, model):
 	Rprecs = []
 	ids2vec = np.load('./w2v-tmp/ids2vec.npy').item()
 
+	i = 1
 	for userId in test_c:
+		logging.info("{0} de {1}. User ID: {2}".format(i, len(test_c), userId))
+		i += 1
 		stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
 		ids_string = encoded_itemIds(item_list=train_c[userId])
 		url        = stream_url.format(ids=ids_string)
