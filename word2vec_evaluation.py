@@ -92,7 +92,7 @@ def protocol_evaluation(data_path, solr, N, model):
 	nDCGs  = []
 	APs    = []
 	Rprecs = []
-	ids2vec = np.load('./w2v-tmp/ids2vec.npy').item()
+	ids2vec = np.load('./w2v-tmp/ids2vec_notrans.npy').item()
 
 	i = 1
 	for userId in test_c:
@@ -133,7 +133,7 @@ def protocol_evaluation(data_path, solr, N, model):
 		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
 		####################################
 
-	with open('TwitterRatings/word2vec/protocol.txt', 'a') as file:
+	with open('TwitterRatings/word2vec/protocol_notrans.txt', 'a') as file:
 		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
