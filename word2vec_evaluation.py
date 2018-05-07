@@ -77,6 +77,7 @@ def doc2vec(document, model):
 	matrix_doc = np.delete(matrix_doc, 0, 0) #Elimina la primera fila de puros ceros
 	vec_doc = max_pool(np_matrix= matrix_doc)
 	return vec_doc
+
 def docs2vecs(solr, model):
 	ids2vec = {}
 	url = solr + '/query?q=*:*&rows=100000'
@@ -128,6 +129,8 @@ def user2vec(consumption, model):
 
 	matrix_doc = np.delete(matrix_doc, 0, 0) #Elimina la primera fila de puros ceros
 	vec_doc = max_pool(np_matrix= matrix_doc)	
+	return vec_doc
+	
 def users2vecs(data_path, model):
 	all_c = consumption(ratings_path=data_path+'eval_all_N5.data', rel_thresh=0, with_ratings=False)
 	i = 0
@@ -140,7 +143,7 @@ def users2vecs(data_path, model):
 #--------------------------------#
 
 
-def protocol_evaluation(data_path, solr, N, model):
+def option1_protocol_evaluation(data_path, solr, N, model):
 	# userId='113447232'
 	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
@@ -148,7 +151,8 @@ def protocol_evaluation(data_path, solr, N, model):
 	nDCGs  = []
 	APs    = []
 	Rprecs = []
-	ids2vec = np.load('./w2v-tmp/docs2vec.npy').item()
+	docs2vec  = np.load('./w2v-tmp/docs2vec.npy').item()
+	users2vec = np.load('./w2v-tmp/users2vec.npy').item()
 
 	i = 1
 	for userId in test_c:
@@ -189,7 +193,7 @@ def protocol_evaluation(data_path, solr, N, model):
 		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
 		####################################
 
-	with open('TwitterRatings/word2vec/protocol_notrans.txt', 'a') as file:
+	with open('TwitterRatings/word2vec/option1_protocol.txt', 'a') as file:
 		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
@@ -206,7 +210,7 @@ def main():
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
 
 	# for N in [5, 10, 15, 20]:
-	# 	protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
+	# 	option1_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
 
 if __name__ == '__main__':
 	main()
