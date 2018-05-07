@@ -130,7 +130,7 @@ def user2vec(consumption, model):
 	matrix_doc = np.delete(matrix_doc, 0, 0) #Elimina la primera fila de puros ceros
 	vec_doc = max_pool(np_matrix= matrix_doc)	
 	return vec_doc
-	
+
 def users2vecs(data_path, model):
 	all_c = consumption(ratings_path=data_path+'eval_all_N5.data', rel_thresh=0, with_ratings=False)
 	i = 0
@@ -152,11 +152,10 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 	APs    = []
 	Rprecs = []
 	docs2vec  = np.load('./w2v-tmp/docs2vec.npy').item()
-	users2vec = np.load('./w2v-tmp/users2vec.npy').item()
 
 	i = 1
 	for userId in test_c:
-		logging.info("{0} de {1}. User ID: {2}".format(i, len(test_c), userId))
+		logging.info("MODO 1. {0} de {1}. User ID: {2}".format(i, len(test_c), userId))
 		i += 1
 		stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
 		ids_string = encoded_itemIds(item_list=train_c[userId])
@@ -167,20 +166,23 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 		except TypeError as e:
 			continue
 
-		vec_user = np.zeros((model.vector_size,), dtype=float)
-		for doc in docs:
-			vec_doc = ids2vec[ str(doc['goodreadsId'][0]) ]
-			vec_user += vec_doc
+		i = 0
+		book_recs = []
+		for user_doc in docs:
+			i+=1
+			print(i)
+			cosines = dict((bookId, 0.0) for bookId in docs2vec)
+			user_bookId = str(user_doc['goodreadsId'][0]) #id de libro consumido por user
+			for bookId in docs2vec: #ids de libros en la DB
+				if bookId == user_bookId: continue
+				cosines[bookId] = 1 - spatial.distance.cosine(docs2vec[bookId], docs2vec[user_bookId]) #1 - dist = similarity
+			sorted_sims = sorted(cosines.items(), key=operator.itemgetter(1), reverse=True) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
+			book_recs.append( [ bookId for bookId, sim in sorted_sims ] )
 
-		cosines = dict((grId, 0.0) for grId in ids2vec)
-		for grId in ids2vec:
-			cosines[grId] = 1 - spatial.distance.cosine(vec_user, ids2vec[grId]) #1 - dist = similarity
-
-		sorted_sims = sorted(cosines.items(), key=operator.itemgetter(1), reverse=True) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
-		book_recs = [ grId for grId, sim in sorted_sims ]
+		book_recs = flatten_list(list_of_lists=book_recs, rows=len(docs))
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		try:
-			recs     = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
+			recs    = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
 		except KeyError as e:
 			logging.info("Usuario {0} del fold de train (total) no encontrado en fold de 'test'".format(userId))
 			continue
@@ -196,6 +198,57 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 	with open('TwitterRatings/word2vec/option1_protocol.txt', 'a') as file:
 		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
+
+
+
+def option2_protocol_evaluation(data_path, solr, N, model):
+	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
+	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
+	MRRs   = []
+	nDCGs  = []
+	APs    = []
+	Rprecs = []
+	docs2vec  = np.load('./w2v-tmp/docs2vec.npy').item()
+	users2vec = np.load('./w2v-tmp/users2vec.npy').item()
+
+	i = 1
+	for userId in test_c:
+		logging.info("MODO 2. {0} de {1}. User ID: {2}".format(i, len(test_c), userId))
+		i += 1
+		stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
+		ids_string = encoded_itemIds(item_list=train_c[userId])
+		url        = stream_url.format(ids=ids_string)
+		response   = json.loads( urlopen(url).read().decode('utf8') )
+		try:
+			docs     = response['response']['docs']
+		except TypeError as e:
+			continue
+
+		cosines = dict((bookId, 0.0) for bookId in docs2vec)
+		for bookId in docs2vec:
+			cosines[bookId] = 1 - spatial.distance.cosine(users2vec[userId], docs2vec[bookId]) #1 - dist = similarity
+
+		sorted_sims = sorted(cosines.items(), key=operator.itemgetter(1), reverse=True) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
+		book_recs   = [ bookId for bookId, sim in sorted_sims ]
+		book_recs   = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+		try:
+			recs      = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
+		except KeyError as e:
+			logging.info("Usuario {0} del fold de train (total) no encontrado en fold de 'test'".format(userId))
+			continue
+
+		####################################
+		mini_recs = dict((k, recs[k]) for k in list(recs.keys())[:N]) #Python 3.x: .keys() devuelve una vista, no una lista
+		nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
+		APs.append( AP_at_N(n=N, recs=mini_recs, rel_thresh=1) )
+		MRRs.append( MRR(recs=mini_recs, rel_thresh=1) )
+		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
+		####################################
+
+	with open('TwitterRatings/word2vec/option2_protocol.txt', 'a') as file:
+		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
+
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
