@@ -16,7 +16,7 @@ from gensim.parsing.preprocessing import preprocess_string, strip_tags, strip_pu
 from nltk.corpus import stopwords
 from textblob.blob import TextBlob
 stop_words = set(stopwords.words('spanish') + stopwords.words('english') + stopwords.words('german') + \
-								 stopwords.words('french') + stopwords.words('italian') + stopwords.words('portuguese'))
+								 stopwords.words('french') + stopwords.words('italian') + stopwords.words('portuguese') + ['goodreads', 'http', 'https', 'www', '"'])
 CUSTOM_FILTERS = [lambda x: x.lower(), strip_tags, strip_punctuation, strip_multiple_whitespaces, strip_numeric]
 
 #-----"PRIVATE" METHODS----------#
@@ -43,32 +43,41 @@ def remove_consumed(user_consumption, rec_list):
 	for itemId in rec_list:
 		if itemId in user_consumption: l.remove(itemId)
 	return l
+def max_pool(np_matrix):
+	rows, cols = np_matrix.shape
+	max_pooled = []
+	for j in range(cols):
+		max_pooled.append( max(np_matrix[:,j]) )
+	return np.array(max_pooled)
 def doc2vec(document, model):
 	flat_doc = ""
 	for field in document:
 		if not isinstance(document[field], list): continue #No tomamos en cuenta los campos 'id' y '_version_': auto-generados por Solr
 		for value in document[field]:
 			## Detección y traducción ##
-			# if field=='author.authors.authorName' or field=='author.authorBio' or field=='description' or field=='quotes.quoteText':
-			# 	value_blob = TextBlob(value)
-			# 	try:
-			# 		if value_blob.detect_language() != 'en':
-			# 			try: 
-			# 				value = value_blob.translate(to='en')
-			# 			except Exception as e: 
-			# 				value = value #e = NotTranslated('Translation API returned the input string unchanged.',)
-			# 	except Exception as e:
-			# 		value = value #e = TranslatorError('Must provide a string with at least 3 characters.')
+			if field=='author.authors.authorName' or field=='author.authorBio' or field=='description' or field=='quotes.quoteText':
+				value_blob = TextBlob(value)
+				try:
+					if value_blob.detect_language() != 'en':
+						try: 
+							value = value_blob.translate(to='en')
+						except Exception as e: 
+							value = value #e = NotTranslated('Translation API returned the input string unchanged.',)
+				except Exception as e:
+					value = value #e = TranslatorError('Must provide a string with at least 3 characters.')
 			############################
 			flat_doc += str(value)+' ' #Se aplana el documento en un solo string
 	flat_doc = preprocess_string(flat_doc, CUSTOM_FILTERS) #Preprocesa el string
-	flat_doc = [w for w in flat_doc if w not in stop_words.union(['www', '"'])] #Remueve stop words
-	vec_doc = np.zeros((model.vector_size,), dtype=float)
+	flat_doc = [w for w in flat_doc if w not in stop_words] #Remueve stop words
+	flat_doc = [w for w in flat_doc if w in model.vocab] #Deja sólo palabras del vocabulario
+	# MAX POOLING
+	matrix_doc = np.zeros((model.vector_size,), dtype=float)
 	for token in flat_doc:
-		if token not in model.vocab: continue
-		vec_doc += model[token]
+		matrix_doc = np.vstack((matrix_doc, model[token]))
+	matrix_doc = np.delete(matrix_doc, 0, 0) #Elimina la primera fila de puros ceros
+	vec_doc = max_pool(np_matrix= matrix_doc)
 	return vec_doc
-def all_doc2vec(solr, model):
+def docs2vecs(solr, model):
 	ids2vec = {}
 	url = solr + '/query?q=*:*&rows=100000'
 	docs = json.loads( urlopen(url).read().decode('utf8') )
@@ -81,6 +90,53 @@ def all_doc2vec(solr, model):
 		ids2vec[goodreadsId] = doc2vec(document= doc, model= model)
 	del docs
 	return ids2vec
+
+# Para el modo 2
+def user2vec(consumption, model):
+	stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
+	ids_string = encoded_itemIds(item_list=consumption)
+	url        = stream_url.format(ids=ids_string)
+	response   = json.loads( urlopen(url).read().decode('utf8') )
+	docs       = response['response']['docs']
+
+	flat_doc = ""
+	for document in docs:
+		for field in document:
+			if not isinstance(document[field], list): continue #No tomamos en cuenta los campos 'id' y '_version_': auto-generados por Solr
+			for value in document[field]:
+				## Detección y traducción ##
+				if field=='author.authors.authorName' or field=='author.authorBio' or field=='description' or field=='quotes.quoteText':
+					value_blob = TextBlob(value)
+					try:
+						if value_blob.detect_language() != 'en':
+							try: 
+								value = value_blob.translate(to='en')
+							except Exception as e: 
+								value = value #e = NotTranslated('Translation API returned the input string unchanged.',)
+					except Exception as e:
+						value = value #e = TranslatorError('Must provide a string with at least 3 characters.')
+				############################
+				flat_doc += str(value)+' ' #Se aplana el documento en un solo string
+
+	flat_doc = preprocess_string(flat_doc, CUSTOM_FILTERS) #Preprocesa el string
+	flat_doc = [w for w in flat_doc if w not in stop_words] #Remueve stop words
+	flat_doc = [w for w in flat_doc if w in model.vocab] #Deja sólo palabras del vocabulario
+	# MAX POOLING
+	matrix_doc = np.zeros((model.vector_size,), dtype=float)
+	for token in flat_doc:
+		matrix_doc = np.vstack((matrix_doc, model[token]))
+
+	matrix_doc = np.delete(matrix_doc, 0, 0) #Elimina la primera fila de puros ceros
+	vec_doc = max_pool(np_matrix= matrix_doc)	
+def users2vecs(data_path, model):
+	all_c = consumption(ratings_path=data_path+'eval_all_N5.data', rel_thresh=0, with_ratings=False)
+	i = 0
+	ids2vec = {}
+	for userId in all_c:
+		i+=1
+		logging.info("USERS 2 VECS. {0} de {1}. User: {2}".format(i, len(all_c), userId))
+		ids2vec[userId] = user2vec(consumption= all_c[userId], model= model)
+	return ids2vec
 #--------------------------------#
 
 
@@ -92,7 +148,7 @@ def protocol_evaluation(data_path, solr, N, model):
 	nDCGs  = []
 	APs    = []
 	Rprecs = []
-	ids2vec = np.load('./w2v-tmp/ids2vec_notrans.npy').item()
+	ids2vec = np.load('./w2v-tmp/docs2vec.npy').item()
 
 	i = 1
 	for userId in test_c:
@@ -142,13 +198,15 @@ def main():
 	solr = 'http://localhost:8983/solr/grrecsys'
 	model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 	## Sólo por ahora para guardar el diccionario de vectores:
-	# ids2vec =	all_doc2vec(solr= solr, model= model_eng)
-	# np.save('./w2v-tmp/ids2vec.npy', ids2vec)
+	dict_docs =	docs2vecs(solr= solr, model= model_eng)
+	np.save('./w2v-tmp/docs2vec.npy', dict_docs)
+	dict_users = users2vecs(data_path= data_path, model= model_eng)
+	np.save('./w2v-tmp/users2vec.npy', dict_users)
 	#Por ahora no:
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
 
-	for N in [5, 10, 15, 20]:
-		protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
+	# for N in [5, 10, 15, 20]:
+	# 	protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
 
 if __name__ == '__main__':
 	main()
