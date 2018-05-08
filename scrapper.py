@@ -636,12 +636,13 @@ def statistics_language(path_jsons):
 				dict_tweet[lang_tweet] = 0
 			dict_tweet[lang_tweet] += 1
 
-
+	print("USERS")
 	for lang_user in sorted(dict_user, key=dict_user.get, reverse=True):
 		print(lang_user, dict_user[lang_user])
 
+	print("TWEETS")
 	for lang_tweet in sorted(dict_tweet, key=dict_tweet.get, reverse=True):
-		print(lang_tweet, dict_user[lang_tweet])
+		print(lang_tweet, dict_tweet[lang_tweet])
 
 def statistics_protocol(data_path, N, folds):
 	logging.info( "N={N}".format(N=N) )
