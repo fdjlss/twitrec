@@ -93,7 +93,7 @@ def docs2vecs(solr, model):
 	return ids2vec
 
 # Para el modo 2
-def user2vec(consumption, model):
+def user2vec(solr, consumption, model):
 	stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
 	ids_string = encoded_itemIds(item_list=consumption)
 	url        = stream_url.format(ids=ids_string)
@@ -131,14 +131,14 @@ def user2vec(consumption, model):
 	vec_doc = max_pool(np_matrix= matrix_doc)	
 	return vec_doc
 
-def users2vecs(data_path, model):
+def users2vecs(solr, data_path, model):
 	all_c = consumption(ratings_path=data_path+'eval_all_N5.data', rel_thresh=0, with_ratings=False)
 	i = 0
 	ids2vec = {}
 	for userId in all_c:
 		i+=1
 		logging.info("USERS 2 VECS. {0} de {1}. User: {2}".format(i, len(all_c), userId))
-		ids2vec[userId] = user2vec(consumption= all_c[userId], model= model)
+		ids2vec[userId] = user2vec(solr= solr, consumption= all_c[userId], model= model)
 	return ids2vec
 #--------------------------------#
 
@@ -255,9 +255,9 @@ def main():
 	solr = 'http://localhost:8983/solr/grrecsys'
 	model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 	## Sólo por ahora para guardar el diccionario de vectores:
-	dict_docs =	docs2vecs(solr= solr, model= model_eng)
-	np.save('./w2v-tmp/docs2vec.npy', dict_docs)
-	dict_users = users2vecs(data_path= data_path, model= model_eng)
+	# dict_docs =	docs2vecs(solr= solr, model= model_eng)
+	# np.save('./w2v-tmp/docs2vec.npy', dict_docs)
+	dict_users = users2vecs(solr= solr, data_path= data_path, model= model_eng)
 	np.save('./w2v-tmp/users2vec.npy', dict_users)
 	#Por ahora no:
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
