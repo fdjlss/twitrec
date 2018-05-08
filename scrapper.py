@@ -610,7 +610,8 @@ def statistics(db_conn):
   # SELECT COUNT(rating) FROM user_reviews WHERE rating IS NOT 0; 
 
 def statistics_language(path_jsons):
-	langs = {}
+	dict_user = {}
+	dict_tweet = {}
 
 	json_titles = [ f for f in listdir(path_jsons) if isfile(join(path_jsons, f)) ]
 	for fname in json_titles:
@@ -619,17 +620,28 @@ def statistics_language(path_jsons):
 			data_json = json.load(f)
 
 		try:
-			lang = data_json[0]['user']['lang']
+			lang_user = data_json[0]['user']['lang']
 		except KeyError as e:
 			continue
+		if lang_user not in dict_user:
+			dict_user[lang_user] = 0
+		dict_user[lang_user] += 1
 
-		if lang not in langs:
-			langs[lang] = 0
+		for tweet in data_json:
+			try:
+				lang_tweet = tweet['lang']
+			except KeyError as e:
+				continue
+			if lang_tweet not in dict_tweet:
+				dict_tweet[lang_tweet] = 0
+			dict_tweet[lang_tweet] += 1
 
-		langs[lang] += 1
 
-	for lang in sorted(langs, key=langs.get, reverse=True):
-		print(lang, langs[lang])
+	for lang_user in sorted(dict_user, key=dict_user.get, reverse=True):
+		print(lang_user, dict_user[lang_user])
+
+	for lang_tweet in sorted(dict_tweet, key=dict_tweet.get, reverse=True):
+		print(lang_tweet, dict_user[lang_tweet])
 
 def statistics_protocol(data_path, N, folds):
 	logging.info( "N={N}".format(N=N) )
