@@ -15,7 +15,7 @@ from gensim.models.word2vec import Word2Vec
 from gensim.parsing.preprocessing import preprocess_string, strip_tags, strip_punctuation, strip_multiple_whitespaces, strip_numeric
 from nltk.corpus import stopwords
 from textblob.blob import TextBlob
-stop_words = set(stopwords.words('spanish') + stopwords.words('english') + stopwords.words('german') + \
+stop_words = set(stopwords.words('spanish') + stopwords.words('english') + stopwords.words('german') + stopwords.words('arabic') + \
 								 stopwords.words('french') + stopwords.words('italian') + stopwords.words('portuguese') + ['goodreads', 'http', 'https', 'www', '"'])
 CUSTOM_FILTERS = [lambda x: x.lower(), strip_tags, strip_punctuation, strip_multiple_whitespaces, strip_numeric]
 
@@ -257,13 +257,14 @@ def main():
 	## Sólo por ahora para guardar el diccionario de vectores:
 	# dict_docs =	docs2vecs(solr= solr, model= model_eng)
 	# np.save('./w2v-tmp/docs2vec.npy', dict_docs)
-	dict_users = users2vecs(solr= solr, data_path= data_path, model= model_eng)
-	np.save('./w2v-tmp/users2vec.npy', dict_users)
+	# dict_users = users2vecs(solr= solr, data_path= data_path, model= model_eng)
+	# np.save('./w2v-tmp/users2vec.npy', dict_users)
 	#Por ahora no:
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
 
-	# for N in [5, 10, 15, 20]:
-	# 	option1_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
+	for N in [5, 10, 15, 20]:
+		option1_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
+		# option2_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
 
 if __name__ == '__main__':
 	main()
