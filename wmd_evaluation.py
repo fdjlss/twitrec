@@ -43,13 +43,8 @@ def remove_consumed(user_consumption, rec_list):
 	for itemId in rec_list:
 		if itemId in user_consumption: l.remove(itemId)
 	return l
-def max_pool(np_matrix):
-	rows, cols = np_matrix.shape
-	max_pooled = []
-	for j in range(cols):
-		max_pooled.append( max(np_matrix[:,j]) )
-	return np.array(max_pooled)
-def doc2vec(document, model):
+
+def flat_doc(document):
 	flat_doc = ""
 	for field in document:
 		if not isinstance(document[field], list): continue #No tomamos en cuenta los campos 'id' y '_version_': auto-generados por Solr
@@ -70,16 +65,10 @@ def doc2vec(document, model):
 	flat_doc = preprocess_string(flat_doc, CUSTOM_FILTERS) #Preprocesa el string
 	flat_doc = [w for w in flat_doc if w not in stop_words] #Remueve stop words
 	flat_doc = [w for w in flat_doc if w in model.vocab] #Deja sólo palabras del vocabulario
-	# MAX POOLING
-	matrix_doc = np.zeros((model.vector_size,), dtype=float)
-	for token in flat_doc:
-		matrix_doc = np.vstack((matrix_doc, model[token]))
-	matrix_doc = np.delete(matrix_doc, 0, 0) #Elimina la primera fila de puros ceros
-	vec_doc = max_pool(np_matrix= matrix_doc)
-	return vec_doc
+	return flat_doc
 
-def docs2vecs(solr, model):
-	ids2vec = {}
+def flatten_all_docs(solr, model):
+	dict_docs = {}
 	url = solr + '/query?q=*:*&rows=100000'
 	docs = json.loads( urlopen(url).read().decode('utf8') )
 	docs = docs['response']['docs']
@@ -88,18 +77,17 @@ def docs2vecs(solr, model):
 		i+=1
 		goodreadsId = str( doc['goodreadsId'][0] )
 		logging.info("{0} de {1}. Doc: {2}".format(i, len(docs), goodreadsId))
-		ids2vec[goodreadsId] = doc2vec(document= doc, model= model)
+		dict_docs[goodreadsId] = flat_doc(document= doc)
 	del docs
-	return ids2vec
+	return dict_docs
 
-# Para el modo 2
-def user2vec(solr, consumption, model):
+def flat_user(solr, consumption, model):
 	stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
 	ids_string = encoded_itemIds(item_list=consumption)
 	url        = stream_url.format(ids=ids_string)
 	response   = json.loads( urlopen(url).read().decode('utf8') )
 	docs       = response['response']['docs']
-	flat_doc = ""
+	flat_user = ""
 	for document in docs:
 		for field in document:
 			if not isinstance(document[field], list): continue #No tomamos en cuenta los campos 'id' y '_version_': auto-generados por Solr
@@ -116,27 +104,21 @@ def user2vec(solr, consumption, model):
 					except Exception as e:
 						value = value #e = TranslatorError('Must provide a string with at least 3 characters.')
 				############################
-				flat_doc += str(value)+' ' #Se aplana el documento en un solo string
-	flat_doc = preprocess_string(flat_doc, CUSTOM_FILTERS) #Preprocesa el string
-	flat_doc = [w for w in flat_doc if w not in stop_words] #Remueve stop words
-	flat_doc = [w for w in flat_doc if w in model.vocab] #Deja sólo palabras del vocabulario
-	# MAX POOLING
-	matrix_doc = np.zeros((model.vector_size,), dtype=float)
-	for token in flat_doc:
-		matrix_doc = np.vstack((matrix_doc, model[token]))
-	matrix_doc = np.delete(matrix_doc, 0, 0) #Elimina la primera fila de puros ceros
-	vec_doc = max_pool(np_matrix= matrix_doc)	
-	return vec_doc
+				flat_user += str(value)+' ' #Se aplana el documento en un solo string
+	flat_user = preprocess_string(flat_user, CUSTOM_FILTERS) #Preprocesa el string
+	flat_user = [w for w in flat_user if w not in stop_words] #Remueve stop words
+	flat_user = [w for w in flat_user if w in model.vocab] #Deja sólo palabras del vocabulario
+	return flat_user
 
-def users2vecs(solr, data_path, model):
+def flatten_all_users(solr, data_path, model):
 	train_c = consumption(ratings_path=data_path+'eval_train_N5.data', rel_thresh=0, with_ratings=False)
 	i = 0
-	ids2vec = {}
+	dict_users = {}
 	for userId in train_c:
 		i+=1
 		logging.info("USERS 2 VECS. {0} de {1}. User: {2}".format(i, len(train_c), userId))
-		ids2vec[userId] = user2vec(solr= solr, consumption= train_c[userId], model= model)
-	return ids2vec
+		dict_users[userId] = flat_user(solr= solr, consumption= train_c[userId], model= model)
+	return dict_users
 #--------------------------------#
 
 
@@ -148,7 +130,7 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 	nDCGs  = []
 	APs    = []
 	Rprecs = []
-	docs2vec  = np.load('./w2v-tmp/docs2vec.npy').item()
+	flat_docs  = np.load('./w2v-tmp/flattened_docs.npy').item()
 
 	i = 1
 	for userId in test_c:
@@ -165,12 +147,14 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 
 		book_recs = []
 		for user_doc in docs:
-			cosines = dict((bookId, 0.0) for bookId in docs2vec)
+			wmds = dict((bookId, 0.0) for bookId in flat_docs)
 			user_bookId = str(user_doc['goodreadsId'][0]) #id de libro consumido por user
-			for bookId in docs2vec: #ids de libros en la DB
+			
+			for bookId in flat_docs: #ids de libros en la DB
 				if bookId == user_bookId: continue
-				cosines[bookId] = 1 - spatial.distance.cosine(docs2vec[bookId], docs2vec[user_bookId]) #1 - dist = similarity
-			sorted_sims = sorted(cosines.items(), key=operator.itemgetter(1), reverse=True) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
+				wmds[bookId] = model.wmdistance(flat_docs[bookId], flat_docs[user_bookId]) #1 - dist = similarity
+			
+			sorted_sims = sorted(wmds.items(), key=operator.itemgetter(1), reverse=False) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
 			book_recs.append( [ bookId for bookId, sim in sorted_sims ] )
 
 		book_recs = flatten_list(list_of_lists=book_recs, rows=len(docs))
@@ -189,7 +173,7 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
 		####################################
 
-	with open('TwitterRatings/word2vec/option1_protocol.txt', 'a') as file:
+	with open('TwitterRatings/word2vec/option1_protocol_wmd.txt', 'a') as file:
 		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
@@ -202,19 +186,20 @@ def option2_protocol_evaluation(data_path, solr, N, model):
 	nDCGs  = []
 	APs    = []
 	Rprecs = []
-	docs2vec  = np.load('./w2v-tmp/docs2vec.npy').item()
-	users2vec = np.load('./w2v-tmp/users2vec.npy').item()
+	flat_docs  = np.load('./w2v-tmp/flattened_docs.npy').item()
+	flat_users = np.load('./w2v-tmp/flattened_users.npy').item()
 
-	i = 1
+	i = 1		
+
 	for userId in test_c:
 		logging.info("MODO 2. {0} de {1}. User ID: {2}".format(i, len(test_c), userId))
 		i += 1
 
-		cosines = dict((bookId, 0.0) for bookId in docs2vec)
-		for bookId in docs2vec:
-			cosines[bookId] = 1 - spatial.distance.cosine(users2vec[userId], docs2vec[bookId]) #1 - dist = similarity
+		wmds = dict((bookId, 0.0) for bookId in flat_docs)
+		for bookId in flat_docs:
+			wmds[bookId] = model.wmdistance(flat_users[userId], flat_docs[bookId])
 
-		sorted_sims = sorted(cosines.items(), key=operator.itemgetter(1), reverse=True) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
+		sorted_sims = sorted(wmds.items(), key=operator.itemgetter(1), reverse=False) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
 		book_recs   = [ bookId for bookId, sim in sorted_sims ]
 		book_recs   = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		try:
@@ -231,7 +216,7 @@ def option2_protocol_evaluation(data_path, solr, N, model):
 		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
 		####################################
 
-	with open('TwitterRatings/word2vec/option2_protocol.txt', 'a') as file:
+	with open('TwitterRatings/word2vec/option2_protocol_wmd.txt', 'a') as file:
 		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
@@ -241,16 +226,14 @@ def main():
 	solr = 'http://localhost:8983/solr/grrecsys'
 	model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 	## Sólo por ahora para guardar el diccionario de vectores:
-	# dict_docs =	docs2vecs(solr= solr, model= model_eng)
-	# np.save('./w2v-tmp/docs2vec.npy', dict_docs)
-	# dict_users = users2vecs(solr= solr, data_path= data_path, model= model_eng)
-	# np.save('./w2v-tmp/users2vec.npy', dict_users)
-	#Por ahora no:
-	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
+	dict_docs =	flatten_all_docs(solr= solr, model= model_eng)
+	np.save('./w2v-tmp/flattened_docs.npy', dict_docs)
+	dict_users = flatten_all_users(solr= solr, data_path= data_path, model= model_eng)
+	np.save('./w2v-tmp/flattened_users.npy', dict_users)
 
-	for N in [5, 10, 15, 20]:
-		option1_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
-		# option2_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
+	# for N in [5, 10, 15, 20]:
+	# 	option1_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
+	# 	option2_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
 
 if __name__ == '__main__':
 	main()
