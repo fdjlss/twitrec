@@ -99,7 +99,6 @@ def user2vec(solr, consumption, model):
 	url        = stream_url.format(ids=ids_string)
 	response   = json.loads( urlopen(url).read().decode('utf8') )
 	docs       = response['response']['docs']
-
 	flat_doc = ""
 	for document in docs:
 		for field in document:
@@ -118,7 +117,6 @@ def user2vec(solr, consumption, model):
 						value = value #e = TranslatorError('Must provide a string with at least 3 characters.')
 				############################
 				flat_doc += str(value)+' ' #Se aplana el documento en un solo string
-
 	flat_doc = preprocess_string(flat_doc, CUSTOM_FILTERS) #Preprocesa el string
 	flat_doc = [w for w in flat_doc if w not in stop_words] #Remueve stop words
 	flat_doc = [w for w in flat_doc if w in model.vocab] #Deja sólo palabras del vocabulario
@@ -126,25 +124,24 @@ def user2vec(solr, consumption, model):
 	matrix_doc = np.zeros((model.vector_size,), dtype=float)
 	for token in flat_doc:
 		matrix_doc = np.vstack((matrix_doc, model[token]))
-
 	matrix_doc = np.delete(matrix_doc, 0, 0) #Elimina la primera fila de puros ceros
 	vec_doc = max_pool(np_matrix= matrix_doc)	
 	return vec_doc
 
 def users2vecs(solr, data_path, model):
-	all_c = consumption(ratings_path=data_path+'eval_all_N5.data', rel_thresh=0, with_ratings=False)
+	train_c = consumption(ratings_path=data_path+'eval_train_N5.data', rel_thresh=0, with_ratings=False)
 	i = 0
 	ids2vec = {}
-	for userId in all_c:
+	for userId in train_c:
 		i+=1
-		logging.info("USERS 2 VECS. {0} de {1}. User: {2}".format(i, len(all_c), userId))
-		ids2vec[userId] = user2vec(solr= solr, consumption= all_c[userId], model= model)
+		logging.info("USERS 2 VECS. {0} de {1}. User: {2}".format(i, len(train_c), userId))
+		ids2vec[userId] = user2vec(solr= solr, consumption= train_c[userId], model= model)
 	return ids2vec
 #--------------------------------#
 
 
 def option1_protocol_evaluation(data_path, solr, N, model):
-	# userId='113447232'
+	# userId='113447232' 285597345
 	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
 	MRRs   = []
@@ -166,11 +163,8 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 		except TypeError as e:
 			continue
 
-		i = 0
 		book_recs = []
 		for user_doc in docs:
-			i+=1
-			print(i)
 			cosines = dict((bookId, 0.0) for bookId in docs2vec)
 			user_bookId = str(user_doc['goodreadsId'][0]) #id de libro consumido por user
 			for bookId in docs2vec: #ids de libros en la DB
