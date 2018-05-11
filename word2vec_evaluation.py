@@ -92,6 +92,34 @@ def docs2vecs(solr, model):
 	del docs
 	return ids2vec
 
+# Para el modo 1
+def sim_matrix(doc_vecs):
+	# sim_matrix = np.zeros(shape=(len(doc_vecs), len(doc_vecs)), dtype=float)
+	sim_dict = dict((bookId, {}) for bookId in doc_vecs)
+	delta = 0
+
+	key_list = list(doc_vecs.keys())
+
+	i=0
+	for bookId1 in key_list:
+		i+=1
+		initial = time.time()
+		print("i={}. delta time={}".format(i, delta))
+		for bookId2 in key_list:
+			# bookId1,bookId2 = key_list[i],key_list[j]
+			# if sim_dict[bookId1].get(bookId2) or sim_dict[bookId2].get(bookId1):
+				# continue
+			# else:
+				sim_dict[bookId1][bookId2] = 1 - spatial.distance.cosine(doc_vecs[bookId1], doc_vecs[bookId2])
+		#Dejamos los 100 libros más parecidos
+		sims = sorted(sim_dict[bookId1].items(), key=operator.itemgetter(1), reverse=True) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
+		for i in range(len(sims)):
+			if i > 101: 
+				del sim_dict[bookId1][sims[i][0]]
+		delta = time.time() - initial
+
+	return sim_matrix
+
 # Para el modo 2
 def user2vec(solr, consumption, model):
 	stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
@@ -148,7 +176,7 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 	nDCGs  = []
 	APs    = []
 	Rprecs = []
-	docs2vec  = np.load('./w2v-tmp/docs2vec.npy').item()
+	docs2vec = np.load('./w2v-tmp/docs2vec.npy').item()
 
 	i = 1
 	for userId in test_c:
@@ -167,9 +195,15 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 		for user_doc in docs:
 			cosines = dict((bookId, 0.0) for bookId in docs2vec)
 			user_bookId = str(user_doc['goodreadsId'][0]) #id de libro consumido por user
+			
+
+			# cosines = sim_dict[user_bookId] #THE DREAM
+
 			for bookId in docs2vec: #ids de libros en la DB
 				if bookId == user_bookId: continue
 				cosines[bookId] = 1 - spatial.distance.cosine(docs2vec[bookId], docs2vec[user_bookId]) #1 - dist = similarity
+			
+
 			sorted_sims = sorted(cosines.items(), key=operator.itemgetter(1), reverse=True) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
 			book_recs.append( [ bookId for bookId, sim in sorted_sims ] )
 
@@ -243,13 +277,20 @@ def main():
 	## Sólo por ahora para guardar el diccionario de vectores:
 	# dict_docs =	docs2vecs(solr= solr, model= model_eng)
 	# np.save('./w2v-tmp/docs2vec.npy', dict_docs)
+	
+	## Para modo 1
+	docs2vec  = np.load('./w2v-tmp/docs2vec.npy').item()
+	dict_sim = sim_matrix(doc_vecs= docs2vec)
+	np.save('./w2v-tmp/sim_matrix.npy', dict_sim)
+	
+	## Para modo 2
 	# dict_users = users2vecs(solr= solr, data_path= data_path, model= model_eng)
 	# np.save('./w2v-tmp/users2vec.npy', dict_users)
 	#Por ahora no:
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
 
-	for N in [5, 10, 15, 20]:
-		option1_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
+	# for N in [5, 10, 15, 20]:
+		# option1_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
 		# option2_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
 
 if __name__ == '__main__':
