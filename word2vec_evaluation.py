@@ -273,7 +273,7 @@ def option2_protocol_evaluation(data_path, solr, N, model):
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = 'http://localhost:8983/solr/grrecsys'
-	model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+	# model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 	## Sólo por ahora para guardar el diccionario de vectores:
 	# dict_docs =	docs2vecs(solr= solr, model= model_eng)
 	# np.save('./w2v-tmp/docs2vec.npy', dict_docs)
