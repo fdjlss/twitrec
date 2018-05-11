@@ -114,9 +114,9 @@ def sim_matrix(doc_vecs):
 				sim_dict[bookId1][bookId2] = 1 - spatial.distance.cosine(doc_vecs[bookId1], doc_vecs[bookId2])
 		#Dejamos los 100 libros más parecidos
 		sims = sorted(sim_dict[bookId1].items(), key=operator.itemgetter(1), reverse=True) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
-		for i in range(len(sims)):
-			if i > 101: 
-				del sim_dict[bookId1][sims[i][0]]
+		for j in range(len(sims)):
+			if j > 101: 
+				del sim_dict[bookId1][sims[j][0]]
 		delta = time.time() - initial
 
 	return sim_matrix
