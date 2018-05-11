@@ -105,7 +105,7 @@ def sim_matrix(doc_vecs):
 	for bookId1 in key_list:
 		i+=1
 		initial = time.time()
-		print("i={}. delta time={}".format(i, delta))
+		logging.info("i={}. delta time={}".format(i, delta))
 		for bookId2 in key_list:
 			# bookId1,bookId2 = key_list[i],key_list[j]
 			# if sim_dict[bookId1].get(bookId2) or sim_dict[bookId2].get(bookId1):
