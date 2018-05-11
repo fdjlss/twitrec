@@ -119,7 +119,7 @@ def sim_matrix(doc_vecs):
 				del sim_dict[bookId1][sims[j][0]]
 		delta = time.time() - initial
 
-	return sim_matrix
+	return sim_dict
 
 # Para el modo 2
 def user2vec(solr, consumption, model):
