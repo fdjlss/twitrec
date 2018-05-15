@@ -98,7 +98,6 @@ def sim_matrix(doc_vecs):
 	# sim_matrix = np.zeros(shape=(len(doc_vecs), len(doc_vecs)), dtype=float)
 	sim_dict = dict((bookId, {}) for bookId in doc_vecs)
 	delta = 0
-
 	key_list = list(doc_vecs.keys())
 
 	i=0
@@ -106,17 +105,13 @@ def sim_matrix(doc_vecs):
 		i+=1
 		initial = time.time()
 		logging.info("i={}. delta time={}".format(i, delta))
+		sims = {}
 		for bookId2 in key_list:
-			# bookId1,bookId2 = key_list[i],key_list[j]
-			# if sim_dict[bookId1].get(bookId2) or sim_dict[bookId2].get(bookId1):
-				# continue
-			# else:
-				sim_dict[bookId1][bookId2] = 1 - spatial.distance.cosine(doc_vecs[bookId1], doc_vecs[bookId2])
+			sims[bookId2] = 1 - spatial.distance.cosine(doc_vecs[bookId1], doc_vecs[bookId2])
 		#Dejamos los 100 libros más parecidos
-		sims = sorted(sim_dict[bookId1].items(), key=operator.itemgetter(1), reverse=True) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
-		for j in range(len(sims)):
-			if j > 101: 
-				del sim_dict[bookId1][sims[j][0]]
+		sims = sorted(sims.items(), key=operator.itemgetter(1), reverse=True) #[(<bookId>, MAYOR sim), ..., (<bookId>, menor sim)]
+		for j in range(100):
+			sim_dict[bookId1][sims[j][0]] = sims[j][1]
 		delta = time.time() - initial
 
 	return sim_dict
@@ -178,6 +173,7 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 	APs    = []
 	Rprecs = []
 	docs2vec = np.load('./w2v-tmp/docs2vec.npy').item()
+	# sim_dict = np.load('./w2v-tmp/sim_matrix.npy').item() #THE DREAM
 
 	i = 1
 	for userId in test_c:
@@ -285,8 +281,8 @@ def main():
 	np.save('./w2v-tmp/sim_matrix.npy', dict_sim)
 	
 	## Para modo 2
-	# dict_users = users2vecs(solr= solr, data_path= data_path, model= model_eng)
-	# np.save('./w2v-tmp/users2vec.npy', dict_users)
+	dict_users = users2vecs(solr= solr, data_path= data_path, model= model_eng)
+	np.save('./w2v-tmp/users2vec.npy', dict_users)
 	#Por ahora no:
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
 
