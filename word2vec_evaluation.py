@@ -29,6 +29,7 @@ def encoded_itemIds(item_list):
 	ids_string = ids_string[:-8] # para borrar el último "%20OR%20"
 	ids_string += ')'
 	return ids_string
+
 def flatten_list(list_of_lists, rows):
 	"""Eliminamos duplicados manteniendo orden"""
 	flattened = []
@@ -39,6 +40,7 @@ def flatten_list(list_of_lists, rows):
 			except IndexError as e:
 				continue
 	return sorted(set(flattened), key=lambda x: flattened.index(x))
+
 def remove_consumed(user_consumption, rec_list):
 	l = rec_list
 	for itemId in rec_list:
@@ -110,7 +112,7 @@ def sim_matrix(doc_vecs):
 			sims[bookId2] = 1 - spatial.distance.cosine(doc_vecs[bookId1], doc_vecs[bookId2])
 		#Dejamos los 100 libros más parecidos
 		sims = sorted(sims.items(), key=operator.itemgetter(1), reverse=True) #[(<bookId>, MAYOR sim), ..., (<bookId>, menor sim)]
-		for j in range(100):
+		for j in range(1000):
 			sim_dict[bookId1][sims[j][0]] = sims[j][1]
 		delta = time.time() - initial
 
@@ -164,7 +166,7 @@ def users2vecs(solr, data_path, model):
 #--------------------------------#
 
 
-def option1_protocol_evaluation(data_path, solr, N, model):
+def option1_protocol_evaluation(data_path, solr, N):
 	# userId='113447232' 285597345
 	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
@@ -190,7 +192,7 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 
 		book_recs = []
 		for user_doc in docs:
-			cosines = dict((bookId, 0.0) for bookId in docs2vec)
+			# cosines = dict((bookId, 0.0) for bookId in docs2vec)
 			user_bookId = str(user_doc['goodreadsId'][0]) #id de libro consumido por user
 			cosines = sim_dict[user_bookId] #THE DREAM
 			# for bookId in docs2vec: #ids de libros en la DB
@@ -199,7 +201,7 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 			sorted_sims = sorted(cosines.items(), key=operator.itemgetter(1), reverse=True) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
 			book_recs.append( [ bookId for bookId, sim in sorted_sims ] )
 
-		book_recs = flatten_list(list_of_lists=book_recs, rows=len(docs))
+		book_recs = flatten_list(list_of_lists=book_recs, rows=len(sorted_sims))
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		try:
 			recs    = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
@@ -265,7 +267,7 @@ def option2_protocol_evaluation(data_path, solr, N, model):
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = 'http://localhost:8983/solr/grrecsys'
-	model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+	# model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 	
 	## Mapeo book Id -> vec_book ##:
 	# dict_docs =	docs2vecs(solr= solr, model= model_eng)
@@ -285,7 +287,7 @@ def main():
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
 
 	for N in [5, 10, 15, 20]:
-		option1_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
+		option1_protocol_evaluation(data_path= data_path, solr= solr, N=N)
 		# option2_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
 
 if __name__ == '__main__':
