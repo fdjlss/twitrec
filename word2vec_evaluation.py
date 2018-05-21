@@ -175,7 +175,7 @@ def option1_protocol_evaluation(data_path, solr, N):
 	APs    = []
 	Rprecs = []
 	docs2vec = np.load('./w2v-tmp/docs2vec.npy').item()
-	sim_dict = np.load('./w2v-tmp/sim_matrix.npy').item() #THE DREAM
+	# sim_dict = np.load('./w2v-tmp/sim_matrix.npy').item() #THE DREAM
 
 	i = 1
 	for userId in test_c:
@@ -192,12 +192,14 @@ def option1_protocol_evaluation(data_path, solr, N):
 
 		book_recs = []
 		for user_doc in docs:
-			# cosines = dict((bookId, 0.0) for bookId in docs2vec)
 			user_bookId = str(user_doc['goodreadsId'][0]) #id de libro consumido por user
-			cosines = sim_dict[user_bookId] #THE DREAM
-			# for bookId in docs2vec: #ids de libros en la DB
-				# if bookId == user_bookId: continue
-				# cosines[bookId] = 1 - spatial.distance.cosine(docs2vec[bookId], docs2vec[user_bookId]) #1 - dist = similarity
+			
+			# cosines = sim_dict[user_bookId] #THE DREAM
+			cosines = dict((bookId, 0.0) for bookId in docs2vec)
+			for bookId in docs2vec: #ids de libros en la DB
+				if bookId == user_bookId: continue
+				cosines[bookId] = 1 - spatial.distance.cosine(docs2vec[bookId], docs2vec[user_bookId]) #1 - dist = similarity
+			
 			sorted_sims = sorted(cosines.items(), key=operator.itemgetter(1), reverse=True) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
 			book_recs.append( [ bookId for bookId, sim in sorted_sims ] )
 
@@ -223,7 +225,7 @@ def option1_protocol_evaluation(data_path, solr, N):
 
 
 
-def option2_protocol_evaluation(data_path, solr, N, model):
+def option2_protocol_evaluation(data_path, solr, N):
 	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
 	MRRs   = []
@@ -287,8 +289,11 @@ def main():
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
 
 	for N in [5, 10, 15, 20]:
+		option2_protocol_evaluation(data_path= data_path, solr= solr, N=N)
+	
+	for N in [10, 15, 20]:
 		option1_protocol_evaluation(data_path= data_path, solr= solr, N=N)
-		# option2_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
+	
 
 if __name__ == '__main__':
 	main()
