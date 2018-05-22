@@ -44,7 +44,7 @@ def remove_consumed(user_consumption, rec_list):
 		if itemId in user_consumption: l.remove(itemId)
 	return l
 
-def flat_doc(document):
+def flat_doc(document, model):
 	flat_doc = ""
 	for field in document:
 		if not isinstance(document[field], list): continue #No tomamos en cuenta los campos 'id' y '_version_': auto-generados por Solr
@@ -77,7 +77,7 @@ def flatten_all_docs(solr, model):
 		i+=1
 		goodreadsId = str( doc['goodreadsId'][0] )
 		logging.info("{0} de {1}. Doc: {2}".format(i, len(docs), goodreadsId))
-		dict_docs[goodreadsId] = flat_doc(document= doc)
+		dict_docs[goodreadsId] = flat_doc(document= doc, model= model)
 	del docs
 	return dict_docs
 
