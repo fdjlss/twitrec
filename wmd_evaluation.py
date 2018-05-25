@@ -130,7 +130,8 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 	nDCGs  = []
 	APs    = []
 	Rprecs = []
-	flat_docs  = np.load('./w2v-tmp/flattened_docs.npy').item()
+	flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
+	model.init_sims(replace=True)
 
 	i = 1
 	for userId in test_c:
@@ -157,7 +158,7 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 			sorted_sims = sorted(wmds.items(), key=operator.itemgetter(1), reverse=False) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
 			book_recs.append( [ bookId for bookId, sim in sorted_sims ] )
 
-		book_recs = flatten_list(list_of_lists=book_recs, rows=len(docs))
+		book_recs = flatten_list(list_of_lists=book_recs, rows=len(sorted_sims))
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		try:
 			recs    = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
@@ -188,7 +189,8 @@ def option2_protocol_evaluation(data_path, solr, N, model):
 	Rprecs = []
 	flat_docs  = np.load('./w2v-tmp/flattened_docs.npy').item()
 	flat_users = np.load('./w2v-tmp/flattened_users.npy').item()
-
+	model.init_sims(replace=True)
+	
 	i = 1		
 
 	for userId in test_c:
@@ -226,14 +228,16 @@ def main():
 	solr = 'http://localhost:8983/solr/grrecsys'
 	model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 	## Sólo por ahora para guardar el diccionario de vectores:
-	dict_docs =	flatten_all_docs(solr= solr, model= model_eng)
-	np.save('./w2v-tmp/flattened_docs.npy', dict_docs)
-	dict_users = flatten_all_users(solr= solr, data_path= data_path, model= model_eng)
-	np.save('./w2v-tmp/flattened_users.npy', dict_users)
+	# dict_docs =	flatten_all_docs(solr= solr, model= model_eng)
+	# np.save('./w2v-tmp/flattened_docs.npy', dict_docs)
+	# dict_users = flatten_all_users(solr= solr, data_path= data_path, model= model_eng)
+	# np.save('./w2v-tmp/flattened_users.npy', dict_users)
+
+	for N in [5, 10, 15, 20]:
+		option2_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
 
 	# for N in [5, 10, 15, 20]:
-	# 	option1_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
-	# 	option2_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
+		# option1_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
 
 if __name__ == '__main__':
 	main()
