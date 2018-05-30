@@ -1,6 +1,7 @@
 # coding=utf-8
 
 import time
+import random
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 import os
@@ -178,7 +179,8 @@ def option1_protocol_evaluation(data_path, solr, N):
 	# sim_dict = np.load('./w2v-tmp/sim_matrix.npy').item() #THE DREAM
 
 	i = 1
-	for userId in test_c:
+	sampled_user_ids = random.sample(test_c.keys(), 100)
+	for userId in sampled_user_ids: #test_c:
 		logging.info("MODO 1. {0} de {1}. User ID: {2}".format(i, len(test_c), userId))
 		i += 1
 		stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
@@ -220,7 +222,7 @@ def option1_protocol_evaluation(data_path, solr, N):
 		####################################
 
 	with open('TwitterRatings/word2vec/option1_protocol.txt', 'a') as file:
-		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+		file.write( "SAMPLED N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
 
@@ -236,7 +238,8 @@ def option2_protocol_evaluation(data_path, solr, N):
 	users2vec = np.load('./w2v-tmp/users2vec.npy').item()
 
 	i = 1
-	for userId in test_c:
+	sampled_user_ids = random.sample(test_c.keys(), 100)
+	for userId in sampled_user_ids: #test_c:
 		logging.info("MODO 2. {0} de {1}. User ID: {2}".format(i, len(test_c), userId))
 		i += 1
 
@@ -262,7 +265,7 @@ def option2_protocol_evaluation(data_path, solr, N):
 		####################################
 
 	with open('TwitterRatings/word2vec/option2_protocol.txt', 'a') as file:
-		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+		file.write( "SAMPLED N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
 
@@ -288,10 +291,10 @@ def main():
 	#Por ahora no:
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
 
-	# for N in [5, 10, 15, 20]:
-		# option2_protocol_evaluation(data_path= data_path, solr= solr, N=N)
+	for N in [5, 10, 15, 20]:
+		option2_protocol_evaluation(data_path= data_path, solr= solr, N=N)
 	
-	for N in [10, 15, 20]:
+	for N in [5, 10, 15, 20]:
 		option1_protocol_evaluation(data_path= data_path, solr= solr, N=N)
 	
 
