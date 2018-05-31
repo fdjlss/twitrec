@@ -179,7 +179,7 @@ def option1_protocol_evaluation(data_path, solr, N):
 	# sim_dict = np.load('./w2v-tmp/sim_matrix.npy').item() #THE DREAM
 
 	i = 1
-	sampled_user_ids = random.sample(test_c.keys(), 100)
+	sampled_user_ids = random.sample(test_c.keys(), 200)
 	for userId in sampled_user_ids: #test_c:
 		logging.info("MODO 1. {0} de {1}. User ID: {2}".format(i, len(test_c), userId))
 		i += 1
@@ -238,7 +238,7 @@ def option2_protocol_evaluation(data_path, solr, N):
 	users2vec = np.load('./w2v-tmp/users2vec.npy').item()
 
 	i = 1
-	sampled_user_ids = random.sample(test_c.keys(), 100)
+	sampled_user_ids = random.sample(test_c.keys(), 200)
 	for userId in sampled_user_ids: #test_c:
 		logging.info("MODO 2. {0} de {1}. User ID: {2}".format(i, len(test_c), userId))
 		i += 1
