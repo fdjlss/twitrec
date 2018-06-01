@@ -198,7 +198,7 @@ def option1_protocol_evaluation(data_path, solr, N):
 		# 	continue
 
 		book_recs = []
-		for bookId in test_c[userId]:#for user_doc in test_c[userId]:#docs:
+		for bookId in train_c[userId]:#for user_doc in test_c[userId]:#docs:
 			# user_bookId = str(user_doc['goodreadsId'][0]) #id de libro consumido por user
 			
 			# cosines = sim_dict[user_bookId] #OLD 1
