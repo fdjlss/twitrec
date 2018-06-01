@@ -291,8 +291,8 @@ def main():
 	#Por ahora no:
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
 
-	for N in [5, 10, 15, 20]:
-		option2_protocol_evaluation(data_path= data_path, solr= solr, N=N)
+	# for N in [5, 10, 15, 20]:
+	# 	option2_protocol_evaluation(data_path= data_path, solr= solr, N=N)
 	
 	for N in [5, 10, 15, 20]:
 		option1_protocol_evaluation(data_path= data_path, solr= solr, N=N)
