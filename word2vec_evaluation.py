@@ -17,6 +17,7 @@ from gensim.models.word2vec import Word2Vec
 from gensim.parsing.preprocessing import preprocess_string, strip_tags, strip_punctuation, strip_multiple_whitespaces, strip_numeric
 from nltk.corpus import stopwords
 from textblob.blob import TextBlob
+from annoy import AnnoyIndex
 stop_words = set(stopwords.words('spanish') + stopwords.words('english') + stopwords.words('german') + stopwords.words('arabic') + \
 								 stopwords.words('french') + stopwords.words('italian') + stopwords.words('portuguese') + ['goodreads', 'http', 'https', 'www', '"'])
 CUSTOM_FILTERS = [lambda x: x.lower(), strip_tags, strip_punctuation, strip_multiple_whitespaces, strip_numeric]
@@ -176,36 +177,44 @@ def option1_protocol_evaluation(data_path, solr, N):
 	APs    = []
 	Rprecs = []
 	docs2vec = np.load('./w2v-tmp/docs2vec.npy').item()
-	# sim_dict = np.load('./w2v-tmp/sim_matrix.npy').item() #THE DREAM
+	num_to_grId = np.load('./w2v-tmp/num_to_grId.npy').item()
+	grId_to_num = np.load('./w2v-tmp/grId_to_num.npy').item()
+	t = AnnoyIndex(300)
+	t.load('./w2v-tmp/doc_vecs_t100.tree')
+	# sim_dict = np.load('./w2v-tmp/sim_matrix.npy').item() #OLD 1
 
 	i = 1
-	sampled_user_ids = random.sample(test_c.keys(), 200)
-	for userId in sampled_user_ids: #test_c:
+	# sampled_user_ids = random.sample(test_c.keys(), 200)
+	for userId in test_c: #sampled_user_ids:
 		logging.info("MODO 1. {0} de {1}. User ID: {2}".format(i, len(test_c), userId))
 		i += 1
-		stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
-		ids_string = encoded_itemIds(item_list=train_c[userId])
-		url        = stream_url.format(ids=ids_string)
-		response   = json.loads( urlopen(url).read().decode('utf8') )
-		try:
-			docs     = response['response']['docs']
-		except TypeError as e:
-			continue
+		# stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
+		# ids_string = encoded_itemIds(item_list=train_c[userId])
+		# url        = stream_url.format(ids=ids_string)
+		# response   = json.loads( urlopen(url).read().decode('utf8') )
+		# try:
+		# 	docs     = response['response']['docs']
+		# except TypeError as e:
+		# 	continue
 
 		book_recs = []
-		for user_doc in docs:
-			user_bookId = str(user_doc['goodreadsId'][0]) #id de libro consumido por user
+		for bookId in test_c[userId]:#for user_doc in test_c[userId]:#docs:
+			# user_bookId = str(user_doc['goodreadsId'][0]) #id de libro consumido por user
 			
-			# cosines = sim_dict[user_bookId] #THE DREAM
-			cosines = dict((bookId, 0.0) for bookId in docs2vec)
-			for bookId in docs2vec: #ids de libros en la DB
-				if bookId == user_bookId: continue
-				cosines[bookId] = 1 - spatial.distance.cosine(docs2vec[bookId], docs2vec[user_bookId]) #1 - dist = similarity
-			
-			sorted_sims = sorted(cosines.items(), key=operator.itemgetter(1), reverse=True) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
-			book_recs.append( [ bookId for bookId, sim in sorted_sims ] )
+			# cosines = sim_dict[user_bookId] #OLD 1
+			# cosines = dict((bookId, 0.0) for bookId in docs2vec) #OLD 2
+			# for bookId in docs2vec: #ids de libros en la DB
+			docs = t.get_nns_by_item(grId_to_num[bookId], 500)
+			book_recs.append( [ str(num_to_grId[doc_num]) for doc_num in docs ] )
 
-		book_recs = flatten_list(list_of_lists=book_recs, rows=len(sorted_sims))
+				#OLD 2
+				# if bookId == user_bookId: continue 
+				# cosines[bookId] = 1 - spatial.distance.cosine(docs2vec[bookId], docs2vec[user_bookId]) #1 - dist = similarity
+			#OLD 2
+			# sorted_sims = sorted(cosines.items(), key=operator.itemgetter(1), reverse=True) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
+			# book_recs.append( [ bookId for bookId, sim in sorted_sims ] )
+
+		book_recs = flatten_list(list_of_lists=book_recs, rows=len(book_recs[0])) #rows=len(sorted_sims))
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		try:
 			recs    = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
@@ -222,7 +231,7 @@ def option1_protocol_evaluation(data_path, solr, N):
 		####################################
 
 	with open('TwitterRatings/word2vec/option1_protocol.txt', 'a') as file:
-		file.write( "SAMPLED N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+		file.write( "INDEXED N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
 
