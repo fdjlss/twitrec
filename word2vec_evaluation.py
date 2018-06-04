@@ -204,9 +204,12 @@ def option1_protocol_evaluation(data_path, solr, N):
 			# cosines = sim_dict[user_bookId] #OLD 1
 			# cosines = dict((bookId, 0.0) for bookId in docs2vec) #OLD 2
 			# for bookId in docs2vec: #ids de libros en la DB
-			docs = t.get_nns_by_item(grId_to_num[bookId], 500)
-			book_recs.append( [ str(num_to_grId[doc_num]) for doc_num in docs ] )
-
+			try:
+				docs = t.get_nns_by_item(grId_to_num[bookId], 500)
+				book_recs.append( [ str(num_to_grId[doc_num]) for doc_num in docs ] )
+			except KeyError as e:
+				logging.info("{} ES UNO DE LOS LIBROS CUYO HTML NO PUDO SER DESCARGADO. PROSIGUIENDO CON EL SIGUIENTE LIBRO..".format(bookId))
+				continue
 				#OLD 2
 				# if bookId == user_bookId: continue 
 				# cosines[bookId] = 1 - spatial.distance.cosine(docs2vec[bookId], docs2vec[user_bookId]) #1 - dist = similarity
