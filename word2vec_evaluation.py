@@ -9,6 +9,7 @@ import json
 from urllib.parse import urlencode, quote_plus
 from urllib.request import urlopen
 from svd_evaluation import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, remove_consumed, user_ranked_recs, opt_value
+from wmd_evaluation import flat_doc, flat_user
 import numpy as np
 from scipy import spatial
 import operator
@@ -54,50 +55,41 @@ def max_pool(np_matrix):
 	for j in range(cols):
 		max_pooled.append( max(np_matrix[:,j]) )
 	return np.array(max_pooled)
-def doc2vec(document, model):
-	flat_doc = ""
-	for field in document:
-		if not isinstance(document[field], list): continue #No tomamos en cuenta los campos 'id' y '_version_': auto-generados por Solr
-		for value in document[field]:
-			## Detección y traducción ##
-			if field=='author.authors.authorName' or field=='author.authorBio' or field=='description' or field=='quotes.quoteText':
-				value_blob = TextBlob(value)
-				try:
-					if value_blob.detect_language() != 'en':
-						try: 
-							value = value_blob.translate(to='en')
-						except Exception as e: 
-							value = value #e = NotTranslated('Translation API returned the input string unchanged.',)
-				except Exception as e:
-					value = value #e = TranslatorError('Must provide a string with at least 3 characters.')
-			############################
-			flat_doc += str(value)+' ' #Se aplana el documento en un solo string
-	flat_doc = preprocess_string(flat_doc, CUSTOM_FILTERS) #Preprocesa el string
-	flat_doc = [w for w in flat_doc if w not in stop_words] #Remueve stop words
-	flat_doc = [w for w in flat_doc if w in model.vocab] #Deja sólo palabras del vocabulario
+
+def doc2vec(list_document, model):
 	# MAX POOLING
 	matrix_doc = np.zeros((model.vector_size,), dtype=float)
-	for token in flat_doc:
+	for token in list_document:
 		matrix_doc = np.vstack((matrix_doc, model[token]))
-	matrix_doc = np.delete(matrix_doc, 0, 0) #Elimina la primera fila de puros ceros
+	matrix_doc = np.delete(matrix_doc, 0, 0) #Elimina la primera fila de sólo ceros
 	vec_doc = max_pool(np_matrix= matrix_doc)
 	return vec_doc
 
-def docs2vecs(solr, model):
+def docs2vecs(model):
+	# ids2vec = {}
+	# url = solr + '/query?q=*:*&rows=100000'
+	# docs = json.loads( urlopen(url).read().decode('utf8') )
+	# docs = docs['response']['docs']
+	# i = 0
+	# for doc in docs:
+	# 	i+=1
+	# 	goodreadsId = str( doc['goodreadsId'][0] )
+	# 	logging.info("{0} de {1}. Doc: {2}".format(i, len(docs), goodreadsId))
+	# 	ids2vec[goodreadsId] = doc2vec(document= doc, model= model)
+	# del docs
+	# return ids2vec
 	ids2vec = {}
-	url = solr + '/query?q=*:*&rows=100000'
-	docs = json.loads( urlopen(url).read().decode('utf8') )
-	docs = docs['response']['docs']
+	flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
 	i = 0
-	for doc in docs:
+	for bookId, flat_doc in flat_docs.items():
 		i+=1
-		goodreadsId = str( doc['goodreadsId'][0] )
 		logging.info("{0} de {1}. Doc: {2}".format(i, len(docs), goodreadsId))
-		ids2vec[goodreadsId] = doc2vec(document= doc, model= model)
-	del docs
+		ids2vec[bookId] = doc2vec(list_document= flat_doc, model= model)
 	return ids2vec
 
+
 # Para el modo 1
+# MÉTODO DESCARTADO!
 def sim_matrix(doc_vecs):
 	# sim_matrix = np.zeros(shape=(len(doc_vecs), len(doc_vecs)), dtype=float)
 	sim_dict = dict((bookId, {}) for bookId in doc_vecs)
@@ -121,54 +113,28 @@ def sim_matrix(doc_vecs):
 	return sim_dict
 
 # Para el modo 2
-def user2vec(solr, consumption, model):
-	stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
-	ids_string = encoded_itemIds(item_list=consumption)
-	url        = stream_url.format(ids=ids_string)
-	response   = json.loads( urlopen(url).read().decode('utf8') )
-	docs       = response['response']['docs']
-	flat_doc = ""
-	for document in docs:
-		for field in document:
-			if not isinstance(document[field], list): continue #No tomamos en cuenta los campos 'id' y '_version_': auto-generados por Solr
-			for value in document[field]:
-				## Detección y traducción ##
-				if field=='author.authors.authorName' or field=='author.authorBio' or field=='description' or field=='quotes.quoteText':
-					value_blob = TextBlob(value)
-					try:
-						if value_blob.detect_language() != 'en':
-							try: 
-								value = value_blob.translate(to='en')
-							except Exception as e: 
-								value = value #e = NotTranslated('Translation API returned the input string unchanged.',)
-					except Exception as e:
-						value = value #e = TranslatorError('Must provide a string with at least 3 characters.')
-				############################
-				flat_doc += str(value)+' ' #Se aplana el documento en un solo string
-	flat_doc = preprocess_string(flat_doc, CUSTOM_FILTERS) #Preprocesa el string
-	flat_doc = [w for w in flat_doc if w not in stop_words] #Remueve stop words
-	flat_doc = [w for w in flat_doc if w in model.vocab] #Deja sólo palabras del vocabulario
+def user2vec(list_user, model):
 	# MAX POOLING
 	matrix_doc = np.zeros((model.vector_size,), dtype=float)
-	for token in flat_doc:
+	for token in list_user:
 		matrix_doc = np.vstack((matrix_doc, model[token]))
 	matrix_doc = np.delete(matrix_doc, 0, 0) #Elimina la primera fila de puros ceros
 	vec_doc = max_pool(np_matrix= matrix_doc)	
 	return vec_doc
 
-def users2vecs(solr, data_path, model):
-	train_c = consumption(ratings_path=data_path+'eval_train_N5.data', rel_thresh=0, with_ratings=False)
-	i = 0
+def users2vecs(model):
 	ids2vec = {}
-	for userId in train_c:
+	flat_users = np.load('./w2v-tmp/flattened_users.npy').item()
+	i = 0
+	for userId, flat_user in flat_users.items():
 		i+=1
 		logging.info("USERS 2 VECS. {0} de {1}. User: {2}".format(i, len(train_c), userId))
-		ids2vec[userId] = user2vec(solr= solr, consumption= train_c[userId], model= model)
+		ids2vec[userId] = user2vec(list_user= flat_user, model= model)
 	return ids2vec
 #--------------------------------#
 
 
-def option1_protocol_evaluation(data_path, solr, N):
+def option1_protocol_evaluation(data_path, N):
 	# userId='113447232' 285597345
 	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
@@ -239,7 +205,7 @@ def option1_protocol_evaluation(data_path, solr, N):
 
 
 
-def option2_protocol_evaluation(data_path, solr, N):
+def option2_protocol_evaluation(data_path, N):
 	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
 	MRRs   = []
@@ -286,9 +252,9 @@ def main():
 	solr = 'http://localhost:8983/solr/grrecsys'
 	# model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 	
-	## Mapeo book Id -> vec_book ##:
-	# dict_docs =	docs2vecs(solr= solr, model= model_eng)
-	# np.save('./w2v-tmp/docs2vec.npy', dict_docs)
+	## Mapeo book Id -> vec_book Para modo 1 y 2 ##:
+	dict_docs =	docs2vecs(solr= solr, model= model_eng)
+	np.save('./w2v-tmp/docs2vec.npy', dict_docs)
 	## DONE ##
 
 	## Para modo 1 ##
@@ -298,17 +264,15 @@ def main():
 	## DONE ##
 
 	## Para modo 2
-	# dict_users = users2vecs(solr= solr, data_path= data_path, model= model_eng)
-	# np.save('./w2v-tmp/users2vec.npy', dict_users)
+	dict_users = users2vecs(solr= solr, data_path= data_path, model= model_eng)
+	np.save('./w2v-tmp/users2vec.npy', dict_users)
 	#Por ahora no:
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
 
-	# for N in [5, 10, 15, 20]:
-	# 	option2_protocol_evaluation(data_path= data_path, solr= solr, N=N)
-	
 	for N in [5, 10, 15, 20]:
-		option1_protocol_evaluation(data_path= data_path, solr= solr, N=N)
+		option1_protocol_evaluation(data_path= data_path, N=N)
+		option2_protocol_evaluation(data_path= data_path, N=N)
 	
-
+	
 if __name__ == '__main__':
 	main()

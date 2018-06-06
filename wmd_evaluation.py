@@ -17,6 +17,7 @@ from gensim.similarities import WmdSimilarity
 from nltk.corpus import stopwords
 from textblob.blob import TextBlob
 from annoy import AnnoyIndex
+from gensim.corpora import Dictionary
 stop_words = set(stopwords.words('spanish') + stopwords.words('english') + stopwords.words('german') + stopwords.words('arabic') + \
 								 stopwords.words('french') + stopwords.words('italian') + stopwords.words('portuguese') + ['goodreads', 'http', 'https', 'www', '"'])
 CUSTOM_FILTERS = [lambda x: x.lower(), strip_tags, strip_punctuation, strip_multiple_whitespaces, strip_numeric]
@@ -46,7 +47,20 @@ def remove_consumed(user_consumption, rec_list):
 		if itemId in user_consumption: l.remove(itemId)
 	return l
 
-def flat_doc(document, model):
+def get_extremes(flat_docs, n_below, n_above):
+	texts    = [flat_doc for id, flat_doc in flat_docs.items() ]
+	dct      = Dictionary(texts)
+	word_fqs = dict((dct[i], dct.dfs[i]) for i in range(len(dct)) )
+	sorted_x = sorted(word_fqs.items(), key=operator.itemgetter(1), reverse=True)
+	extremes = []
+	for word, freq in sorted_x:
+		if freq > n_above:
+			extremes.append(word)
+		if n_below > freq:
+			extremes.append(word)
+	return extremes
+
+def flat_doc(document, model, flat_docs=None):
 	flat_doc = ""
 	for field in document:
 		if not isinstance(document[field], list): continue #No tomamos en cuenta los campos 'id' y '_version_': auto-generados por Solr
@@ -66,24 +80,40 @@ def flat_doc(document, model):
 			flat_doc += str(value)+' ' #Se aplana el documento en un solo string
 	flat_doc = preprocess_string(flat_doc, CUSTOM_FILTERS) #Preprocesa el string
 	flat_doc = [w for w in flat_doc if w not in stop_words] #Remueve stop words
+	
+	if flat_docs:
+		n_below = len(flat_docs) * 0.5
+		n_above = 2
+		extremes = get_extremes(flat_docs=flat_docs, n_below=n_below, n_above=n_above)
+		flat_doc = [w for w in flat_doc if w not in extremes]
+
 	flat_doc = [w for w in flat_doc if w in model.vocab] #Deja sólo palabras del vocabulario
 	return flat_doc
 
-def flatten_all_docs(solr, model):
+def flatten_all_docs(solr, model, filter_extremes=False):
 	dict_docs = {}
-	url = solr + '/query?q=*:*&rows=100000'
+	url = solr + '/query?q=*:*&rows=100000' #n docs: 50,862 < 100,000
 	docs = json.loads( urlopen(url).read().decode('utf8') )
 	docs = docs['response']['docs']
-	i = 0
-	for doc in docs:
-		i+=1
-		goodreadsId = str( doc['goodreadsId'][0] )
-		logging.info("{0} de {1}. Doc: {2}".format(i, len(docs), goodreadsId))
-		dict_docs[goodreadsId] = flat_doc(document= doc, model= model)
+
+	i = 0 
+	if filter_extremes:	
+		flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
+		for doc in docs:
+			i+=1
+			goodreadsId = str( doc['goodreadsId'][0] )
+			logging.info("{0} de {1}. Doc: {2}".format(i, len(docs), goodreadsId))
+			dict_docs[goodreadsId] = flat_doc(document= doc, model= model, flat_docs= flat_docs)
+	else:
+		for doc in docs:
+			i+=1
+			goodreadsId = str( doc['goodreadsId'][0] )
+			logging.info("{0} de {1}. Doc: {2}".format(i, len(docs), goodreadsId))
+			dict_docs[goodreadsId] = flat_doc(document= doc, model= model)
 	del docs
 	return dict_docs
 
-def flat_user(solr, consumption, model):
+def flat_user(solr, consumption, model, flat_docs=None):
 	stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
 	ids_string = encoded_itemIds(item_list=consumption)
 	url        = stream_url.format(ids=ids_string)
@@ -109,17 +139,33 @@ def flat_user(solr, consumption, model):
 				flat_user += str(value)+' ' #Se aplana el documento en un solo string
 	flat_user = preprocess_string(flat_user, CUSTOM_FILTERS) #Preprocesa el string
 	flat_user = [w for w in flat_user if w not in stop_words] #Remueve stop words
+
+	if flat_docs: # Sólo posible si ya se ejecutó flatten_all_docs
+		n_below = len(flat_docs) * 0.5
+		n_above = 2
+		extremes  = get_extremes(flat_docs=flat_docs, n_below=n_below, n_above=n_above)
+		flat_user = [w for w in flat_user if w not in extremes]
+
 	flat_user = [w for w in flat_user if w in model.vocab] #Deja sólo palabras del vocabulario
 	return flat_user
 
-def flatten_all_users(solr, data_path, model):
+def flatten_all_users(solr, data_path, model, filter_extremes=False):
 	train_c = consumption(ratings_path=data_path+'eval_train_N5.data', rel_thresh=0, with_ratings=False)
-	i = 0
 	dict_users = {}
-	for userId in train_c:
-		i+=1
-		logging.info("USERS 2 VECS. {0} de {1}. User: {2}".format(i, len(train_c), userId))
-		dict_users[userId] = flat_user(solr= solr, consumption= train_c[userId], model= model)
+
+	i = 0
+	if filter_extremes:	
+		flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
+		for userId in train_c:
+			i+=1
+			logging.info("USERS 2 VECS. {0} de {1}. User: {2}".format(i, len(train_c), userId))
+			dict_users[userId] = flat_user(solr= solr, consumption= train_c[userId], model= model, flat_docs= flat_docs)
+	else:
+		for userId in train_c:
+			i+=1
+			logging.info("USERS 2 VECS. {0} de {1}. User: {2}".format(i, len(train_c), userId))
+			dict_users[userId] = flat_user(solr= solr, consumption= train_c[userId], model= model)
+
 	return dict_users
 #--------------------------------#
 
@@ -132,8 +178,7 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 	nDCGs  = []
 	APs    = []
 	Rprecs = []
-	flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
-	docs2vec = np.load('./w2v-tmp/docs2vec.npy').item()
+	flat_docs   = np.load('./w2v-tmp/flattened_docs.npy').item()
 	num_to_grId = np.load('./w2v-tmp/num_to_grId.npy').item()
 	grId_to_num = np.load('./w2v-tmp/grId_to_num.npy').item()
 	t = AnnoyIndex(300)
@@ -222,20 +267,43 @@ def option2_protocol_evaluation(data_path, solr, N, model):
 	Rprecs = []
 	flat_docs  = np.load('./w2v-tmp/flattened_docs.npy').item()
 	flat_users = np.load('./w2v-tmp/flattened_users.npy').item()
-	
+	docs2vec   = np.load('./w2v-tmp/docs2vec.npy').item()
+	users2vec  = np.load('./w2v-tmp/users2vec.npy').item()
+	num_best = 20
 	
 	i = 1		
-
 	for userId in test_c:
 		logging.info("MODO 2. {0} de {1}. User ID: {2}".format(i, len(test_c), userId))
 		i += 1
 
-		wmds = dict((bookId, 0.0) for bookId in flat_docs)
-		for bookId in flat_docs:
-			wmds[bookId] = model.wmdistance(flat_users[userId], flat_docs[bookId])
+		# wmds = dict((bookId, 0.0) for bookId in flat_docs)
+		# for bookId in flat_docs:
+			# wmds[bookId] = model.wmdistance(flat_users[userId], flat_docs[bookId])
 
-		sorted_sims = sorted(wmds.items(), key=operator.itemgetter(1), reverse=False) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
-		book_recs   = [ bookId for bookId, sim in sorted_sims ]
+		cosines = dict((bookId, 0.0) for bookId in docs2vec)
+		for bookId in docs2vec:
+			cosines[bookId] = 1 - spatial.distance.cosine(users2vec[userId], docs2vec[bookId]) #1 - dist = similarity
+
+		sorted_sims   = sorted(cosines.items(), key=operator.itemgetter(1), reverse=True) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
+		book_recs_cos = [ bookId for bookId, sim in sorted_sims ]
+		book_recs_cos = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+
+
+		wmd_corpus = []
+		num_to_grId_wmd = {}
+		j = 0
+		for grId in book_recs_cos[:50]:
+			wmd_corpus.append( flat_docs[grId] )
+			num_to_grId_wmd[j] = grId
+			j += 1
+		grId_to_num_wmd = {v: k for k, v in num_to_grId_wmd.items()}
+		# Creamos índice WMD con un subset de (50) ítems recomendados al usuario por cossim
+		index = WmdSimilarity(wmd_corpus, model, num_best= num_best, normalize_w2v_and_replace=False)
+		r = index[flat_users[userId]]
+
+		book_recs = [ num_to_grId_wmd[id] for id,score in r ]
+		# sorted_sims = sorted(wmds.items(), key=operator.itemgetter(1), reverse=False) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
+		# book_recs   = [ bookId for bookId, sim in sorted_sims ]
 		book_recs   = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		try:
 			recs      = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
@@ -260,19 +328,26 @@ def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = 'http://localhost:8983/solr/grrecsys'
 	model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
-	model_eng.init_sims(replace=True)
 
 	## Sólo por ahora para guardar el diccionario de vectores:
-	# dict_docs =	flatten_all_docs(solr= solr, model= model_eng)
-	# np.save('./w2v-tmp/flattened_docs.npy', dict_docs)
-	# dict_users = flatten_all_users(solr= solr, data_path= data_path, model= model_eng)
-	# np.save('./w2v-tmp/flattened_users.npy', dict_users)
+	dict_docs =	flatten_all_docs(solr= solr, model= model_eng, filter_extremes= True)
+	np.save('./w2v-tmp/flattened_docs.npy', dict_docs)
+	dict_users = flatten_all_users(solr= solr, data_path= data_path, model= model_eng, filter_extremes= True)
+	np.save('./w2v-tmp/flattened_users.npy', dict_users)
 
-	for N in [5, 10, 15, 20]:
-		option2_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
-
+	# model_eng.init_sims(replace=True)
 	# for N in [5, 10, 15, 20]:
-		# option1_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
+	# 	option1_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
+	# 	option2_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
+
 
 if __name__ == '__main__':
 	main()
+
+# AVG y STDEV LENGTH OF FLATTENED DOCS #
+# lens=[]
+# for id, flat_doc in flat_docs.items():
+# 	lens.append( len(flat_doc) )
+# mean(lens)
+# stdev(lens)
+
