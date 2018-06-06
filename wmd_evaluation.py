@@ -13,8 +13,10 @@ import operator
 from gensim.models import KeyedVectors
 from gensim.models.word2vec import Word2Vec
 from gensim.parsing.preprocessing import preprocess_string, strip_tags, strip_punctuation, strip_multiple_whitespaces, strip_numeric
+from gensim.similarities import WmdSimilarity
 from nltk.corpus import stopwords
 from textblob.blob import TextBlob
+from annoy import AnnoyIndex
 stop_words = set(stopwords.words('spanish') + stopwords.words('english') + stopwords.words('german') + stopwords.words('arabic') + \
 								 stopwords.words('french') + stopwords.words('italian') + stopwords.words('portuguese') + ['goodreads', 'http', 'https', 'www', '"'])
 CUSTOM_FILTERS = [lambda x: x.lower(), strip_tags, strip_punctuation, strip_multiple_whitespaces, strip_numeric]
@@ -123,7 +125,7 @@ def flatten_all_users(solr, data_path, model):
 
 
 def option1_protocol_evaluation(data_path, solr, N, model):
-	# userId='113447232' 285597345
+	# userId='113447232' user_bookId='17310690'
 	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
 	MRRs   = []
@@ -131,34 +133,65 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 	APs    = []
 	Rprecs = []
 	flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
-	model.init_sims(replace=True)
+	docs2vec = np.load('./w2v-tmp/docs2vec.npy').item()
+	num_to_grId = np.load('./w2v-tmp/num_to_grId.npy').item()
+	grId_to_num = np.load('./w2v-tmp/grId_to_num.npy').item()
+	t = AnnoyIndex(300)
+	t.load('./w2v-tmp/doc_vecs_t100.tree')	
+	num_best = 20
 
 	i = 1
 	for userId in test_c:
 		logging.info("MODO 1. {0} de {1}. User ID: {2}".format(i, len(test_c), userId))
 		i += 1
-		stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
-		ids_string = encoded_itemIds(item_list=train_c[userId])
-		url        = stream_url.format(ids=ids_string)
-		response   = json.loads( urlopen(url).read().decode('utf8') )
-		try:
-			docs     = response['response']['docs']
-		except TypeError as e:
-			continue
+		# stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
+		# ids_string = encoded_itemIds(item_list=train_c[userId])
+		# url        = stream_url.format(ids=ids_string)
+		# response   = json.loads( urlopen(url).read().decode('utf8') )
+		# try:
+		# 	docs     = response['response']['docs']
+		# except TypeError as e:
+		# 	continue
 
 		book_recs = []
-		for user_doc in docs:
-			wmds = dict((bookId, 0.0) for bookId in flat_docs)
-			user_bookId = str(user_doc['goodreadsId'][0]) #id de libro consumido por user
-			
-			for bookId in flat_docs: #ids de libros en la DB
-				if bookId == user_bookId: continue
-				wmds[bookId] = model.wmdistance(flat_docs[bookId], flat_docs[user_bookId]) #1 - dist = similarity
-			
-			sorted_sims = sorted(wmds.items(), key=operator.itemgetter(1), reverse=False) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
-			book_recs.append( [ bookId for bookId, sim in sorted_sims ] )
+		for user_bookId in train_c[userId]:#for user_doc in docs:
 
-		book_recs = flatten_list(list_of_lists=book_recs, rows=len(sorted_sims))
+			try:
+				docs = t.get_nns_by_item(grId_to_num[user_bookId], 20)
+				book_recs_cos = [ str(num_to_grId[doc_num]) for doc_num in docs ]
+			except KeyError as e:
+				logging.info("{} ES UNO DE LOS LIBROS CUYO HTML NO PUDO SER DESCARGADO. PROSIGUIENDO CON EL SIGUIENTE LIBRO..".format(bookId))
+				continue
+
+
+
+			wmd_corpus = []
+			num_to_grId_wmd = {}
+			j = 0
+			for grId in book_recs_cos:
+				wmd_corpus.append( flat_docs[grId] )
+				num_to_grId_wmd[j] = grId
+				j += 1
+			grId_to_num_wmd = {v: k for k, v in num_to_grId_wmd.items()}
+
+			index = WmdSimilarity(wmd_corpus, model, num_best= num_best, normalize_w2v_and_replace=False)
+			r = index[flat_docs[user_bookId]]
+			book_recs.append( [ num_to_grId_wmd[id] for id,score in r ] )
+
+			# wmds = dict((bookId, 0.0) for bookId in flat_docs)
+			# user_bookId = str(user_doc['goodreadsId'][0]) #id de libro consumido por user
+			
+			# for bookId in flat_docs: #ids de libros en la DB
+				# if bookId == user_bookId: continue
+				# wmds[bookId] = model.wmdistance(flat_docs[bookId], flat_docs[user_bookId]) #1 - dist = similarity
+			
+			# sorted_sims = sorted(wmds.items(), key=operator.itemgetter(1), reverse=False) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
+			# book_recs.append( [ bookId for bookId, sim in sorted_sims ] )
+
+
+
+
+		book_recs = flatten_list(list_of_lists=book_recs, rows=len(book_recs[0]))
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		try:
 			recs    = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
@@ -189,7 +222,7 @@ def option2_protocol_evaluation(data_path, solr, N, model):
 	Rprecs = []
 	flat_docs  = np.load('./w2v-tmp/flattened_docs.npy').item()
 	flat_users = np.load('./w2v-tmp/flattened_users.npy').item()
-	model.init_sims(replace=True)
+	
 	
 	i = 1		
 
@@ -227,6 +260,8 @@ def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = 'http://localhost:8983/solr/grrecsys'
 	model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+	model_eng.init_sims(replace=True)
+
 	## Sólo por ahora para guardar el diccionario de vectores:
 	# dict_docs =	flatten_all_docs(solr= solr, model= model_eng)
 	# np.save('./w2v-tmp/flattened_docs.npy', dict_docs)
