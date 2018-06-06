@@ -60,7 +60,7 @@ def get_extremes(flat_docs, n_below, n_above):
 			extremes.append(word)
 	return extremes
 
-def flat_doc(document, model, flat_docs=None):
+def flat_doc(document, model, extremes=None):
 	flat_doc = ""
 	for field in document:
 		if not isinstance(document[field], list): continue #No tomamos en cuenta los campos 'id' y '_version_': auto-generados por Solr
@@ -81,10 +81,7 @@ def flat_doc(document, model, flat_docs=None):
 	flat_doc = preprocess_string(flat_doc, CUSTOM_FILTERS) #Preprocesa el string
 	flat_doc = [w for w in flat_doc if w not in stop_words] #Remueve stop words
 	
-	if flat_docs:
-		n_below = len(flat_docs) * 0.5
-		n_above = 2
-		extremes = get_extremes(flat_docs=flat_docs, n_below=n_below, n_above=n_above)
+	if extremes:
 		flat_doc = [w for w in flat_doc if w not in extremes]
 
 	flat_doc = [w for w in flat_doc if w in model.vocab] #Deja sólo palabras del vocabulario
@@ -98,12 +95,16 @@ def flatten_all_docs(solr, model, filter_extremes=False):
 
 	i = 0 
 	if filter_extremes:	
-		flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
+		flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()		
+		n_below = len(flat_docs) * 0.5
+		n_above = 2
+		extremes = get_extremes(flat_docs=flat_docs, n_below=n_below, n_above=n_above)
 		for doc in docs:
 			i+=1
 			goodreadsId = str( doc['goodreadsId'][0] )
 			logging.info("{0} de {1}. Doc: {2}".format(i, len(docs), goodreadsId))
-			dict_docs[goodreadsId] = flat_doc(document= doc, model= model, flat_docs= flat_docs)
+			dict_docs[goodreadsId] = flat_doc(document= doc, model= model, extremes= extremes)
+	
 	else:
 		for doc in docs:
 			i+=1
@@ -113,7 +114,7 @@ def flatten_all_docs(solr, model, filter_extremes=False):
 	del docs
 	return dict_docs
 
-def flat_user(solr, consumption, model, flat_docs=None):
+def flat_user(solr, consumption, model, extremes=None):
 	stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
 	ids_string = encoded_itemIds(item_list=consumption)
 	url        = stream_url.format(ids=ids_string)
@@ -140,10 +141,7 @@ def flat_user(solr, consumption, model, flat_docs=None):
 	flat_user = preprocess_string(flat_user, CUSTOM_FILTERS) #Preprocesa el string
 	flat_user = [w for w in flat_user if w not in stop_words] #Remueve stop words
 
-	if flat_docs: # Sólo posible si ya se ejecutó flatten_all_docs
-		n_below = len(flat_docs) * 0.5
-		n_above = 2
-		extremes  = get_extremes(flat_docs=flat_docs, n_below=n_below, n_above=n_above)
+	if extremes: # Sólo posible si ya se ejecutó flatten_all_docs
 		flat_user = [w for w in flat_user if w not in extremes]
 
 	flat_user = [w for w in flat_user if w in model.vocab] #Deja sólo palabras del vocabulario
@@ -156,10 +154,14 @@ def flatten_all_users(solr, data_path, model, filter_extremes=False):
 	i = 0
 	if filter_extremes:	
 		flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
+		n_below = len(flat_docs) * 0.5
+		n_above = 2
+		extremes = get_extremes(flat_docs=flat_docs, n_below=n_below, n_above=n_above)
 		for userId in train_c:
 			i+=1
 			logging.info("USERS 2 VECS. {0} de {1}. User: {2}".format(i, len(train_c), userId))
-			dict_users[userId] = flat_user(solr= solr, consumption= train_c[userId], model= model, flat_docs= flat_docs)
+			dict_users[userId] = flat_user(solr= solr, consumption= train_c[userId], model= model, extremes= extremes)
+
 	else:
 		for userId in train_c:
 			i+=1
