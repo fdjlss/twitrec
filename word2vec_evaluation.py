@@ -250,10 +250,10 @@ def option2_protocol_evaluation(data_path, N):
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = 'http://localhost:8983/solr/grrecsys'
-	# model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+	model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 	
 	## Mapeo book Id -> vec_book Para modo 1 y 2 ##:
-	dict_docs =	docs2vecs(solr= solr, model= model_eng)
+	dict_docs =	docs2vecs(model= model_eng)
 	np.save('./w2v-tmp/docs2vec.npy', dict_docs)
 	## DONE ##
 
@@ -264,7 +264,7 @@ def main():
 	## DONE ##
 
 	## Para modo 2
-	dict_users = users2vecs(solr= solr, data_path= data_path, model= model_eng)
+	dict_users = users2vecs(model= model_eng)
 	np.save('./w2v-tmp/users2vec.npy', dict_users)
 	#Por ahora no:
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
