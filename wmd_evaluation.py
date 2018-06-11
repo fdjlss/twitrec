@@ -332,9 +332,9 @@ def main():
 	model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 
 	## Sólo por ahora para guardar el diccionario de vectores:
-	dict_docs =	flatten_all_docs(solr= solr, model= model_eng, filter_extremes= True)
+	dict_docs =	flatten_all_docs(solr= solr, model= model_eng, filter_extremes= False)
 	np.save('./w2v-tmp/flattened_docs.npy', dict_docs)
-	dict_users = flatten_all_users(solr= solr, data_path= data_path, model= model_eng, filter_extremes= True)
+	dict_users = flatten_all_users(solr= solr, data_path= data_path, model= model_eng, filter_extremes= False)
 	np.save('./w2v-tmp/flattened_users.npy', dict_users)
 
 	# model_eng.init_sims(replace=True)
