@@ -200,7 +200,7 @@ def option1_protocol_evaluation(data_path, N):
 		####################################
 
 	with open('TwitterRatings/word2vec/option1_protocol.txt', 'a') as file:
-		file.write( "INDEXED N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+		file.write( "EXTREMES FILTERED N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
 
@@ -216,8 +216,8 @@ def option2_protocol_evaluation(data_path, N):
 	users2vec = np.load('./w2v-tmp/users2vec.npy').item()
 
 	i = 1
-	sampled_user_ids = random.sample(test_c.keys(), 200)
-	for userId in sampled_user_ids: #test_c:
+	# sampled_user_ids = random.sample(test_c.keys(), 200)
+	for userId in test_c:#sampled_user_ids:
 		logging.info("MODO 2. {0} de {1}. User ID: {2}".format(i, len(test_c), userId))
 		i += 1
 
@@ -243,7 +243,7 @@ def option2_protocol_evaluation(data_path, N):
 		####################################
 
 	with open('TwitterRatings/word2vec/option2_protocol.txt', 'a') as file:
-		file.write( "SAMPLED N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+		file.write( "EXTREMES FILTERED N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
 
