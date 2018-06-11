@@ -83,7 +83,7 @@ def docs2vecs(model):
 	i = 0
 	for bookId, flat_doc in flat_docs.items():
 		i+=1
-		logging.info("{0} de {1}. Doc: {2}".format(i, len(flat_docs), goodreadsId))
+		logging.info("{0} de {1}. Doc: {2}".format(i, len(flat_docs), bookId))
 		ids2vec[bookId] = doc2vec(list_document= flat_doc, model= model)
 	return ids2vec
 
