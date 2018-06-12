@@ -54,9 +54,9 @@ def get_extremes(flat_docs, n_below, n_above):
 	sorted_x = sorted(word_fqs.items(), key=operator.itemgetter(1), reverse=True)
 	extremes = []
 	for word, freq in sorted_x:
-		if freq > n_above:
+		if freq >= n_above:
 			extremes.append(word)
-		if n_below > freq:
+		if n_below >= freq:
 			extremes.append(word)
 	return extremes
 
@@ -83,7 +83,6 @@ def flat_doc(document, model, extremes=None):
 	
 	if extremes:
 		flat_doc = [w for w in flat_doc if w not in extremes]
-
 	flat_doc = [w for w in flat_doc if w in model.vocab] #Deja sólo palabras del vocabulario
 	return flat_doc
 
@@ -96,8 +95,8 @@ def flatten_all_docs(solr, model, filter_extremes=False):
 	i = 0 
 	if filter_extremes:	
 		flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()		
-		n_below = len(flat_docs) * 0.5
-		n_above = 2
+		n_above = len(flat_docs) * 0.5
+		n_below = 2
 		extremes = get_extremes(flat_docs=flat_docs, n_below=n_below, n_above=n_above)
 		for doc in docs:
 			i+=1
@@ -332,10 +331,10 @@ def main():
 	model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 
 	## Sólo por ahora para guardar el diccionario de vectores:
-	dict_docs =	flatten_all_docs(solr= solr, model= model_eng, filter_extremes= False)
-	np.save('./w2v-tmp/flattened_docs.npy', dict_docs)
-	dict_users = flatten_all_users(solr= solr, data_path= data_path, model= model_eng, filter_extremes= False)
-	np.save('./w2v-tmp/flattened_users.npy', dict_users)
+	dict_docs =	flatten_all_docs(solr= solr, model= model_eng, filter_extremes= True)
+	np.save('./w2v-tmp/flattened_docs_fe.npy', dict_docs)
+	dict_users = flatten_all_users(solr= solr, data_path= data_path, model= model_eng, filter_extremes= True)
+	np.save('./w2v-tmp/flattened_users_fe.npy', dict_users)
 
 	# model_eng.init_sims(replace=True)
 	# for N in [5, 10, 15, 20]:
