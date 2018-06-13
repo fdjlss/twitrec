@@ -18,6 +18,7 @@ from nltk.corpus import stopwords
 from textblob.blob import TextBlob
 from annoy import AnnoyIndex
 from gensim.corpora import Dictionary
+# Debería estar dentro del main:
 stop_words = set(stopwords.words('spanish') + stopwords.words('english') + stopwords.words('german') + stopwords.words('arabic') + \
 								 stopwords.words('french') + stopwords.words('italian') + stopwords.words('portuguese') + ['goodreads', 'http', 'https', 'www', '"'])
 CUSTOM_FILTERS = [lambda x: x.lower(), strip_tags, strip_punctuation, strip_multiple_whitespaces, strip_numeric]
@@ -56,9 +57,27 @@ def get_extremes(flat_docs, n_below, n_above):
 	for word, freq in sorted_x:
 		if freq >= n_above:
 			extremes.append(word)
-		if n_below >= freq:
+		if freq <= n_below:
 			extremes.append(word)
 	return extremes
+
+def get_tweets_as_flat_docs(tweet_path, train_users):
+	# Obtenemos sólo los tweets de los usuarios dentro del train set protocolar
+	filenames = [ f for f in os.listdir(tweet_path) ]
+	p_filenames = []
+	for userId in train_users:
+		p_filenames.append( [filename for filename in filenames if userId in filename][0] )
+
+	# Leemos todos los tweets en strings preprocesados en una lista
+	flat_docs = []
+	for file in p_filenames:
+		with open(tweet_path+file, 'r', encoding='ISO-8859-1') as f:
+			flat_user = f.read().replace('\n', ' ')
+		flat_docs.append( preprocess_string(flat_user) )
+
+	# Dado que flat_user() recibe un dict, se debe crear un mock dict
+	flat_docs = dict(enumerate(flat_docs))
+	return flat_docs
 
 def flat_doc(document, model, extremes=None):
 	flat_doc = ""
@@ -80,7 +99,6 @@ def flat_doc(document, model, extremes=None):
 			flat_doc += str(value)+' ' #Se aplana el documento en un solo string
 	flat_doc = preprocess_string(flat_doc, CUSTOM_FILTERS) #Preprocesa el string
 	flat_doc = [w for w in flat_doc if w not in stop_words] #Remueve stop words
-	
 	if extremes:
 		flat_doc = [w for w in flat_doc if w not in extremes]
 	flat_doc = [w for w in flat_doc if w in model.vocab] #Deja sólo palabras del vocabulario
@@ -113,59 +131,67 @@ def flatten_all_docs(solr, model, filter_extremes=False):
 	del docs
 	return dict_docs
 
-def flat_user(solr, consumption, model, extremes=None):
-	stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
-	ids_string = encoded_itemIds(item_list=consumption)
-	url        = stream_url.format(ids=ids_string)
-	response   = json.loads( urlopen(url).read().decode('utf8') )
-	docs       = response['response']['docs']
-	flat_user = ""
-	for document in docs:
-		for field in document:
-			if not isinstance(document[field], list): continue #No tomamos en cuenta los campos 'id' y '_version_': auto-generados por Solr
-			for value in document[field]:
-				## Detección y traducción ##
-				if field=='author.authors.authorName' or field=='author.authorBio' or field=='description' or field=='quotes.quoteText':
-					value_blob = TextBlob(value)
-					try:
-						if value_blob.detect_language() != 'en':
-							try: 
-								value = value_blob.translate(to='en')
-							except Exception as e: 
-								value = value #e = NotTranslated('Translation API returned the input string unchanged.',)
-					except Exception as e:
-						value = value #e = TranslatorError('Must provide a string with at least 3 characters.')
-				############################
-				flat_user += str(value)+' ' #Se aplana el documento en un solo string
-	flat_user = preprocess_string(flat_user, CUSTOM_FILTERS) #Preprocesa el string
+def flat_user(flat_docs, consumption):
+	flat_user = []
+	for bookId in consumption:
+		try:
+			flat_user += flat_docs[bookId]
+		except KeyError as e:
+			# Esto pasa sólo con 2 libros hasta el momento..
+			logging.info("{} ES UNO DE LOS LIBROS CUYO HTML NO PUDO SER DESCARGADO. PROSIGUIENDO CON EL SIGUIENTE LIBRO..".format(bookId))
+			continue	
+	return flat_user
+
+def flat_user_as_tweets(tweets_file, model, extremes=None):
+	with open(tweets_file, 'r', encoding='ISO-8859-1') as f:
+		flat_user = f.read().replace('\n', ' ')
+	flat_user = preprocess_string(flat_user, CUSTOM_FILTERS)
+	# No hago trabajo de traducción con TextBlob, ya que tendría que tomar 
+	# el string completo, lo que sería demasiado costoso
 	flat_user = [w for w in flat_user if w not in stop_words] #Remueve stop words
-
-	if extremes: # Sólo posible si ya se ejecutó flatten_all_docs
+	if extremes: 
 		flat_user = [w for w in flat_user if w not in extremes]
-
 	flat_user = [w for w in flat_user if w in model.vocab] #Deja sólo palabras del vocabulario
 	return flat_user
 
-def flatten_all_users(solr, data_path, model, filter_extremes=False):
+def flatten_all_users(data_path, model, as_tweets=False, filter_extremes=False):
 	train_c = consumption(ratings_path=data_path+'eval_train_N5.data', rel_thresh=0, with_ratings=False)
 	dict_users = {}
 
 	i = 0
-	if filter_extremes:	
-		flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
-		n_below = len(flat_docs) * 0.5
-		n_above = 2
-		extremes = get_extremes(flat_docs=flat_docs, n_below=n_below, n_above=n_above)
+	if as_tweets:
+		tweet_path = "/home/jschellman/tesis/TwitterRatings/users_goodreads/"
+		filenames  = [ f for f in os.listdir(tweet_path) ]
+		flat_docs  = get_tweets_as_flat_docs(tweet_path=tweet_path, train_users= train_c)
+		n_above    = len(flat_docs) * 0.5
+		n_below    = 2
+		extremes   = get_extremes(flat_docs= flat_docs, n_below= n_below, n_above= n_above)
 		for userId in train_c:
 			i+=1
-			logging.info("USERS 2 VECS. {0} de {1}. User: {2}".format(i, len(train_c), userId))
-			dict_users[userId] = flat_user(solr= solr, consumption= train_c[userId], model= model, extremes= extremes)
+			logging.info("USERS 2 VECS. AS TWEETS. {0} de {1}. User: {2}".format(i, len(train_c), userId))
+			tweets_file = [filename for filename in filenames if userId in filename][0]
+			dict_users[userId] = flat_user_as_tweets(tweets_file= tweet_path+tweets_file, model= model, extremes= extremes)
 
 	else:
+		if filter_extremes:	
+			flat_docs = np.load('./w2v-tmp/flattened_docs_fe.npy').item()
+		else:
+			flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
 		for userId in train_c:
 			i+=1
 			logging.info("USERS 2 VECS. {0} de {1}. User: {2}".format(i, len(train_c), userId))
-			dict_users[userId] = flat_user(solr= solr, consumption= train_c[userId], model= model)
+			dict_users[userId] = flat_user(flat_docs= flat_docs, consumption= train_c[userId])
+
+	return dict_users
+
+def mix_user_flattening(data_path):
+	train_c = consumption(ratings_path=data_path+'eval_train_N5.data', rel_thresh=0, with_ratings=False)
+	flat_users_books = np.load('./w2v-tmp/flattened_users_books.npy').item()
+	flat_users_tweets = np.load('./w2v-tmp/flattened_users_tweets.npy').item()
+	dict_users = {}
+
+	for userId in train_c:
+		dict_users[userId] = flat_users_books[userId] + flat_users_tweets[userId]
 
 	return dict_users
 #--------------------------------#
@@ -257,8 +283,6 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
-
-
 def option2_protocol_evaluation(data_path, solr, N, model):
 	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
@@ -333,7 +357,7 @@ def main():
 	## Sólo por ahora para guardar el diccionario de vectores:
 	dict_docs =	flatten_all_docs(solr= solr, model= model_eng, filter_extremes= True)
 	np.save('./w2v-tmp/flattened_docs_fe.npy', dict_docs)
-	dict_users = flatten_all_users(solr= solr, data_path= data_path, model= model_eng, filter_extremes= True)
+	dict_users = flatten_all_users(data_path= data_path, model= model_eng, as_tweets=False, filter_extremes= True)
 	np.save('./w2v-tmp/flattened_users_fe.npy', dict_users)
 
 	# model_eng.init_sims(replace=True)
