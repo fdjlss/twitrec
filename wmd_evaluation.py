@@ -102,7 +102,7 @@ def flat_doc(document, model, extremes=None):
 	if extremes:
 		flat_doc = [w for w in flat_doc if w not in extremes]
 	flat_doc = [w for w in flat_doc if w in model.vocab] #Deja sólo palabras del vocabulario
-	if flat_doc = []:
+	if flat_doc == []:
 		flat_doc = ['book'] #Si el libro queda vacío, agregarle un token para no tener problemas más adelante
 	return flat_doc
 
