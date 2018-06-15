@@ -250,16 +250,19 @@ def option2_protocol_evaluation(data_path, N):
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = 'http://localhost:8983/solr/grrecsys'
+	
 	## Modelo w2v Google 300 ##
-	model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+	
 	## Modelo FT Wiki + UMBC webbase + statmt.org news 300 ##
 	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/fasttext-wiki-news-subwords-300/fasttext-wiki-news-subwords-300.gz')
-	## Modelo glove Twitter 200 ##
+	
+	## Modelo glove (convertido a w2v) Twitter 200 ##
 	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
 
 	## Mapeo book Id -> vec_book Para modo 1 y 2 ##:
-	dict_docs =	docs2vecs(model= model_eng)
-	np.save('./w2v-tmp/docs2vec.npy', dict_docs)
+	# dict_docs =	docs2vecs(model= model)
+	# np.save('./w2v-tmp/docs2vec.npy', dict_docs)
 	## DONE ##
 
 	## Para modo 1 ##
@@ -269,15 +272,15 @@ def main():
 	## DONE ##
 
 	## Para modo 2
-	dict_users = users2vecs(model= model_eng)
-	np.save('./w2v-tmp/users2vec.npy', dict_users)
+	# dict_users = users2vecs(model= model)
+	# np.save('./w2v-tmp/users2vec.npy', dict_users)
 	#Por ahora no:
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
 
 	# CORRER annoy_indexer ANTES DE..
-	# for N in [5, 10, 15, 20]:
-	# 	option1_protocol_evaluation(data_path= data_path, N=N)
-	# 	option2_protocol_evaluation(data_path= data_path, N=N)
+	for N in [5, 10, 15, 20]:
+		option1_protocol_evaluation(data_path= data_path, N=N)
+		option2_protocol_evaluation(data_path= data_path, N=N)
 	
 	
 if __name__ == '__main__':
