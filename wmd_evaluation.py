@@ -102,6 +102,8 @@ def flat_doc(document, model, extremes=None):
 	if extremes:
 		flat_doc = [w for w in flat_doc if w not in extremes]
 	flat_doc = [w for w in flat_doc if w in model.vocab] #Deja sólo palabras del vocabulario
+	if flat_doc = []:
+		flat_doc = ['book'] #Si el libro queda vacío, agregarle un token para no tener problemas más adelante
 	return flat_doc
 
 def flatten_all_docs(solr, model, filter_extremes=False):
@@ -352,13 +354,17 @@ def option2_protocol_evaluation(data_path, solr, N, model):
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = 'http://localhost:8983/solr/grrecsys'
-	model_eng = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+	## Modelo w2v Google 300 ##
+	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+	
+	## Modelo glove (convertido a w2v) Twitter 200 ##
+	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
 
 	## Sólo por ahora para guardar el diccionario de vectores:
-	dict_docs =	flatten_all_docs(solr= solr, model= model_eng, filter_extremes= True)
-	np.save('./w2v-tmp/flattened_docs_fe.npy', dict_docs)
-	dict_users = flatten_all_users(data_path= data_path, model= model_eng, as_tweets=False, filter_extremes= True)
-	np.save('./w2v-tmp/flattened_users_fe.npy', dict_users)
+	# dict_docs =	flatten_all_docs(solr= solr, model= model_eng, filter_extremes= True)
+	# np.save('./w2v-tmp/flattened_docs_fe.npy', dict_docs)
+	dict_users = flatten_all_users(data_path= data_path, model= model, as_tweets=True, filter_extremes= True)
+	np.save('./w2v-tmp/flattened_users_tweets.npy', dict_users)
 
 	# model_eng.init_sims(replace=True)
 	# for N in [5, 10, 15, 20]:
