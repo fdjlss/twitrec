@@ -34,7 +34,7 @@ def encoded_itemIds(item_list):
 	return ids_string
 def flatten_list(list_of_lists, rows):
 	"""Eliminamos duplicados manteniendo orden"""
-	flattened = []
+	flattened == []
 	for i in range(0, rows): #asumimos que todas las listas tienen largo "rows"
 		for j in range(0, len(list_of_lists)):
 			try:
