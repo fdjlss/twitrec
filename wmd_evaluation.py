@@ -369,8 +369,8 @@ def main():
 
 	model.init_sims(replace=True)
 	for N in [5, 10, 15, 20]:
-		option1_protocol_evaluation(data_path= data_path, N=N, model= model_eng)
-		option2_protocol_evaluation(data_path= data_path, N=N, model= model_eng)
+		option1_protocol_evaluation(data_path= data_path, N=N, model= model)
+		option2_protocol_evaluation(data_path= data_path, N=N, model= model)
 
 
 if __name__ == '__main__':
