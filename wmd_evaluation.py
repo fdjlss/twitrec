@@ -34,7 +34,7 @@ def encoded_itemIds(item_list):
 	return ids_string
 def flatten_list(list_of_lists, rows):
 	"""Eliminamos duplicados manteniendo orden"""
-	flattened == []
+	flattened = []
 	for i in range(0, rows): #asumimos que todas las listas tienen largo "rows"
 		for j in range(0, len(list_of_lists)):
 			try:
@@ -176,7 +176,7 @@ def flatten_all_users(data_path, model, as_tweets=False, filter_extremes=False):
 
 	else:
 		if filter_extremes:	
-			flat_docs = np.load('./w2v-tmp/flattened_docs_fe.npy').item()
+			flat_docs = np.load('./w2v-tmp/flattened_docs_fea075b1.npy').item()
 		else:
 			flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
 		for userId in train_c:
@@ -227,27 +227,31 @@ def option1_protocol_evaluation(data_path, N, model):
 		# except TypeError as e:
 		# 	continue
 
-		book_recs = []
+		book_recs     = []
+		book_recs_cos = []
 		for user_bookId in train_c[userId]:#for user_doc in docs:
-
 			try:
-				docs = t.get_nns_by_item(grId_to_num[user_bookId], 20)
-				book_recs_cos = [ str(num_to_grId[doc_num]) for doc_num in docs ]
+				docs = t.get_nns_by_item(grId_to_num[user_bookId], 4)
+				book_recs_cos += [ str(num_to_grId[doc_num]) for doc_num in docs ]
 			except KeyError as e:
 				logging.info("{} ES UNO DE LOS LIBROS CUYO HTML NO PUDO SER DESCARGADO. PROSIGUIENDO CON EL SIGUIENTE LIBRO..".format(bookId))
 				continue
 
+		# Removemos de la primera lista los items consumidos, dado que get_nns_by_items() los incluye
+		book_recs_cos = [bookId for bookId in book_recs_cos if bookId not in train_c[userId]]
 
-			wmd_corpus = []
-			num_to_grId_wmd = {}
-			j = 0
-			for grId in book_recs_cos:
-				wmd_corpus.append( flat_docs[grId] )
-				num_to_grId_wmd[j] = grId
-				j += 1
-			grId_to_num_wmd = {v: k for k, v in num_to_grId_wmd.items()}
+		wmd_corpus = []
+		num_to_grId_wmd = {}
+		j = 0
+		for grId in book_recs_cos:
+			wmd_corpus.append( flat_docs[grId] )
+			num_to_grId_wmd[j] = grId
+			j += 1	
+		grId_to_num_wmd = {v: k for k, v in num_to_grId_wmd.items()}
 
-			index = WmdSimilarity(wmd_corpus, model, num_best= num_best, normalize_w2v_and_replace=False)
+		index = WmdSimilarity(wmd_corpus, model, num_best= num_best, normalize_w2v_and_replace=False)
+
+		for user_bookId in train_c[userId]:
 			r = index[flat_docs[user_bookId]]
 			book_recs.append( [ num_to_grId_wmd[id] for id,score in r ] )
 
@@ -358,19 +362,19 @@ def main():
 	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
 
 	## Sólo por ahora para guardar el diccionario de vectores:
-	# dict_docs =	flatten_all_docs(solr= solr, model= model_eng, filter_extremes= True)
-	# np.save('./w2v-tmp/flattened_docs_fea075b1.npy', dict_docs)
-	# dict_users = flatten_all_users(data_path= data_path, model= model, as_tweets=False, filter_extremes= True)
-	# np.save('./w2v-tmp/flattened_users_fea075b1.npy', dict_users)
+	dict_docs =	flatten_all_docs(solr= solr, model= model, filter_extremes= True)
+	np.save('./w2v-tmp/flattened_docs_fea075b1.npy', dict_docs)
+	dict_users = flatten_all_users(data_path= data_path, model= model, as_tweets=False, filter_extremes= True)
+	np.save('./w2v-tmp/flattened_users_fea075b1.npy', dict_users)
 
 	# RECORDAR CAMBIARLE NOMBRE AL flattened_users GANADOR (normal.npy o _fe.npy a *_books,npy)
 	# dict_users = mix_user_flattening(data_path= data_path)
 	# np.save('./w2v-tmp/flattened_users_tweets.npy', dict_users)
 
-	model.init_sims(replace=True)
-	for N in [5, 10, 15, 20]:
-		option1_protocol_evaluation(data_path= data_path, N=N, model= model)
-		option2_protocol_evaluation(data_path= data_path, N=N, model= model)
+	# model.init_sims(replace=True)
+	# for N in [5, 10, 15, 20]:
+	# 	option1_protocol_evaluation(data_path= data_path, N=N, model= model)
+	# 	option2_protocol_evaluation(data_path= data_path, N=N, model= model)
 
 
 if __name__ == '__main__':
