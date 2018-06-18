@@ -199,7 +199,7 @@ def mix_user_flattening(data_path):
 #--------------------------------#
 
 
-def option1_protocol_evaluation(data_path, solr, N, model):
+def option1_protocol_evaluation(data_path, N, model):
 	# userId='113447232' user_bookId='17310690'
 	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
@@ -207,7 +207,7 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 	nDCGs  = []
 	APs    = []
 	Rprecs = []
-	flat_docs   = np.load('./w2v-tmp/flattened_docs.npy').item()
+	flat_docs   = np.load('./w2v-tmp/flattened_docs_fea05b2.npy').item()
 	num_to_grId = np.load('./w2v-tmp/num_to_grId.npy').item()
 	grId_to_num = np.load('./w2v-tmp/grId_to_num.npy').item()
 	t = AnnoyIndex(300)
@@ -238,7 +238,6 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 				continue
 
 
-
 			wmd_corpus = []
 			num_to_grId_wmd = {}
 			j = 0
@@ -263,8 +262,6 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 			# book_recs.append( [ bookId for bookId, sim in sorted_sims ] )
 
 
-
-
 		book_recs = flatten_list(list_of_lists=book_recs, rows=len(book_recs[0]))
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		try:
@@ -285,15 +282,15 @@ def option1_protocol_evaluation(data_path, solr, N, model):
 		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
-def option2_protocol_evaluation(data_path, solr, N, model):
+def option2_protocol_evaluation(data_path, N, model):
 	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
 	MRRs   = []
 	nDCGs  = []
 	APs    = []
 	Rprecs = []
-	flat_docs  = np.load('./w2v-tmp/flattened_docs.npy').item()
-	flat_users = np.load('./w2v-tmp/flattened_users.npy').item()
+	flat_docs  = np.load('./w2v-tmp/flattened_docs_fea05b2.npy').item()
+	flat_users = np.load('./w2v-tmp/flattened_users_fea05b2.npy').item()
 	docs2vec   = np.load('./w2v-tmp/docs2vec.npy').item()
 	users2vec  = np.load('./w2v-tmp/users2vec.npy').item()
 	num_best = 20
@@ -372,8 +369,8 @@ def main():
 
 	model.init_sims(replace=True)
 	for N in [5, 10, 15, 20]:
-		option1_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
-		option2_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
+		option1_protocol_evaluation(data_path= data_path, N=N, model= model_eng)
+		option2_protocol_evaluation(data_path= data_path, N=N, model= model_eng)
 
 
 if __name__ == '__main__':
