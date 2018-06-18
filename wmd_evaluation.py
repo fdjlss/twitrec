@@ -115,8 +115,8 @@ def flatten_all_docs(solr, model, filter_extremes=False):
 	i = 0 
 	if filter_extremes:	
 		flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()		
-		n_above = len(flat_docs) * 0.5
-		n_below = 2
+		n_above = len(flat_docs) * 0.75
+		n_below = 1
 		extremes = get_extremes(flat_docs=flat_docs, n_below=n_below, n_above=n_above)
 		for doc in docs:
 			i+=1
@@ -165,8 +165,8 @@ def flatten_all_users(data_path, model, as_tweets=False, filter_extremes=False):
 		tweet_path = "/home/jschellman/tesis/TwitterRatings/users_goodreads/"
 		filenames  = [ f for f in os.listdir(tweet_path) ]
 		flat_docs  = get_tweets_as_flat_docs(tweet_path=tweet_path, train_users= train_c)
-		n_above    = len(flat_docs) * 0.5
-		n_below    = 2
+		n_above    = len(flat_docs) * 0.75
+		n_below    = 1
 		extremes   = get_extremes(flat_docs= flat_docs, n_below= n_below, n_above= n_above)
 		for userId in train_c:
 			i+=1
@@ -355,21 +355,25 @@ def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = 'http://localhost:8983/solr/grrecsys'
 	## Modelo w2v Google 300 ##
-	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 	
 	## Modelo glove (convertido a w2v) Twitter 200 ##
-	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
+	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
 
 	## Sólo por ahora para guardar el diccionario de vectores:
 	# dict_docs =	flatten_all_docs(solr= solr, model= model_eng, filter_extremes= True)
-	# np.save('./w2v-tmp/flattened_docs_fe.npy', dict_docs)
-	dict_users = flatten_all_users(data_path= data_path, model= model, as_tweets=True, filter_extremes= True)
-	np.save('./w2v-tmp/flattened_users_tweets.npy', dict_users)
+	# np.save('./w2v-tmp/flattened_docs_fea075b1.npy', dict_docs)
+	# dict_users = flatten_all_users(data_path= data_path, model= model, as_tweets=False, filter_extremes= True)
+	# np.save('./w2v-tmp/flattened_users_fea075b1.npy', dict_users)
 
-	# model_eng.init_sims(replace=True)
-	# for N in [5, 10, 15, 20]:
-	# 	option1_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
-	# 	option2_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
+	# RECORDAR CAMBIARLE NOMBRE AL flattened_users GANADOR (normal.npy o _fe.npy a *_books,npy)
+	# dict_users = mix_user_flattening(data_path= data_path)
+	# np.save('./w2v-tmp/flattened_users_tweets.npy', dict_users)
+
+	model.init_sims(replace=True)
+	for N in [5, 10, 15, 20]:
+		option1_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
+		option2_protocol_evaluation(data_path= data_path, solr= solr, N=N, model= model_eng)
 
 
 if __name__ == '__main__':
