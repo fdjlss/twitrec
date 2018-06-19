@@ -356,20 +356,20 @@ def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = 'http://localhost:8983/solr/grrecsys'
 	## Modelo w2v Google 300 ##
-	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 	
 	## Modelo glove (convertido a w2v) Twitter 200 ##
-	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
+	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
 
 	## Sólo por ahora para guardar el diccionario de vectores:
-	dict_docs =	flatten_all_docs(solr= solr, model= model, filter_extremes= True)
-	np.save('./w2v-tmp/flattened_docs_fea075b1.npy', dict_docs)
-	dict_users = flatten_all_users(data_path= data_path, model= model, as_tweets=False, filter_extremes= True)
-	np.save('./w2v-tmp/flattened_users_fea075b1.npy', dict_users)
+	# dict_docs =	flatten_all_docs(solr= solr, model= model, filter_extremes= True)
+	# np.save('./w2v-tmp/flattened_docs_fea075b1.npy', dict_docs)
+	dict_users = flatten_all_users(data_path= data_path, model= model, as_tweets= True, filter_extremes= True)
+	# np.save('./w2v-tmp/flattened_users_fea075b1.npy', dict_users)
 
 	# RECORDAR CAMBIARLE NOMBRE AL flattened_users GANADOR (normal.npy o _fe.npy a *_books,npy)
 	# dict_users = mix_user_flattening(data_path= data_path)
-	# np.save('./w2v-tmp/flattened_users_tweets.npy', dict_users)
+	np.save('./w2v-tmp/flattened_users_tweets.npy', dict_users)
 
 	# model.init_sims(replace=True)
 	# for N in [5, 10, 15, 20]:
