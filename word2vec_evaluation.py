@@ -98,7 +98,7 @@ def users2vecs(model):
 	for userId, flat_user in flat_users.items():
 		i+=1
 		logging.info("USERS 2 VECS. {0} de {1}. User: {2}".format(i, len(flat_users), userId))
-		ids2vec[userId] = doc2vec(list_user= flat_user, model= model)
+		ids2vec[userId] = doc2vec(list_document= flat_user, model= model)
 	return ids2vec
 
 # MÉTODO DESCARTADO!
@@ -254,8 +254,8 @@ def main():
 	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
 
 	## Mapeo book Id -> vec_book Para modo 1 y 2 ##:
-	dict_docs =	docs2vecs(model= model)
-	np.save('./w2v-tmp/docs2vec_fea075b1.npy', dict_docs)
+	# dict_docs =	docs2vecs(model= model)
+	# np.save('./w2v-tmp/docs2vec_fea075b1.npy', dict_docs)
 	## DONE ##
 
 	## Para modo 2
