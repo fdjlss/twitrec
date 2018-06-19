@@ -60,6 +60,10 @@ def doc2vec(list_document, model):
 	# MAX POOLING
 	matrix_doc = np.zeros((model.vector_size,), dtype=float)
 	for token in list_document:
+		# Debiera estar manejado en las funciones de wmd_evaluation,
+		# pero habría que hacer este manejo si considero el vocab de Twitter
+		# y convierto en vector con modelo Wiki, por ej..
+		if token not in model.vocab: continue 
 		matrix_doc = np.vstack((matrix_doc, model[token]))
 	matrix_doc = np.delete(matrix_doc, 0, 0) #Elimina la primera fila de sólo ceros
 	vec_doc = max_pool(np_matrix= matrix_doc)
@@ -79,7 +83,7 @@ def docs2vecs(model):
 	# del docs
 	# return ids2vec
 	ids2vec = {}
-	flat_docs = np.load('./w2v-tmp/flattened_docs_fe.npy').item()
+	flat_docs = np.load('./w2v-tmp/flattened_docs_fea075b1.npy').item()
 	i = 0
 	for bookId, flat_doc in flat_docs.items():
 		i+=1
@@ -87,9 +91,18 @@ def docs2vecs(model):
 		ids2vec[bookId] = doc2vec(list_document= flat_doc, model= model)
 	return ids2vec
 
+def users2vecs(model):
+	ids2vec = {}
+	flat_users = np.load('./w2v-tmp/flattened_users_fea075b1.npy').item()
+	i = 0
+	for userId, flat_user in flat_users.items():
+		i+=1
+		logging.info("USERS 2 VECS. {0} de {1}. User: {2}".format(i, len(flat_users), userId))
+		ids2vec[userId] = doc2vec(list_user= flat_user, model= model)
+	return ids2vec
 
-# Para el modo 1
 # MÉTODO DESCARTADO!
+# Para el modo 1
 def sim_matrix(doc_vecs):
 	# sim_matrix = np.zeros(shape=(len(doc_vecs), len(doc_vecs)), dtype=float)
 	sim_dict = dict((bookId, {}) for bookId in doc_vecs)
@@ -111,26 +124,6 @@ def sim_matrix(doc_vecs):
 		delta = time.time() - initial
 
 	return sim_dict
-
-# Para el modo 2
-def user2vec(list_user, model):
-	# MAX POOLING
-	matrix_doc = np.zeros((model.vector_size,), dtype=float)
-	for token in list_user:
-		matrix_doc = np.vstack((matrix_doc, model[token]))
-	matrix_doc = np.delete(matrix_doc, 0, 0) #Elimina la primera fila de puros ceros
-	vec_doc = max_pool(np_matrix= matrix_doc)	
-	return vec_doc
-
-def users2vecs(model):
-	ids2vec = {}
-	flat_users = np.load('./w2v-tmp/flattened_users_fe.npy').item()
-	i = 0
-	for userId, flat_user in flat_users.items():
-		i+=1
-		logging.info("USERS 2 VECS. {0} de {1}. User: {2}".format(i, len(flat_users), userId))
-		ids2vec[userId] = user2vec(list_user= flat_user, model= model)
-	return ids2vec
 #--------------------------------#
 
 
@@ -142,7 +135,7 @@ def option1_protocol_evaluation(data_path, N):
 	nDCGs  = []
 	APs    = []
 	Rprecs = []
-	docs2vec = np.load('./w2v-tmp/docs2vec.npy').item()
+	docs2vec = np.load('./w2v-tmp/docs2vec_fea075b1.npy').item()
 	num_to_grId = np.load('./w2v-tmp/num_to_grId.npy').item()
 	grId_to_num = np.load('./w2v-tmp/grId_to_num.npy').item()
 	t = AnnoyIndex(300)
@@ -200,7 +193,7 @@ def option1_protocol_evaluation(data_path, N):
 		####################################
 
 	with open('TwitterRatings/word2vec/option1_protocol.txt', 'a') as file:
-		file.write( "EXTREMES FILTERED N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+		file.write( "EXTREMES FILTERED NO_AB=0.75 NO_BE=1 N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
 
@@ -212,8 +205,8 @@ def option2_protocol_evaluation(data_path, N):
 	nDCGs  = []
 	APs    = []
 	Rprecs = []
-	docs2vec  = np.load('./w2v-tmp/docs2vec.npy').item()
-	users2vec = np.load('./w2v-tmp/users2vec.npy').item()
+	docs2vec  = np.load('./w2v-tmp/docs2vec_fea075b1.npy').item()
+	users2vec = np.load('./w2v-tmp/users2vec_fea075b1.npy').item()
 
 	i = 1
 	# sampled_user_ids = random.sample(test_c.keys(), 200)
@@ -243,7 +236,7 @@ def option2_protocol_evaluation(data_path, N):
 		####################################
 
 	with open('TwitterRatings/word2vec/option2_protocol.txt', 'a') as file:
-		file.write( "EXTREMES FILTERED N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+		file.write( "EXTREMES FILTERED NO_AB=0.75 NO_BE=1 N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
 
@@ -252,7 +245,7 @@ def main():
 	solr = 'http://localhost:8983/solr/grrecsys'
 	
 	## Modelo w2v Google 300 ##
-	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 	
 	## Modelo FT Wiki + UMBC webbase + statmt.org news 300 ##
 	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/fasttext-wiki-news-subwords-300/fasttext-wiki-news-subwords-300.gz')
@@ -261,26 +254,27 @@ def main():
 	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
 
 	## Mapeo book Id -> vec_book Para modo 1 y 2 ##:
-	# dict_docs =	docs2vecs(model= model)
-	# np.save('./w2v-tmp/docs2vec.npy', dict_docs)
+	dict_docs =	docs2vecs(model= model)
+	np.save('./w2v-tmp/docs2vec_fea075b1.npy', dict_docs)
 	## DONE ##
 
-	## Para modo 1 ##
+	## Para modo 2
+	dict_users = users2vecs(model= model)
+	np.save('./w2v-tmp/users2vec_fea075b1.npy', dict_users)
+	#Por ahora no:
+	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
+
+	# MÉTODO DESCARTADO!
+	## Para modo 1 y 2 ##
 	# docs2vec  = np.load('./w2v-tmp/docs2vec.npy').item()
 	# dict_sim = sim_matrix(doc_vecs= docs2vec)
 	# np.save('./w2v-tmp/sim_matrix.npy', dict_sim)
 	## DONE ##
 
-	## Para modo 2
-	# dict_users = users2vecs(model= model)
-	# np.save('./w2v-tmp/users2vec.npy', dict_users)
-	#Por ahora no:
-	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
-
 	# CORRER annoy_indexer ANTES DE..
-	for N in [5, 10, 15, 20]:
-		option1_protocol_evaluation(data_path= data_path, N=N)
-		option2_protocol_evaluation(data_path= data_path, N=N)
+	# for N in [5, 10, 15, 20]:
+		# option1_protocol_evaluation(data_path= data_path, N=N)
+		# option2_protocol_evaluation(data_path= data_path, N=N)
 	
 	
 if __name__ == '__main__':
