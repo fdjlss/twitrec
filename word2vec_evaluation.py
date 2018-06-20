@@ -139,7 +139,7 @@ def option1_protocol_evaluation(data_path, N):
 	num_to_grId = np.load('./w2v-tmp/num_to_grId.npy').item()
 	grId_to_num = np.load('./w2v-tmp/grId_to_num.npy').item()
 	t = AnnoyIndex(300)
-	t.load('./w2v-tmp/doc_vecs_t100.tree')
+	t.load('./w2v-tmp/doc_vecs_t100_angular.tree')
 	# sim_dict = np.load('./w2v-tmp/sim_matrix.npy').item() #OLD 1
 
 	i = 1
@@ -259,8 +259,8 @@ def main():
 	## DONE ##
 
 	## Para modo 2
-	dict_users = users2vecs(model= model)
-	np.save('./w2v-tmp/users2vec_fea075b1.npy', dict_users)
+	# dict_users = users2vecs(model= model)
+	# np.save('./w2v-tmp/users2vec_fea075b1.npy', dict_users)
 	#Por ahora no:
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
 
@@ -272,9 +272,9 @@ def main():
 	## DONE ##
 
 	# CORRER annoy_indexer ANTES DE..
-	# for N in [5, 10, 15, 20]:
-		# option1_protocol_evaluation(data_path= data_path, N=N)
-		# option2_protocol_evaluation(data_path= data_path, N=N)
+	for N in [5, 10, 15, 20]:
+		option1_protocol_evaluation(data_path= data_path, N=N)
+		option2_protocol_evaluation(data_path= data_path, N=N)
 	
 	
 if __name__ == '__main__':
