@@ -91,9 +91,11 @@ def docs2vecs(model):
 		ids2vec[bookId] = doc2vec(list_document= flat_doc, model= model)
 	return ids2vec
 
-def users2vecs(model):
+def users2vecs(model, as_tweets=False):
 	ids2vec = {}
+	
 	flat_users = np.load('./w2v-tmp/flattened_users_fea075b1.npy').item()
+	if as_tweets: flat_users = np.load('./w2v-tmp/flattened_users_tweets.npy').item()
 	i = 0
 	for userId, flat_user in flat_users.items():
 		i+=1
@@ -127,7 +129,7 @@ def sim_matrix(doc_vecs):
 #--------------------------------#
 
 
-def option1_protocol_evaluation(data_path, N):
+def option1_protocol_evaluation(data_path, N, which_model):
 	# userId='113447232' 285597345
 	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
@@ -135,11 +137,16 @@ def option1_protocol_evaluation(data_path, N):
 	nDCGs  = []
 	APs    = []
 	Rprecs = []
-	docs2vec = np.load('./w2v-tmp/docs2vec_fea075b1.npy').item()
-	num_to_grId = np.load('./w2v-tmp/num_to_grId.npy').item()
-	grId_to_num = np.load('./w2v-tmp/grId_to_num.npy').item()
-	t = AnnoyIndex(300)
-	t.load('./w2v-tmp/doc_vecs_t100_angular.tree')
+	
+	docs2vec = np.load('./w2v-tmp/docs2vec_'+which_model+'.npy').item()
+	if which_model == 'twit':
+		t = AnnoyIndex(200)
+	else:
+		t = AnnoyIndex(300)
+	num_to_grId = np.load('./w2v-tmp/num_to_grId_'+which_model+'.npy').item()
+	grId_to_num = np.load('./w2v-tmp/grId_to_num_'+which_model+'.npy').item()
+	t.load('./w2v-tmp/doc_vecs_t100_angular_'+which_model+'.tree')
+
 	# sim_dict = np.load('./w2v-tmp/sim_matrix.npy').item() #OLD 1
 
 	i = 1
@@ -192,21 +199,21 @@ def option1_protocol_evaluation(data_path, N):
 		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
 		####################################
 
-	with open('TwitterRatings/word2vec/option1_protocol.txt', 'a') as file:
-		file.write( "EXTREMES FILTERED NO_AB=0.75 NO_BE=1 N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+	with open('TwitterRatings/word2vec/option1_protocol_'+which_model+'.txt', 'a') as file:
+		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
 
 
-def option2_protocol_evaluation(data_path, N):
+def option2_protocol_evaluation(data_path, N, which_model):
 	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
 	MRRs   = []
 	nDCGs  = []
 	APs    = []
 	Rprecs = []
-	docs2vec  = np.load('./w2v-tmp/docs2vec_fea075b1.npy').item()
-	users2vec = np.load('./w2v-tmp/users2vec_fea075b1.npy').item()
+	docs2vec  = np.load('./w2v-tmp/docs2vec_'+which_model+'.npy').item()
+	users2vec = np.load('./w2v-tmp/users2vec_'+which_model+'.npy').item()
 
 	i = 1
 	# sampled_user_ids = random.sample(test_c.keys(), 200)
@@ -235,7 +242,7 @@ def option2_protocol_evaluation(data_path, N):
 		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
 		####################################
 
-	with open('TwitterRatings/word2vec/option2_protocol.txt', 'a') as file:
+	with open('TwitterRatings/word2vec/option2_protocol_'+which_model+'.txt', 'a') as file:
 		file.write( "EXTREMES FILTERED NO_AB=0.75 NO_BE=1 N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
@@ -243,24 +250,24 @@ def option2_protocol_evaluation(data_path, N):
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = 'http://localhost:8983/solr/grrecsys'
+	models=['google', 'wiki', 'twit']
 	
 	## Modelo w2v Google 300 ##
-	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
-	
+	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+
 	## Modelo FT Wiki + UMBC webbase + statmt.org news 300 ##
-	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/fasttext-wiki-news-subwords-300/fasttext-wiki-news-subwords-300.gz')
-	
-	## Modelo glove (convertido a w2v) Twitter 200 ##
-	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
+	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/fasttext-wiki-news-subwords-300/fasttext-wiki-news-subwords-300.gz')
+	for i in range(1, len(models)):
+		which_model=models[i]
+		## Mapeo book Id -> vec_book Para modo 1 y 2 ##:
+		dict_docs =	docs2vecs(model= model)
+		np.save('./w2v-tmp/docs2vec_'+which_model+'.npy', dict_docs)
+		## Para modo 2
+		dict_users = users2vecs(model= model)
+		np.save('./w2v-tmp/users2vec_'+which_model+'.npy', dict_users)
+		# Modelo glove (convertido a w2v) Twitter 200 ##
+		model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
 
-	## Mapeo book Id -> vec_book Para modo 1 y 2 ##:
-	# dict_docs =	docs2vecs(model= model)
-	# np.save('./w2v-tmp/docs2vec_fea075b1.npy', dict_docs)
-	## DONE ##
-
-	## Para modo 2
-	# dict_users = users2vecs(model= model)
-	# np.save('./w2v-tmp/users2vec_fea075b1.npy', dict_users)
 	#Por ahora no:
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
 
@@ -272,9 +279,9 @@ def main():
 	## DONE ##
 
 	# CORRER annoy_indexer ANTES DE..
-	for N in [5, 10, 15, 20]:
-		option1_protocol_evaluation(data_path= data_path, N=N)
-		option2_protocol_evaluation(data_path= data_path, N=N)
+	# for N in [5, 10, 15, 20]:
+	# 	option1_protocol_evaluation(data_path= data_path, N=N, which_model=which_model)
+	# 	option2_protocol_evaluation(data_path= data_path, N=N, which_model=which_model)
 	
 	
 if __name__ == '__main__':
