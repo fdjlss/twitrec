@@ -70,18 +70,6 @@ def doc2vec(list_document, model):
 	return vec_doc
 
 def docs2vecs(model):
-	# ids2vec = {}
-	# url = solr + '/query?q=*:*&rows=100000'
-	# docs = json.loads( urlopen(url).read().decode('utf8') )
-	# docs = docs['response']['docs']
-	# i = 0
-	# for doc in docs:
-	# 	i+=1
-	# 	goodreadsId = str( doc['goodreadsId'][0] )
-	# 	logging.info("{0} de {1}. Doc: {2}".format(i, len(docs), goodreadsId))
-	# 	ids2vec[goodreadsId] = doc2vec(document= doc, model= model)
-	# del docs
-	# return ids2vec
 	ids2vec = {}
 	flat_docs = np.load('./w2v-tmp/flattened_docs_fea075b1.npy').item()
 	i = 0
@@ -103,30 +91,6 @@ def users2vecs(model, as_tweets=False, as_mix=False):
 		logging.info("USERS 2 VECS. {0} de {1}. User: {2}".format(i, len(flat_users), userId))
 		ids2vec[userId] = doc2vec(list_document= flat_user, model= model)
 	return ids2vec
-
-# MÉTODO DESCARTADO!
-# Para el modo 1
-def sim_matrix(doc_vecs):
-	# sim_matrix = np.zeros(shape=(len(doc_vecs), len(doc_vecs)), dtype=float)
-	sim_dict = dict((bookId, {}) for bookId in doc_vecs)
-	delta = 0
-	key_list = list(doc_vecs.keys())
-
-	i=0
-	for bookId1 in key_list:
-		i+=1
-		initial = time.time()
-		logging.info("i={}. delta time={}".format(i, delta))
-		sims = {}
-		for bookId2 in key_list:
-			sims[bookId2] = 1 - spatial.distance.cosine(doc_vecs[bookId1], doc_vecs[bookId2])
-		#Dejamos los 100 libros más parecidos
-		sims = sorted(sims.items(), key=operator.itemgetter(1), reverse=True) #[(<bookId>, MAYOR sim), ..., (<bookId>, menor sim)]
-		for j in range(1000):
-			sim_dict[bookId1][sims[j][0]] = sims[j][1]
-		delta = time.time() - initial
-
-	return sim_dict
 #--------------------------------#
 
 
@@ -155,34 +119,17 @@ def option1_protocol_evaluation(data_path, N, which_model):
 	for userId in test_c: #sampled_user_ids:
 		logging.info("MODO 1. {0} de {1}. User ID: {2}".format(i, len(test_c), userId))
 		i += 1
-		# stream_url = solr + '/query?rows=1000&q=goodreadsId:{ids}'
-		# ids_string = encoded_itemIds(item_list=train_c[userId])
-		# url        = stream_url.format(ids=ids_string)
-		# response   = json.loads( urlopen(url).read().decode('utf8') )
-		# try:
-		# 	docs     = response['response']['docs']
-		# except TypeError as e:
-		# 	continue
+
 
 		book_recs = []
-		for bookId in train_c[userId]:#for user_doc in test_c[userId]:#docs:
-			# user_bookId = str(user_doc['goodreadsId'][0]) #id de libro consumido por user
-			
-			# cosines = sim_dict[user_bookId] #OLD 1
-			# cosines = dict((bookId, 0.0) for bookId in docs2vec) #OLD 2
-			# for bookId in docs2vec: #ids de libros en la DB
+		for bookId in train_c[userId]:
+
 			try:
 				docs = t.get_nns_by_item(grId_to_num[bookId], 500)
 				book_recs.append( [ str(num_to_grId[doc_num]) for doc_num in docs ] )
 			except KeyError as e:
 				logging.info("{} ES UNO DE LOS LIBROS CUYO HTML NO PUDO SER DESCARGADO. PROSIGUIENDO CON EL SIGUIENTE LIBRO..".format(bookId))
 				continue
-				#OLD 2
-				# if bookId == user_bookId: continue 
-				# cosines[bookId] = 1 - spatial.distance.cosine(docs2vec[bookId], docs2vec[user_bookId]) #1 - dist = similarity
-			#OLD 2
-			# sorted_sims = sorted(cosines.items(), key=operator.itemgetter(1), reverse=True) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
-			# book_recs.append( [ bookId for bookId, sim in sorted_sims ] )
 
 		book_recs = flatten_list(list_of_lists=book_recs, rows=len(book_recs[0])) #rows=len(sorted_sims))
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
@@ -217,8 +164,7 @@ def option2_protocol_evaluation(data_path, N, which_model):
 	users2vec = np.load('./w2v-tmp/'+which_model+'/users2vec_'+which_model+'.npy').item()
 
 	i = 1
-	# sampled_user_ids = random.sample(test_c.keys(), 200)
-	for userId in test_c:#sampled_user_ids:
+	for userId in test_c:
 		logging.info("MODO 2. {0} de {1}. User ID: {2}".format(i, len(test_c), userId))
 		i += 1
 
@@ -244,7 +190,7 @@ def option2_protocol_evaluation(data_path, N, which_model):
 		####################################
 
 	with open('TwitterRatings/word2vec/option2_protocol_'+which_model+'.txt', 'a') as file:
-		file.write( "EXTREMES FILTERED NO_AB=0.75 NO_BE=1 N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
 
@@ -262,7 +208,6 @@ def main():
 	# Modelo glove (convertido a w2v) Twitter 200 ##
 	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
 	
-	# which_model = models[2]
 
 	## Mapeo book Id -> vec_book Para modo 1 y 2 ##:
 	# dict_docs =	docs2vecs(model= model)
@@ -272,44 +217,14 @@ def main():
 	# np.save('./w2v-tmp/'+which_model+'/users2vec_'+which_model+'.npy', dict_users)
 
 
-	## MIX ##
-	logging.info("EMPIEZA GOOGLE")
-	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
-	which_model = models[0]
-	dict_users = users2vecs(model= model, as_mix=True)
-	np.save('./w2v-tmp/'+which_model+'/users2vec_mix_'+which_model+'.npy', dict_users)
-	del model
 
-	logging.info("EMPIEZA WIKI")
-	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/fasttext-wiki-news-subwords-300/fasttext-wiki-news-subwords-300.gz')
-	which_model = models[1]
-	dict_users = users2vecs(model= model, as_mix=True)
-	np.save('./w2v-tmp/'+which_model+'/users2vec_mix_'+which_model+'.npy', dict_users)
-	del model	
-
-	logging.info("EMPIEZA TWITTER")
-	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
-	which_model = models[2]
-	dict_users = users2vecs(model= model, as_mix=True)
-	np.save('./w2v-tmp/'+which_model+'/users2vec_mix_'+which_model+'.npy', dict_users)
-	del model
-	#########
-
-	#Por ahora no:
-	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
-
-	# MÉTODO DESCARTADO!
-	## Para modo 1 y 2 ##
-	# docs2vec  = np.load('./w2v-tmp/docs2vec.npy').item()
-	# dict_sim = sim_matrix(doc_vecs= docs2vec)
-	# np.save('./w2v-tmp/sim_matrix.npy', dict_sim)
-	## DONE ##
-
-	# CORRER annoy_indexer ANTES DE..
-	# for N in [5, 10, 15, 20]:
-	# 	option1_protocol_evaluation(data_path= data_path, N=N, which_model=which_model)
-	# 	option2_protocol_evaluation(data_path= data_path, N=N, which_model=which_model)
-	
+	for i in range(1, len(models)):
+		which_model = models[i]
+		# CORRER annoy_indexer ANTES DE..
+		for N in [5, 10, 15, 20]:
+			option1_protocol_evaluation(data_path= data_path, N=N, which_model=which_model)
+			option2_protocol_evaluation(data_path= data_path, N=N, which_model=which_model)
+		
 	
 if __name__ == '__main__':
 	main()
