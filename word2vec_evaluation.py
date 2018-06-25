@@ -256,17 +256,19 @@ def main():
 	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 
 	## Modelo FT Wiki + UMBC webbase + statmt.org news 300 ##
-	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/fasttext-wiki-news-subwords-300/fasttext-wiki-news-subwords-300.gz')
-	for i in range(1, len(models)):
-		which_model=models[i]
-		## Mapeo book Id -> vec_book Para modo 1 y 2 ##:
-		dict_docs =	docs2vecs(model= model)
-		np.save('./w2v-tmp/docs2vec_'+which_model+'.npy', dict_docs)
-		## Para modo 2
-		dict_users = users2vecs(model= model)
-		np.save('./w2v-tmp/users2vec_'+which_model+'.npy', dict_users)
-		# Modelo glove (convertido a w2v) Twitter 200 ##
-		model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
+	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/fasttext-wiki-news-subwords-300/fasttext-wiki-news-subwords-300.gz')
+	
+	# Modelo glove (convertido a w2v) Twitter 200 ##
+	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
+	
+	which_model = models[2]
+
+	## Mapeo book Id -> vec_book Para modo 1 y 2 ##:
+	dict_docs =	docs2vecs(model= model)
+	np.save('./w2v-tmp/docs2vec_'+which_model+'.npy', dict_docs)
+	## Para modo 2
+	dict_users = users2vecs(model= model, as_tweets=True)
+	np.save('./w2v-tmp/users2vec_'+which_model+'.npy', dict_users)
 
 	#Por ahora no:
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
