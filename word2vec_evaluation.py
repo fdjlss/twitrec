@@ -91,11 +91,12 @@ def docs2vecs(model):
 		ids2vec[bookId] = doc2vec(list_document= flat_doc, model= model)
 	return ids2vec
 
-def users2vecs(model, as_tweets=False):
+def users2vecs(model, as_tweets=False, as_mix=False):
 	ids2vec = {}
 	
 	flat_users = np.load('./w2v-tmp/flattened_users_fea075b1.npy').item()
 	if as_tweets: flat_users = np.load('./w2v-tmp/flattened_users_tweets.npy').item()
+	if as_mix: flat_users = np.load('./w2v-tmp/flattened_users_mix.npy').item()
 	i = 0
 	for userId, flat_user in flat_users.items():
 		i+=1
@@ -138,14 +139,14 @@ def option1_protocol_evaluation(data_path, N, which_model):
 	APs    = []
 	Rprecs = []
 	
-	docs2vec = np.load('./w2v-tmp/docs2vec_'+which_model+'.npy').item()
+	docs2vec = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
 	if which_model == 'twit':
 		t = AnnoyIndex(200)
 	else:
 		t = AnnoyIndex(300)
-	num_to_grId = np.load('./w2v-tmp/num_to_grId_'+which_model+'.npy').item()
-	grId_to_num = np.load('./w2v-tmp/grId_to_num_'+which_model+'.npy').item()
-	t.load('./w2v-tmp/doc_vecs_t100_angular_'+which_model+'.tree')
+	num_to_grId = np.load('./w2v-tmp/'+which_model+'/num_to_grId_'+which_model+'.npy').item()
+	grId_to_num = np.load('./w2v-tmp/'+which_model+'/grId_to_num_'+which_model+'.npy').item()
+	t.load('./w2v-tmp/'+which_model+'/doc_vecs_t100_angular_'+which_model+'.tree')
 
 	# sim_dict = np.load('./w2v-tmp/sim_matrix.npy').item() #OLD 1
 
@@ -212,8 +213,8 @@ def option2_protocol_evaluation(data_path, N, which_model):
 	nDCGs  = []
 	APs    = []
 	Rprecs = []
-	docs2vec  = np.load('./w2v-tmp/docs2vec_'+which_model+'.npy').item()
-	users2vec = np.load('./w2v-tmp/users2vec_'+which_model+'.npy').item()
+	docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
+	users2vec = np.load('./w2v-tmp/'+which_model+'/users2vec_'+which_model+'.npy').item()
 
 	i = 1
 	# sampled_user_ids = random.sample(test_c.keys(), 200)
@@ -259,16 +260,40 @@ def main():
 	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/fasttext-wiki-news-subwords-300/fasttext-wiki-news-subwords-300.gz')
 	
 	# Modelo glove (convertido a w2v) Twitter 200 ##
-	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
+	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
 	
-	which_model = models[2]
+	# which_model = models[2]
 
 	## Mapeo book Id -> vec_book Para modo 1 y 2 ##:
-	dict_docs =	docs2vecs(model= model)
-	np.save('./w2v-tmp/docs2vec_'+which_model+'.npy', dict_docs)
+	# dict_docs =	docs2vecs(model= model)
+	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', dict_docs)
 	## Para modo 2
-	dict_users = users2vecs(model= model, as_tweets=True)
-	np.save('./w2v-tmp/users2vec_'+which_model+'.npy', dict_users)
+	# dict_users = users2vecs(model= model, as_tweets=True)
+	# np.save('./w2v-tmp/'+which_model+'/users2vec_'+which_model+'.npy', dict_users)
+
+
+	## MIX ##
+	logging.info("EMPIEZA GOOGLE")
+	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+	which_model = models[0]
+	dict_users = users2vecs(model= model, as_mix=True)
+	np.save('./w2v-tmp/'+which_model+'/users2vec_mix_'+which_model+'.npy', dict_users)
+	del model
+
+	logging.info("EMPIEZA WIKI")
+	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/fasttext-wiki-news-subwords-300/fasttext-wiki-news-subwords-300.gz')
+	which_model = models[1]
+	dict_users = users2vecs(model= model, as_mix=True)
+	np.save('./w2v-tmp/'+which_model+'/users2vec_mix_'+which_model+'.npy', dict_users)
+	del model	
+
+	logging.info("EMPIEZA TWITTER")
+	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
+	which_model = models[2]
+	dict_users = users2vecs(model= model, as_mix=True)
+	np.save('./w2v-tmp/'+which_model+'/users2vec_mix_'+which_model+'.npy', dict_users)
+	del model
+	#########
 
 	#Por ahora no:
 	# model_esp = KeyedVectors.load_word2vec_format('/home/jschellman/fasttext-sbwc.3.6.e20.vec')
