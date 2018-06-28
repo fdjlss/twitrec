@@ -94,7 +94,7 @@ def users2vecs(model, as_tweets=False, as_mix=False):
 #--------------------------------#
 
 
-def option1_protocol_evaluation(data_path, N, which_model):
+def option1_protocol_evaluation(data_path, N, which_model, metric):
 	# userId='113447232' 285597345
 	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
@@ -108,9 +108,9 @@ def option1_protocol_evaluation(data_path, N, which_model):
 		t = AnnoyIndex(200)
 	else:
 		t = AnnoyIndex(300)
-	num_to_grId = np.load('./w2v-tmp/'+which_model+'/num_to_grId_'+which_model+'.npy').item()
-	grId_to_num = np.load('./w2v-tmp/'+which_model+'/grId_to_num_'+which_model+'.npy').item()
-	t.load('./w2v-tmp/'+which_model+'/doc_vecs_t100_angular_'+which_model+'.tree')
+	num_to_grId = np.load('./w2v-tmp/'+which_model+'/num_to_grId_'+metric+'_'+which_model+'.npy').item()
+	grId_to_num = np.load('./w2v-tmp/'+which_model+'/grId_to_num_'+metric+'_'+which_model+'.npy').item()
+	t.load('./w2v-tmp/'+which_model+'/doc_vecs_t100_'+metric+'_'+which_model+'.tree')
 
 	# sim_dict = np.load('./w2v-tmp/sim_matrix.npy').item() #OLD 1
 
@@ -148,12 +148,12 @@ def option1_protocol_evaluation(data_path, N, which_model):
 		####################################
 
 	with open('TwitterRatings/word2vec/option1_protocol_'+which_model+'.txt', 'a') as file:
-		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
-				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
+		file.write( "%s: N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(metric.upper(), N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
 
 
-def option2_protocol_evaluation(data_path, N, which_model):
+def option2_protocol_evaluation(data_path, N, which_model, metric):
 	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
 	MRRs   = []
@@ -168,11 +168,14 @@ def option2_protocol_evaluation(data_path, N, which_model):
 		logging.info("MODO 2. {0} de {1}. User ID: {2}".format(i, len(test_c), userId))
 		i += 1
 
-		cosines = dict((bookId, 0.0) for bookId in docs2vec)
+		distances = dict((bookId, 0.0) for bookId in docs2vec)
 		for bookId in docs2vec:
-			cosines[bookId] = 1 - spatial.distance.cosine(users2vec[userId], docs2vec[bookId]) #1 - dist = similarity
+			if metric=='angular':
+				distances[bookId] = spatial.distance.cosine(users2vec[userId], docs2vec[bookId])
+			elif metric=='euclidean':
+				distances[bookId] = spatial.distance.euclidean(users2vec[userId], docs2vec[bookId])
 
-		sorted_sims = sorted(cosines.items(), key=operator.itemgetter(1), reverse=True) #[(<grId>, MAYOR sim), ..., (<grId>, menor sim)]
+		sorted_sims = sorted(distances.items(), key=operator.itemgetter(1), reverse=False) #[(<grId>, MENOR dist), ..., (<grId>, MAYOR dist)]
 		book_recs   = [ bookId for bookId, sim in sorted_sims ]
 		book_recs   = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		try:
@@ -190,14 +193,16 @@ def option2_protocol_evaluation(data_path, N, which_model):
 		####################################
 
 	with open('TwitterRatings/word2vec/option2_protocol_'+which_model+'.txt', 'a') as file:
-		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
-				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
+		file.write( "%s: N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(metric.upper(), N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = 'http://localhost:8983/solr/grrecsys'
-	models=['google', 'wiki', 'twit']
+	models = ['google', 'wiki', 'twit']
+	metrics = ['angular', 'euclidean']
+	metric = distances[1]
 	
 	## Modelo w2v Google 300 ##
 	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
@@ -222,8 +227,8 @@ def main():
 		which_model = models[i]
 		# CORRER annoy_indexer ANTES DE..
 		for N in [5, 10, 15, 20]:
-			option1_protocol_evaluation(data_path= data_path, N=N, which_model=which_model)
-			option2_protocol_evaluation(data_path= data_path, N=N, which_model=which_model)
+			option1_protocol_evaluation(data_path= data_path, N=N, which_model=which_model, metric=metric)
+			option2_protocol_evaluation(data_path= data_path, N=N, which_model=which_model, metric=metric)
 		
 	
 if __name__ == '__main__':
