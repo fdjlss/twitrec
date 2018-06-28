@@ -202,8 +202,8 @@ def main():
 	solr = 'http://localhost:8983/solr/grrecsys'
 	models = ['google', 'wiki', 'twit']
 	metrics = ['angular', 'euclidean']
-	metric = distances[1]
-	
+	metric = metrics[1]
+
 	## Modelo w2v Google 300 ##
 	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 
