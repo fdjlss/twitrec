@@ -105,21 +105,18 @@ def option1_protocol_evaluation(data_path, N, which_model, metric):
 	
 	docs2vec = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
 	if which_model == 'twit':
-		t = AnnoyIndex(200)
+		vector_size = 200
 	else:
-		t = AnnoyIndex(300)
+		vector_size = 300
+	t = AnnoyIndex(vector_size, metric=metric)
+	t.load('./w2v-tmp/'+which_model+'/doc_vecs_t100_'+metric+'_'+which_model+'.tree')
 	num_to_grId = np.load('./w2v-tmp/'+which_model+'/num_to_grId_'+metric+'_'+which_model+'.npy').item()
 	grId_to_num = np.load('./w2v-tmp/'+which_model+'/grId_to_num_'+metric+'_'+which_model+'.npy').item()
-	t.load('./w2v-tmp/'+which_model+'/doc_vecs_t100_'+metric+'_'+which_model+'.tree')
-
-	# sim_dict = np.load('./w2v-tmp/sim_matrix.npy').item() #OLD 1
 
 	i = 1
-	# sampled_user_ids = random.sample(test_c.keys(), 200)
-	for userId in test_c: #sampled_user_ids:
+	for userId in test_c:
 		logging.info("MODO 1. {0} de {1}. User ID: {2}".format(i, len(test_c), userId))
 		i += 1
-
 
 		book_recs = []
 		for bookId in train_c[userId]:
