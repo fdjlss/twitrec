@@ -220,13 +220,13 @@ def main():
 
 
 
-	for i in range(1, len(models)):
-		which_model = models[i]
-		# CORRER annoy_indexer ANTES DE..
-		for N in [5, 10, 15, 20]:
-			option1_protocol_evaluation(data_path= data_path, N=N, which_model=which_model, metric=metric)
-			option2_protocol_evaluation(data_path= data_path, N=N, which_model=which_model, metric=metric)
-		
+	# for i in range(1, len(models)):
+	which_model = models[0]
+	# CORRER annoy_indexer ANTES DE..
+	for N in [5, 10, 15, 20]:
+		option1_protocol_evaluation(data_path= data_path, N=N, which_model=which_model, metric=metric)
+		option2_protocol_evaluation(data_path= data_path, N=N, which_model=which_model, metric=metric)
+	
 	
 if __name__ == '__main__':
 	main()
