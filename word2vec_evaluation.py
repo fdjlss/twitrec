@@ -150,7 +150,7 @@ def option1_protocol_evaluation(data_path, N, which_model, metric):
 
 
 
-def option2_protocol_evaluation(data_path, N, which_model, metric):
+def option2_protocol_evaluation(data_path, N, which_model, metric, mix=False):
 	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
 	MRRs   = []
@@ -159,6 +159,7 @@ def option2_protocol_evaluation(data_path, N, which_model, metric):
 	Rprecs = []
 	docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
 	users2vec = np.load('./w2v-tmp/'+which_model+'/users2vec_'+which_model+'.npy').item()
+	if mix: users2vec = np.load('./w2v-tmp/'+which_model+'/users2vec_mix_'+which_model+'.npy').item()
 
 	i = 1
 	for userId in test_c:
@@ -190,16 +191,18 @@ def option2_protocol_evaluation(data_path, N, which_model, metric):
 		####################################
 
 	with open('TwitterRatings/word2vec/option2_protocol_'+which_model+'.txt', 'a') as file:
-		file.write( "%s: N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
-				(metric.upper(), N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
-
+		if mix:
+			file.write( "%s MIX: N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+									(metric.upper(), N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
+		else:
+			file.write( "%s: N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+									(metric.upper(), N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = 'http://localhost:8983/solr/grrecsys'
 	models = ['google', 'wiki', 'twit']
 	metrics = ['angular', 'euclidean']
-	metric = metrics[1]
 
 	## Modelo w2v Google 300 ##
 	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
@@ -220,12 +223,12 @@ def main():
 
 
 
-	# for i in range(1, len(models)):
-	which_model = models[0]
-	# CORRER annoy_indexer ANTES DE..
-	for N in [5, 10, 15, 20]:
-		option1_protocol_evaluation(data_path= data_path, N=N, which_model=which_model, metric=metric)
-		option2_protocol_evaluation(data_path= data_path, N=N, which_model=which_model, metric=metric)
+	for metric in metrics:
+		for model in models:
+			# CORRER annoy_indexer ANTES DE..
+			for N in [5, 10, 15, 20]:
+				# option1_protocol_evaluation(data_path= data_path, N=N, which_model=which_model, metric=metric)
+				option2_protocol_evaluation(data_path= data_path, N=N, which_model=which_model, metric=metric, mix=True)
 	
 	
 if __name__ == '__main__':
