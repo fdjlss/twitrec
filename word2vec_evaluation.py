@@ -158,9 +158,11 @@ def option2_protocol_evaluation(data_path, N, which_model, metric, mix=False):
 	APs    = []
 	Rprecs = []
 	docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
-	users2vec = np.load('./w2v-tmp/'+which_model+'/users2vec_'+which_model+'.npy').item()
-	if mix: users2vec = np.load('./w2v-tmp/'+which_model+'/users2vec_mix_'+which_model+'.npy').item()
-
+	if mix: 
+		users2vec = np.load('./w2v-tmp/'+which_model+'/users2vec_mix_'+which_model+'.npy').item()
+	else:
+		users2vec = np.load('./w2v-tmp/'+which_model+'/users2vec_'+which_model+'.npy').item()
+	
 	i = 1
 	for userId in test_c:
 		logging.info("MODO 2. {0} de {1}. User ID: {2}".format(i, len(test_c), userId))
@@ -228,7 +230,7 @@ def main():
 			# CORRER annoy_indexer ANTES DE..
 			for N in [5, 10, 15, 20]:
 				# option1_protocol_evaluation(data_path= data_path, N=N, which_model=which_model, metric=metric)
-				option2_protocol_evaluation(data_path= data_path, N=N, which_model=which_model, metric=metric, mix=True)
+				option2_protocol_evaluation(data_path= data_path, N=N, which_model=model, metric=metric, mix=True)
 	
 	
 if __name__ == '__main__':
