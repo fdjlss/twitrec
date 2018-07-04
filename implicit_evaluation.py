@@ -1,13 +1,21 @@
 # coding=utf-8
 
-from jojFunkSvd import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, user_ranked_recs, opt_value
+from svd_evaluation import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, user_ranked_recs, opt_value
 from solr_evaluation import remove_consumed
+from pyFM_evaluation import loadData
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-import implicit
 import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix
-import pandas as pd
+from sklearn.feature_extraction import DictVectorizer
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+from math import sqrt
+import implicit
+
+
+# coding=utf-8
+
+
 
 #-----"PRIVATE" METHODS----------#
 class IdCoder(object):
@@ -116,8 +124,6 @@ def ALS_tuning(data_path, N):
 	return defaults
 
 
-
-
 def ALS_protocol_evaluation(data_path, params, N):
 	all_c     = consumption(ratings_path= data_path+'eval_all_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
 	test_c    = consumption(ratings_path= data_path+'test/test_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
@@ -154,10 +160,11 @@ def ALS_protocol_evaluation(data_path, params, N):
 		file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs_normal), mean(nDCGs_altform), mean(nDCGs_bin), mean(APs), mean(MRRs), mean(Rprecs)) )
 
+	
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	# opt_params = ALS_tuning(data_path= data_path, N= 20)
-	opt_params = {'f': 1180, 'lamb': 0.04, 'mi': 10}
+	opt_params = ALS_tuning(data_path= data_path, N= 20)
+	# opt_params = {'f': 1180, 'lamb': 0.04, 'mi': 10}
 	for N in [5, 10, 15, 20]:
 		ALS_protocol_evaluation(data_path= data_path, params= opt_params, N= N)
 
