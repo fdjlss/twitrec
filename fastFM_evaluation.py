@@ -374,7 +374,7 @@ def fastFM_protocol_evaluation(data_path, params, N):
 			l = v.inverse_transform( X_te[i,:] )[0].keys()
 			pred_itemId = [s for s in l if "item" in s][0].split('=')[-1]
 			book_recs.append( [preds[i], pred_itemId] )
-			if i==100: break #no necesitamos una lista de recomendaciones más larga que 100
+			# if i==100: break #no necesitamos una lista de recomendaciones más larga que 100
 
 		book_recs = [ itemId for rating, itemId in sorted(book_recs, reverse=True) ] 
 		book_recs = remove_consumed(user_consumption= train_c[userId], rec_list= book_recs)
@@ -426,7 +426,7 @@ def fastFM_protocol_evaluation_bpr(data_path, params, N):
 			l = v.inverse_transform( X_te[pred_row,:] )[0].keys()
 			pred_itemId = [s for s in l if "item" in s][0].split('=')[-1]
 			book_recs.append(pred_itemId)
-			if i==100: break
+			# if i==100: break
 
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		recs      = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
@@ -443,13 +443,13 @@ def fastFM_protocol_evaluation_bpr(data_path, params, N):
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	opt_params_sgd = fastFM_tuning(data_path=data_path, N=20, solver="sgd")
-	opt_params_bpr = fastFM_tuning_bpr(data_path=data_path, N=20) # Solr evaluation: N=10
+	# opt_params_sgd = fastFM_tuning(data_path=data_path, N=20, solver="sgd")
+	# opt_params_bpr = fastFM_tuning_bpr(data_path=data_path, N=20) # Solr evaluation: N=10
 	# opt_params_sgd = {'mi':150, 'init_stdev':0.01, 'f':1, 'l2_reg_w':0.05, 'l2_reg_V':0.0001, 'l2_reg':0.04, 'step_size':0.07}
 	# opt_params_bpr = {'mi':10, 'init_stdev':0.1, 'f':880, 'l2_reg_w':0.01, 'l2_reg_V':0.01, 'l2_reg':0.02, 'step_size':0.005}
 	for N in [5, 10, 15, 20]:
 		fastFM_protocol_evaluation(data_path=data_path, params=opt_params_sgd, N=N)
-		fastFM_protocol_evaluation_bpr(data_path=data_path, params=opt_params_bpr, N=N)
+		# fastFM_protocol_evaluation_bpr(data_path=data_path, params=opt_params_bpr, N=N)
 
 if __name__ == '__main__':
 	main()
