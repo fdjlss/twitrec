@@ -79,12 +79,9 @@ def docs2vecs(model):
 		ids2vec[bookId] = doc2vec(list_document= flat_doc, model= model)
 	return ids2vec
 
-def users2vecs(model, as_tweets=False, as_mix=False):
+def users2vecs(model, representation):
 	ids2vec = {}
-	
-	flat_users = np.load('./w2v-tmp/flattened_users_fea075b1.npy').item()
-	if as_tweets: flat_users = np.load('./w2v-tmp/flattened_users_tweets.npy').item()
-	if as_mix: flat_users = np.load('./w2v-tmp/flattened_users_mix.npy').item()
+	flat_users = np.load('./w2v-tmp/flattened_users_'+str(representation)+'.npy').item()
 	i = 0
 	for userId, flat_user in flat_users.items():
 		i+=1
@@ -150,7 +147,7 @@ def option1_protocol_evaluation(data_path, N, which_model, metric):
 
 
 
-def option2_protocol_evaluation(data_path, N, which_model, metric, mix=False):
+def option2_protocol_evaluation(data_path, N, which_model, metric, representation):
 	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
 	MRRs   = []
@@ -158,10 +155,7 @@ def option2_protocol_evaluation(data_path, N, which_model, metric, mix=False):
 	APs    = []
 	Rprecs = []
 	docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
-	if mix: 
-		users2vec = np.load('./w2v-tmp/'+which_model+'/users2vec_mix_'+which_model+'.npy').item()
-	else:
-		users2vec = np.load('./w2v-tmp/'+which_model+'/users2vec_'+which_model+'.npy').item()
+	users2vec = np.load('./w2v-tmp/'+which_model+'/users2vec_'+representation+'_'+which_model+'.npy').item()
 	
 	i = 1
 	for userId in test_c:
@@ -193,12 +187,8 @@ def option2_protocol_evaluation(data_path, N, which_model, metric, mix=False):
 		####################################
 
 	with open('TwitterRatings/word2vec/option2_protocol_'+which_model+'.txt', 'a') as file:
-		if mix:
-			file.write( "%s MIX: N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
-									(metric.upper(), N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
-		else:
-			file.write( "%s: N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
-									(metric.upper(), N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
+		file.write( "%s USERS AS %s: N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+							(metric.upper(), representation.upper(), N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
@@ -206,31 +196,46 @@ def main():
 	models = ['google', 'wiki', 'twit']
 	metrics = ['angular', 'euclidean']
 
-	## Modelo w2v Google 300 ##
-	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 
-	## Modelo FT Wiki + UMBC webbase + statmt.org news 300 ##
-	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/fasttext-wiki-news-subwords-300/fasttext-wiki-news-subwords-300.gz')
-	
-	# Modelo glove (convertido a w2v) Twitter 200 ##
-	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
-	
-
-	## Mapeo book Id -> vec_book Para modo 1 y 2 ##:
+	## Para modo 1 y 2
+	## Mapeo book Id -> vec_book
 	# dict_docs =	docs2vecs(model= model)
 	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', dict_docs)
+	
 	## Para modo 2
-	# dict_users = users2vecs(model= model, as_tweets=True)
-	# np.save('./w2v-tmp/'+which_model+'/users2vec_'+which_model+'.npy', dict_users)
+	for which_model in models:
+		if which_model=='google'
+			representation = 'tweets'
+			# Modelo w2v Google 300 ##
+			model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+		elif which_model=='wiki':
+			representation = 'tweets'
+			# Modelo FT Wiki + UMBC webbase + statmt.org news 300 ##
+			model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/fasttext-wiki-news-subwords-300/fasttext-wiki-news-subwords-300.gz')
+		elif which_model=='twit':
+			representation = 'books'
+			# Modelo glove (convertido a w2v) Twitter 200 ##
+			model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
+
+		dict_users = users2vecs(model= model, representation=representation)
+		np.save('./w2v-tmp/'+which_model+'/users2vec_'+representation+'_'+which_model+'.npy', dict_users)
 
 
-
+	# CONVERTIR FLATTENED USERS AS TWEETS A USERS2VEC_TWEET PARA CADA GOOGLE Y WIKI
+	# .. PARA TWEET CONVERTIR FLAT USERS AS BOOKS A USERS2VEC_BOOKS
 	for metric in metrics:
-		for model in models:
+		for which_model in models:
 			# CORRER annoy_indexer ANTES DE..
 			for N in [5, 10, 15, 20]:
+
+				# Sólo por ahora, para la completitud:
+				if which_model=='google' or which_model=='wiki':
+					representation = 'tweets'
+				elif which_model=='twit':
+					representation = 'books'
+
 				# option1_protocol_evaluation(data_path= data_path, N=N, which_model=which_model, metric=metric)
-				option2_protocol_evaluation(data_path= data_path, N=N, which_model=model, metric=metric, mix=True)
+				option2_protocol_evaluation(data_path= data_path, N=N, which_model=which_model, metric=metric, representation=representation)
 	
 	
 if __name__ == '__main__':
