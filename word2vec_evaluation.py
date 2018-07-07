@@ -204,7 +204,7 @@ def main():
 	
 	## Para modo 2
 	for which_model in models:
-		if which_model=='google'
+		if which_model=='google':
 			representation = 'tweets'
 			# Modelo w2v Google 300 ##
 			model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
