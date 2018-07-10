@@ -64,7 +64,7 @@ def get_ndcg(data_path, idcoder, fold, N, model, matrix_T):
 		users_nDCGs.append( nDCG(recs=recs, alt_form=False, rel_thresh=False) )
 	return mean(users_nDCGs)
 
-def implicitJob(data_path, params, N, vectorizer):
+def implicitJob(data_path, all_c, idcoder, params, N):
 	nDCGs = []
 	logging.info("Evaluando con params: {0}".format(params))
 	for i in range(1, 4+1):
