@@ -13,8 +13,6 @@ from math import sqrt
 import implicit
 
 
-# coding=utf-8
-
 
 
 #-----"PRIVATE" METHODS----------#
@@ -42,7 +40,7 @@ def get_data(data_path, all_c, idcoder, fold, N, mode):
 		train_c = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
 	arrays  = {'items':[], 'users':[], 'data':[]}
 	for userId in train_c:
-		r_u = mean( map( int, all_c[userId].values() ) )
+		r_u = mean( map( int, train_c[userId].values() ) )
 		for itemId in train_c[userId]:
 			if int(train_c[userId][itemId]) >= r_u:
 				arrays['items'].append(int( idcoder.coder('item', itemId) ))
@@ -53,29 +51,44 @@ def get_data(data_path, all_c, idcoder, fold, N, mode):
 				arrays['users'].append(int( idcoder.coder('user', userId) ))
 				arrays['data'].append(0)
 	ones = np.array( arrays['data'] )
-	return ones, arrays['items'], arrays['users']
+	return ones, arrays['items'], arrays['users'] # value, rows, cols
 
 def get_ndcg(data_path, idcoder, fold, N, model, matrix_T):
 	users_nDCGs = []
 	val_c = consumption(ratings_path=data_path+'val/val_N'+str(N)+'.'+str(fold), rel_thresh=0, with_ratings=True)
 	for userId in val_c:
 		recommends = model.recommend(userid= int(idcoder.coder('user', userId)), user_items= matrix_T, N= N)
-		book_recs  = [ str(tupl[0]) for tupl in recommends ]
+
+		book_recs  = [ idcoder.decoder('item', tupl[0]) for tupl in recommends ]
 		recs       = user_ranked_recs(user_recs= book_recs, user_consumpt= val_c[userId])
 		users_nDCGs.append( nDCG(recs=recs, alt_form=False, rel_thresh=False) )
 	return mean(users_nDCGs)
 
-def implicitJob(data_path, all_c, idcoder, params, N):
+def implicitJob(data_path, params, N, vectorizer):
 	nDCGs = []
+	logging.info("Evaluando con params: {0}".format(params))
 	for i in range(1, 4+1):
+		# train_data, y_tr, _ = loadData('train/train_N'+str(N)+'.'+str(i))
+		# X_tr = vectorizer.transform(train_data)
 		ones, row, col = get_data(data_path= data_path, all_c= all_c, idcoder= idcoder, fold= i, N= N, mode= "tuning")
 		matrix         = csr_matrix((ones, (row, col)), dtype=np.float64 )
 		user_items     = matrix.T.tocsr()
 		model          = implicit.als.AlternatingLeastSquares(factors= params['f'], regularization= params['lamb'], iterations= params['mi'], dtype= np.float64)
 		model.fit(matrix)
+		# val_data, y_va, _ = loadData('val/val_N'+str(N)+'.'+str(i))
+		# X_va = vectorizer.transform(val_data)
 		ndcg           = get_ndcg(data_path= data_path, idcoder= idcoder, fold= i, N= N, model= model, matrix_T= user_items)
 		nDCGs.append( ndcg )
 	return mean(nDCGs)
+
+
+	for i in range(1, 4+1):
+
+		preds = fm.predict(X_va)
+		rmse  = sqrt( mean_squared_error(y_va, preds) )
+		print("FM RMSE: %.4f" % rmse)
+		rmses.append(rmse)
+	return mean(rmses)
 #--------------------------------#
 
 
@@ -125,17 +138,23 @@ def ALS_tuning(data_path, N):
 
 
 def ALS_protocol_evaluation(data_path, params, N):
-	all_c     = consumption(ratings_path= data_path+'eval_all_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
-	test_c    = consumption(ratings_path= data_path+'test/test_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
-	train_c   = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= False)
+	# all_data, y_all, items = loadData("eval_all_N"+str(N)+".data")
+	# v = DictVectorizer()
+	# X_all = v.fit_transform(all_data)
+
 	items_ids = list(set( [ itemId for userId, itemsDict in all_c.items() for itemId in itemsDict ] ))
 	idcoder   = IdCoder(items_ids, all_c.keys())
-	MRRs          = []
-	nDCGs_bin     = []
-	nDCGs_normal  = []
-	nDCGs_altform = []
-	APs           = []
-	Rprecs        = []
+	test_c  = consumption(ratings_path= data_path+'test/test_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
+	train_c = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= False)
+	all_c   = consumption(ratings_path= data_path+'eval_all_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
+	MRRs   = []
+	nDCGs  = []
+	APs    = []
+	Rprecs = []
+
+	# train_data, y_tr, _ = loadData('eval_train_N'+str(N)+'.data')
+	# X_tr = v.transform(train_data)
+
 	ones, row, col = get_data(data_path= data_path, all_c= all_c, idcoder= idcoder, fold= 0, N= N, mode= "testing")
 	matrix         = csr_matrix((ones, (row, col)), dtype=np.float64 )
 	user_items     = matrix.T.tocsr()
@@ -144,21 +163,22 @@ def ALS_protocol_evaluation(data_path, params, N):
 
 	for userId in test_c: 
 		recommends = model.recommend(userid= int(idcoder.coder('user', userId)), user_items= user_items, N= 200)
-		book_recs  = [ str(tupl[0]) for tupl in recommends ]
+		book_recs  = [ idcoder.decoder('item', tupl[0]) for tupl in recommends ]
 		book_recs  = remove_consumed(user_consumption= train_c[userId], rec_list= book_recs)
 		recs       = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
 		mini_recs  = dict((k, recs[k]) for k in recs.keys()[:N])
 
 		MRRs.append( MRR(recs=recs, rel_thresh=1) )
-		nDCGs_bin.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=1) )
-		nDCGs_normal.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
-		nDCGs_altform.append( nDCG(recs=mini_recs, alt_form=True, rel_thresh=False) )			
+		nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
 		APs.append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
 		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
 
 	with open('TwitterRatings/implicit/protocol.txt', 'a') as file:
-		file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
-				(N, mean(nDCGs_normal), mean(nDCGs_altform), mean(nDCGs_bin), mean(APs), mean(MRRs), mean(Rprecs)) )
+		file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
+
+
+
 
 	
 def main():
