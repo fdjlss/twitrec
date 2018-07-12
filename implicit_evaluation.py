@@ -142,11 +142,11 @@ def ALS_protocol_evaluation(data_path, params, N):
 	# v = DictVectorizer()
 	# X_all = v.fit_transform(all_data)
 
-	items_ids = list(set( [ itemId for userId, itemsDict in all_c.items() for itemId in itemsDict ] ))
-	idcoder   = IdCoder(items_ids, all_c.keys())
 	test_c  = consumption(ratings_path= data_path+'test/test_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
 	train_c = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= False)
 	all_c   = consumption(ratings_path= data_path+'eval_all_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
+	items_ids = list(set( [ itemId for userId, itemsDict in all_c.items() for itemId in itemsDict ] ))
+	idcoder   = IdCoder(items_ids, all_c.keys())
 	MRRs   = []
 	nDCGs  = []
 	APs    = []
@@ -183,8 +183,9 @@ def ALS_protocol_evaluation(data_path, params, N):
 	
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	opt_params = ALS_tuning(data_path= data_path, N= 20)
-	# opt_params = {'f': 1180, 'lamb': 0.04, 'mi': 10}
+	# opt_params = ALS_tuning(data_path= data_path, N= 20)
+	# opt_params = {'f': 1180, 'lamb': 0.04, 'mi': 10} OLD
+	opt_params = {'f': 20, 'lamb': 0.3, 'mi': 15}
 	for N in [5, 10, 15, 20]:
 		ALS_protocol_evaluation(data_path= data_path, params= opt_params, N= N)
 
