@@ -163,7 +163,7 @@ def option1_tuning(data_path, solr, N):
 			defaults['mlt.maxwl']  = opt_value(results=results['mlt.maxwl'], metric='ndcg')	
 
 		if param=='mlt.maxqt':
-			for i in range(1, 110, 10): # no se pueden tener 0 query terms
+			for i in [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]: # no se pueden tener 0 query terms
 				defaults['mlt.maxqt'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['mlt.maxqt'][i] = option1Job(data_path=data_path, solr=solr, params=defaults, N=N)
@@ -260,7 +260,7 @@ def option2_tuning(data_path, solr, N):
 			defaults['mlt.maxwl']  = opt_value(results=results['mlt.maxwl'], metric='ndcg')	
 
 		if param=='mlt.maxqt':
-			for i in range(1, 110, 10): # no se pueden tener 0 query terms
+			for i in [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]: # no se pueden tener 0 query terms
 				defaults['mlt.maxqt'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['mlt.maxqt'][i] = option2Job(data_path=data_path, solr=solr, params=defaults, N=N)
