@@ -117,6 +117,12 @@ def option1_tuning(data_path, solr, N):
 							'mlt.maxqt' : 25, #def: 25
 							'mlt.maxntp' : 5000 }
 
+	url = solr + '/query?q=*:*&rows=100000' #n docs: 50,862 < 100,000
+	docs = json.loads( urlopen(url).read().decode('utf8') )
+	docs = docs['response']['docs']
+	docs_num = len(docs)
+	del docs
+
 	results = dict((param, {}) for param in param_names)
 	for param in param_names: 
 		
@@ -149,14 +155,14 @@ def option1_tuning(data_path, solr, N):
 			defaults['mlt.mindf']  = opt_value(results=results['mlt.mindf'], metric='ndcg')		
 
 		if param=='mlt.maxdf':
-			for i in [0, 100, 500, 1000, 5000, 10000, 20000, 30000, 40000, 50000]: #agregados 3 desde últimos resultados
+			for i in [int(docs_num*0.2), int(docs_num*0.35), int(docs_num*0.5), int(docs_num*0.75), int(docs_num*0.9)]:
 				defaults['mlt.maxdf'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['mlt.maxdf'][i] = option1Job(data_path=data_path, solr=solr, params=defaults, N=N)
 			defaults['mlt.maxdf']  = opt_value(results=results['mlt.maxdf'], metric='ndcg')	
 
 		if param=='mlt.maxwl':
-			for i in range(0, 30, 5):
+			for i in range(0, 25, 2):
 				defaults['mlt.maxwl'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['mlt.maxwl'][i] = option1Job(data_path=data_path, solr=solr, params=defaults, N=N)
@@ -206,11 +212,17 @@ def option2_tuning(data_path, solr, N):
 							'mlt.boost' : 'false', #def: false
 							'mlt.mintf' : 2, #def: 2
 							'mlt.mindf' : 5, #def: 5
-							'mlt.minwl' : 0, 
+							'mlt.minwl' : 0, #def: 0
 							'mlt.maxdf' : 50000, # en realidad no especificado
-							'mlt.maxwl' : 0,
+							'mlt.maxwl' : 0, #def: 0 
 							'mlt.maxqt' : 25, #def: 25
-							'mlt.maxntp' : 5000 }
+							'mlt.maxntp' : 5000 } #def: 5000
+
+	url = solr + '/query?q=*:*&rows=100000' #n docs: 50,862 < 100,000
+	docs = json.loads( urlopen(url).read().decode('utf8') )
+	docs = docs['response']['docs']
+	docs_num = len(docs)
+	del docs
 
 	results = dict((param, {}) for param in param_names)
 	for param in param_names: 
@@ -246,14 +258,14 @@ def option2_tuning(data_path, solr, N):
 			defaults['mlt.mindf']  = opt_value(results=results['mlt.mindf'], metric='ndcg')		
 
 		if param=='mlt.maxdf':
-			for i in [0, 100, 500, 1000, 5000, 10000, 20000, 30000, 40000, 50000]: #agregados 3 desde últimos resultados
+			for i in [int(docs_num*0.2), int(docs_num*0.35), int(docs_num*0.5), int(docs_num*0.75), int(docs_num*0.9)]:
 				defaults['mlt.maxdf'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['mlt.maxdf'][i] = option2Job(data_path=data_path, solr=solr, params=defaults, N=N)
 			defaults['mlt.maxdf']  = opt_value(results=results['mlt.maxdf'], metric='ndcg')	
 
 		if param=='mlt.maxwl':
-			for i in range(0, 30, 5):
+			for i in range(0, 25, 2):
 				defaults['mlt.maxwl'] = i
 				logging.info("Evaluando con params: {}".format(defaults))
 				results['mlt.maxwl'][i] = option2Job(data_path=data_path, solr=solr, params=defaults, N=N)
@@ -323,7 +335,7 @@ def option1_protocol_evaluation(data_path, solr, params):
 
 		for N in [5, 10, 15, 20]:
 			mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
-			MRRs[N].append( MRR(recs=recs, rel_thresh=1) )
+			MRRs[N].append( MRR(recs=mini_recs, rel_thresh=1) )
 			nDCGs[N].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )		
 			APs[N].append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
 			Rprecs[N].append( R_precision(n_relevants=N, recs=mini_recs) )
@@ -334,8 +346,8 @@ def option1_protocol_evaluation(data_path, solr, params):
 				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
 
 def option2_protocol_evaluation(data_path, solr, params):
-	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
-	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
+	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
+	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
 	MRRs   = dict((N, []) for N in [5, 10, 15, 20])
 	nDCGs  = dict((N, []) for N in [5, 10, 15, 20])
 	APs    = dict((N, []) for N in [5, 10, 15, 20])
@@ -361,14 +373,14 @@ def option2_protocol_evaluation(data_path, solr, params):
 
 		for N in [5, 10, 15, 20]:
 			mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
-			MRRs[N].append( MRR(recs=recs, rel_thresh=1) )
+			MRRs[N].append( MRR(recs=mini_recs, rel_thresh=1) )
 			nDCGs[N].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )		
 			APs[N].append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
 			Rprecs[N].append( R_precision(n_relevants=N, recs=mini_recs) )
 
 
 	for N in [5, 10, 15, 20]:
-		with open('TwitterRatings/CB/option1_protocol.txt', 'a') as file:
+		with open('TwitterRatings/CB/option2_protocol.txt', 'a') as file:
 			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
 

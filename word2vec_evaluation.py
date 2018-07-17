@@ -91,14 +91,14 @@ def users2vecs(model, representation):
 #--------------------------------#
 
 
-def option1_protocol_evaluation(data_path, N, which_model, metric):
+def option1_protocol_evaluation(data_path, which_model, metric):
 	# userId='113447232' 285597345
-	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
-	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
-	MRRs   = []
-	nDCGs  = []
-	APs    = []
-	Rprecs = []
+	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
+	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
+	MRRs   = dict((N, []) for N in [5, 10, 15, 20])
+	nDCGs  = dict((N, []) for N in [5, 10, 15, 20])
+	APs    = dict((N, []) for N in [5, 10, 15, 20])
+	Rprecs = dict((N, []) for N in [5, 10, 15, 20])
 	
 	docs2vec = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
 	if which_model == 'twit':
@@ -133,27 +133,28 @@ def option1_protocol_evaluation(data_path, N, which_model, metric):
 			logging.info("Usuario {0} del fold de train (total) no encontrado en fold de 'test'".format(userId))
 			continue
 
-		####################################
-		mini_recs = dict((k, recs[k]) for k in list(recs.keys())[:N]) #Python 3.x: .keys() devuelve una vista, no una lista
-		nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
-		APs.append( AP_at_N(n=N, recs=mini_recs, rel_thresh=1) )
-		MRRs.append( MRR(recs=mini_recs, rel_thresh=1) )
-		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
-		####################################
-
-	with open('TwitterRatings/word2vec/option1_protocol_'+which_model+'.txt', 'a') as file:
-		file.write( "%s: N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
-				(metric.upper(), N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
+		for N in [5, 10, 15, 20]:
+			mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
+			MRRs[N].append( MRR(recs=mini_recs, rel_thresh=1) )
+			nDCGs[N].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )		
+			APs[N].append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
+			Rprecs[N].append( R_precision(n_relevants=N, recs=mini_recs) )
 
 
+	for N in [5, 10, 15, 20]:
+		with open('TwitterRatings/word2vec/option1_protocol_'+which_model+'.txt', 'a') as file:
+			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
 
-def option2_protocol_evaluation(data_path, N, which_model, metric, representation):
-	test_c  = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True)
-	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
-	MRRs   = []
-	nDCGs  = []
-	APs    = []
-	Rprecs = []
+
+
+def option2_protocol_evaluation(data_path, which_model, metric, representation):
+	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
+	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
+	MRRs   = dict((N, []) for N in [5, 10, 15, 20])
+	nDCGs  = dict((N, []) for N in [5, 10, 15, 20])
+	APs    = dict((N, []) for N in [5, 10, 15, 20])
+	Rprecs = dict((N, []) for N in [5, 10, 15, 20])
 	docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
 	users2vec = np.load('./w2v-tmp/'+which_model+'/users2vec_'+representation+'_'+which_model+'.npy').item()
 	
@@ -178,64 +179,59 @@ def option2_protocol_evaluation(data_path, N, which_model, metric, representatio
 			logging.info("Usuario {0} del fold de train (total) no encontrado en fold de 'test'".format(userId))
 			continue
 
-		####################################
-		mini_recs = dict((k, recs[k]) for k in list(recs.keys())[:N]) #Python 3.x: .keys() devuelve una vista, no una lista
-		nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
-		APs.append( AP_at_N(n=N, recs=mini_recs, rel_thresh=1) )
-		MRRs.append( MRR(recs=mini_recs, rel_thresh=1) )
-		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
-		####################################
+		for N in [5, 10, 15, 20]:
+			mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
+			MRRs[N].append( MRR(recs=mini_recs, rel_thresh=1) )
+			nDCGs[N].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )		
+			APs[N].append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
+			Rprecs[N].append( R_precision(n_relevants=N, recs=mini_recs) )
 
-	with open('TwitterRatings/word2vec/option2_protocol_'+which_model+'.txt', 'a') as file:
-		file.write( "%s USERS AS %s: N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
-							(metric.upper(), representation.upper(), N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
+
+	for N in [5, 10, 15, 20]:
+		with open('TwitterRatings/word2vec/option2_protocol_'+which_model+'.txt', 'a') as file:
+			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = 'http://localhost:8983/solr/grrecsys'
 	models = ['google', 'wiki', 'twit']
-	metrics = ['angular', 'euclidean']
-
 
 	## Para modo 1 y 2
 	## Mapeo book Id -> vec_book
 	# dict_docs =	docs2vecs(model= model)
 	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', dict_docs)
 	
-	## Para modo 2
-	for which_model in models:
-		if which_model=='google':
-			representation = 'tweets'
-			# Modelo w2v Google 300 ##
-			model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
-		elif which_model=='wiki':
-			representation = 'tweets'
-			# Modelo FT Wiki + UMBC webbase + statmt.org news 300 ##
-			model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/fasttext-wiki-news-subwords-300/fasttext-wiki-news-subwords-300.gz')
-		elif which_model=='twit':
-			representation = 'books'
-			# Modelo glove (convertido a w2v) Twitter 200 ##
-			model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
+	# ## Para modo 2
+	# for which_model in models:
+	# 	if which_model=='google':
+	# 		representation = 'tweets'
+	# 		# Modelo w2v Google 300 ##
+	# 		model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+	# 	elif which_model=='wiki':
+	# 		representation = 'tweets'
+	# 		# Modelo FT Wiki + UMBC webbase + statmt.org news 300 ##
+	# 		model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/fasttext-wiki-news-subwords-300/fasttext-wiki-news-subwords-300.gz')
+	# 	elif which_model=='twit':
+	# 		representation = 'books'
+	# 		# Modelo glove (convertido a w2v) Twitter 200 ##
+	# 		model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/glove-twitter-200/glove-twitter-200.txt')
 
-		dict_users = users2vecs(model= model, representation=representation)
-		np.save('./w2v-tmp/'+which_model+'/users2vec_'+representation+'_'+which_model+'.npy', dict_users)
+	# 	dict_users = users2vecs(model= model, representation=representation)
+	# 	np.save('./w2v-tmp/'+which_model+'/users2vec_'+representation+'_'+which_model+'.npy', dict_users)
 
 
 	# CONVERTIR FLATTENED USERS AS TWEETS A USERS2VEC_TWEET PARA CADA GOOGLE Y WIKI
 	# .. PARA TWEET CONVERTIR FLAT USERS AS BOOKS A USERS2VEC_BOOKS
-	for metric in metrics:
+	for metric in ['angular', 'euclidean']:
 		for which_model in models:
 			# CORRER annoy_indexer ANTES DE..
-			for N in [5, 10, 15, 20]:
-
-				# Sólo por ahora, para la completitud:
-				if which_model=='google' or which_model=='wiki':
-					representation = 'tweets'
-				elif which_model=='twit':
-					representation = 'books'
-
-				# option1_protocol_evaluation(data_path= data_path, N=N, which_model=which_model, metric=metric)
-				option2_protocol_evaluation(data_path= data_path, N=N, which_model=which_model, metric=metric, representation=representation)
+			# for N in [5, 10, 15, 20]:
+			option1_protocol_evaluation(data_path= data_path, which_model=which_model, metric=metric)
+				
+			for representation in ['books', 'tweets', 'mix']:
+				# for N in [5, 10, 15, 20]:
+				option2_protocol_evaluation(data_path= data_path, which_model=which_model, metric=metric, representation=representation)
 	
 	
 if __name__ == '__main__':

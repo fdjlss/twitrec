@@ -180,7 +180,7 @@ def SVDJob(data_path, params):
 	return mean(maes), mean(rmses)
 #--------------------------------#
 
-def boosting(data_path):
+def svd_tuning(data_path):
 
 	defaults = {'f': 1000, 'mi': 100, 'lr': 0.01, 'lamb': 0.1}
 	results  = {'f': {}, 'mi': {}, 'lr': {}, 'lamb': {}}
@@ -383,17 +383,17 @@ def nDCGMAP_calculator(data_path, params, topN, output_filename):
 				(n, mean(nDCGs_normal[n]), mean(nDCGs_altform[n]), mean(nDCGs_bin_thresh4[n]), mean(nDCGs_bin_thresh3[n]), mean(APs_thresh4[n]), mean(APs_thresh3[n]), mean(APs_thresh2[n]), mean(MRR_thresh4), mean(MRR_thresh3)) )	
 
 
-def protocol_nDCGMAP_evaluation(data_path, params, N, output_filename):
-	user_consumption = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True) #debiera ser el test_c, pero como includeRated=False, da lo mismo
-	train_c = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=False)
-	svd = pyreclab.SVD( dataset   = data_path+'eval_train_N'+str(N)+'.data',
+def svd_protocol_evaluation(data_path, params):
+	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True) #debiera ser el test_c, pero como includeRated=False, da lo mismo
+	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
+	svd = pyreclab.SVD( dataset   = data_path+'eval_train_N20.data',
 											dlmchar   = b',',
 											header    = False,
 											usercol   = 0,
 											itemcol   = 1,
 											ratingcol = 2 )
 	svd.train( factors= params['f'], maxiter= params['mi'], lr= params['lr'], lamb= params['lamb'] )
-	recommendationList = svd.testrec( input_file    = data_path+'test/test_N'+str(N)+'.data',
+	recommendationList = svd.testrec( input_file    = data_path+'test/test_N20.data',
                                       dlmchar     = b',',
                                       header      = False,
                                       usercol     = 0,
@@ -401,27 +401,27 @@ def protocol_nDCGMAP_evaluation(data_path, params, N, output_filename):
                                       ratingcol   = 2,
                                       topn        = 100,
                                       includeRated= False )
-	MRRs          = []
-	nDCGs_bin     = []
-	nDCGs_normal  = []
-	nDCGs_altform = []
-	APs           = []
-	Rprecs        = []
+
+	MRRs   = dict((N, []) for N in [5, 10, 15, 20])
+	nDCGs  = dict((N, []) for N in [5, 10, 15, 20])
+	APs    = dict((N, []) for N in [5, 10, 15, 20])
+	Rprecs = dict((N, []) for N in [5, 10, 15, 20])
 
 	for userId in recommendationList[0]:
 		book_recs  = remove_consumed(user_consumption= train_c[userId], rec_list= recommendationList[0][userId]) #da lo mismo este paso, según Gabriel el testrec no devuelve items consumidos
-		recs       = user_ranked_recs(user_recs=book_recs, user_consumpt=user_consumption[userId])
-		mini_recs  = dict((k, recs[k]) for k in recs.keys()[:N]) #DEVUELVO SÓLO N RECOMENDACIONES
-		nDCGs_normal.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
-		nDCGs_bin.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=1) )
-		nDCGs_altform.append( nDCG(recs=mini_recs, alt_form=True, rel_thresh=False) )			
-		APs.append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
-		MRRs.append( MRR(recs=recs, rel_thresh=1) )
-		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
+		recs       = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
 
-	with open('TwitterRatings/funkSVD/'+output_filename, 'a') as file:
-		file.write( "N=%s, normal nDCG=%s, alternative nDCG=%s, bin nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
-				(N, mean(nDCGs_normal), mean(nDCGs_altform), mean(nDCGs_bin), mean(APs), mean(MRRs), mean(Rprecs)) )	
+		for N in [5, 10, 15, 20]:
+			mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
+			MRRs[N].append( MRR(recs=mini_recs, rel_thresh=1) )
+			nDCGs[N].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )		
+			APs[N].append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
+			Rprecs[N].append( R_precision(n_relevants=N, recs=mini_recs) )
+
+	for N in [5, 10, 15, 20]:
+		with open('TwitterRatings/funkSVD/protocol.txt', 'a') as file:
+			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
 
 
 def generate_recommends(params):
@@ -459,14 +459,13 @@ def generate_recommends(params):
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	# opt_params = boosting(data_path= data_path)
+	# opt_params = svd_tuning(data_path= data_path)
 	# RMSEMAE_distr(output_filename="results_8020.txt")
-	# opt_params = {'f': 425, 'mi': 130, 'lr': 0.01, 'lamb': 0.05}
 	opt_params = {'f': 675, 'mi': 110, 'lr': 0.009, 'lamb': 0.05}
 	# PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
 	# nDCGMAP_calculator(data_path= data_path, params=opt_params, topN=[10, 15, 20, 50], output_filename="nDCGMAP.txt")
-	for N in [5, 10, 15, 20]:
-		protocol_nDCGMAP_evaluation(data_path=data_path, params=opt_params, N=N, output_filename='protocol.txt')
+	# for N in [5, 10, 15, 20]:
+	svd_protocol_evaluation(data_path=data_path, params=opt_params)
 	# generate_recommends(params=opt_params)
 
 

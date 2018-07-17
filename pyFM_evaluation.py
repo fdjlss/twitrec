@@ -167,20 +167,20 @@ def pyFM_tuning(data_path, N):
 
 	return defaults
 
-def pyFM_protocol_evaluation(data_path, params, N):
-	all_data, y_all, items = loadData("eval_all_N"+str(N)+".data")
+def pyFM_protocol_evaluation(data_path, params):
+	all_data, y_all, items = loadData("eval_all_N20.data")
 	v = DictVectorizer()
 	X_all = v.fit_transform(all_data)
 
-	test_c  = consumption(ratings_path= data_path+'test/test_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
-	train_c = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= False)
-	all_c   = consumption(ratings_path= data_path+'eval_all_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
-	MRRs          = []
-	nDCGs_normal  = []
-	APs           = []
-	Rprecs        = []
+	test_c  = consumption(ratings_path= data_path+'test/test_N20.data', rel_thresh= 0, with_ratings= True)
+	train_c = consumption(ratings_path= data_path+'eval_train_N20.data', rel_thresh= 0, with_ratings= False)
+	all_c   = consumption(ratings_path= data_path+'eval_all_N20.data', rel_thresh= 0, with_ratings= True)
+	MRRs   = dict((N, []) for N in [5, 10, 15, 20])
+	nDCGs  = dict((N, []) for N in [5, 10, 15, 20])
+	APs    = dict((N, []) for N in [5, 10, 15, 20])
+	Rprecs = dict((N, []) for N in [5, 10, 15, 20])
 
-	train_data, y_tr, _ = loadData('eval_train_N'+str(N)+'.data')
+	train_data, y_tr, _ = loadData('eval_train_N20.data')
 	X_tr = v.transform(train_data)
 	fm   = pylibfm.FM(num_factors=params['f'], num_iter=params['mi'], k0=params['bias'], k1=params['oneway'], init_stdev=params['init_stdev'], \
 									validation_size=params['val_size'], learning_rate_schedule=params['lr_s'], initial_learning_rate=params['lr'], \
@@ -199,23 +199,39 @@ def pyFM_protocol_evaluation(data_path, params, N):
 		book_recs = remove_consumed(user_consumption= train_c[userId], rec_list= book_recs)
 		recs      = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
 
-	####################################
-		mini_recs = dict((k, recs[k]) for k in recs.keys()[:N]) #DEVUELVO SÓLO N RECOMENDACIONES
-		nDCGs_normal.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
-		APs.append( AP_at_N(n=N, recs=mini_recs, rel_thresh=1) )
-		MRRs.append( MRR(recs=mini_recs, rel_thresh=1) )
-		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
+		for N in [5, 10, 15, 20]:
+			mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
+			MRRs[N].append( MRR(recs=mini_recs, rel_thresh=1) )
+			nDCGs[N].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )		
+			APs[N].append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
+			Rprecs[N].append( R_precision(n_relevants=N, recs=mini_recs) )
 
-	with open('TwitterRatings/pyFM/protocol.txt', 'a') as file:
-		file.write( "N=%s, normal nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
-				(N, mean(nDCGs_normal), mean(APs), mean(MRRs), mean(Rprecs)) )	
-	####################################
+
+	for N in [5, 10, 15, 20]:
+		with open('TwitterRatings/pyFM/protocol.txt', 'a') as file:
+			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
+
+
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	opt_params = pyFM_tuning(data_path=data_path, N=20)
-	for N in [5, 10, 15, 20]:
-		pyFM_protocol_evaluation(data_path=data_path, params=opt_params, N=N)
+	# opt_params = pyFM_tuning(data_path=data_path, N=20)
+	opt_params = {'lr_s':'invscaling',
+								'val_size':0.001,
+								'shuffle':False,
+								'bias':True,
+								'invscale_pow':0.05,
+								'f':20,
+								'mi':5,
+								'seed':20,
+								'lr':0.01,
+								'oneway':True,
+								'optimal_denom':0.01,
+								'init_stdev':0.01}
+
+	# for N in [5, 10, 15, 20]:
+	pyFM_protocol_evaluation(data_path=data_path, params=opt_params)
 
 if __name__ == '__main__':
 	main()

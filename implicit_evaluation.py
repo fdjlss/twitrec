@@ -137,25 +137,25 @@ def ALS_tuning(data_path, N):
 	return defaults
 
 
-def ALS_protocol_evaluation(data_path, params, N):
+def ALS_protocol_evaluation(data_path, params):
 	# all_data, y_all, items = loadData("eval_all_N"+str(N)+".data")
 	# v = DictVectorizer()
 	# X_all = v.fit_transform(all_data)
 
-	test_c  = consumption(ratings_path= data_path+'test/test_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
-	train_c = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= False)
-	all_c   = consumption(ratings_path= data_path+'eval_all_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
+	test_c  = consumption(ratings_path= data_path+'test/test_N20.data', rel_thresh= 0, with_ratings= True)
+	train_c = consumption(ratings_path= data_path+'eval_train_N20.data', rel_thresh= 0, with_ratings= False)
+	all_c   = consumption(ratings_path= data_path+'eval_all_N20.data', rel_thresh= 0, with_ratings= True)
 	items_ids = list(set( [ itemId for userId, itemsDict in all_c.items() for itemId in itemsDict ] ))
 	idcoder   = IdCoder(items_ids, all_c.keys())
-	MRRs   = []
-	nDCGs  = []
-	APs    = []
-	Rprecs = []
+	MRRs   = dict((N, []) for N in [5, 10, 15, 20])
+	nDCGs  = dict((N, []) for N in [5, 10, 15, 20])
+	APs    = dict((N, []) for N in [5, 10, 15, 20])
+	Rprecs = dict((N, []) for N in [5, 10, 15, 20])
 
 	# train_data, y_tr, _ = loadData('eval_train_N'+str(N)+'.data')
 	# X_tr = v.transform(train_data)
 
-	ones, row, col = get_data(data_path= data_path, all_c= all_c, idcoder= idcoder, fold= 0, N= N, mode= "testing")
+	ones, row, col = get_data(data_path= data_path, all_c= all_c, idcoder= idcoder, fold= 0, N= 20, mode= "testing")
 	matrix         = csr_matrix((ones, (row, col)), dtype=np.float64 )
 	user_items     = matrix.T.tocsr()
 	model          = implicit.als.AlternatingLeastSquares(factors= params['f'], regularization= params['lamb'], iterations= params['mi'], dtype= np.float64)
@@ -166,18 +166,19 @@ def ALS_protocol_evaluation(data_path, params, N):
 		book_recs  = [ idcoder.decoder('item', tupl[0]) for tupl in recommends ]
 		book_recs  = remove_consumed(user_consumption= train_c[userId], rec_list= book_recs)
 		recs       = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
-		mini_recs  = dict((k, recs[k]) for k in recs.keys()[:N])
 
-		MRRs.append( MRR(recs=recs, rel_thresh=1) )
-		nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
-		APs.append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
-		Rprecs.append( R_precision(n_relevants=N, recs=mini_recs) )
-
-	with open('TwitterRatings/implicit/protocol.txt', 'a') as file:
-		file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
-				(N, mean(nDCGs), mean(APs), mean(MRRs), mean(Rprecs)) )
+		for N in [5, 10, 15, 20]:
+			mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
+			MRRs[N].append( MRR(recs=mini_recs, rel_thresh=1) )
+			nDCGs[N].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )		
+			APs[N].append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
+			Rprecs[N].append( R_precision(n_relevants=N, recs=mini_recs) )
 
 
+	for N in [5, 10, 15, 20]:
+		with open('TwitterRatings/implicit/protocol.txt', 'a') as file:
+			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
+				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
 
 
 	
@@ -186,8 +187,8 @@ def main():
 	# opt_params = ALS_tuning(data_path= data_path, N= 20)
 	# opt_params = {'f': 1180, 'lamb': 0.04, 'mi': 10} OLD
 	opt_params = {'f': 20, 'lamb': 0.3, 'mi': 15}
-	for N in [5, 10, 15, 20]:
-		ALS_protocol_evaluation(data_path= data_path, params= opt_params, N= N)
+	# for N in [5, 10, 15, 20]:
+	ALS_protocol_evaluation(data_path= data_path, params= opt_params)
 
 if __name__ == '__main__':
 	main()
