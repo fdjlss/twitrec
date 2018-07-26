@@ -401,22 +401,22 @@ def main():
 	# 						'mlt.mintf' : 1, #def: 2
 	# 						'mlt.mindf' : 2, #def: 5
 	# 						'mlt.minwl' : 1, 
-	# 						'mlt.maxdf' : 1000, # en realidad no especificado
-	# 						'mlt.maxwl' : 10,
-	# 						'mlt.maxqt' : 81, #def: 25
+	# 						'mlt.maxdf' : 25431 #docs*0.5, # en realidad no especificado
+	# 						'mlt.maxwl' : 8,
+	# 						'mlt.maxqt' : 90, #def: 25
 	# 						'mlt.maxntp' : 150000 }
 	# params_o2 = {'echoParams' : 'none',
 	# 						'fl' : 'goodreadsId,description,title.titleOfficial,genres.genreName,author.authors.authorName,quotes.quoteText,author.authorBio,title.titleGreytext',
 	# 						'rows' : 100,
 	# 						'mlt.fl' : 'author.authors.authorName',
 	# 						'mlt.boost' : 'false', #def: false
-	# 						'mlt.mintf' : 1, #def: 2
+	# 						'mlt.mintf' : 2, #def: 2
 	# 						'mlt.mindf' : 8, #def: 5
 	# 						'mlt.minwl' : 3, 
-	# 						'mlt.maxdf' : 50000, # en realidad no especificado
-	# 						'mlt.maxwl' : 10,
-	# 						'mlt.maxqt' : 31, #def: 25
-	# 						'mlt.maxntp' : 5000 }
+	# 						'mlt.maxdf' : 25431, # en realidad no especificado
+	# 						'mlt.maxwl' : 8,
+	# 						'mlt.maxqt' : 40, #def: 25
+	# 						'mlt.maxntp' : 150000 }
 	# for N in [5, 10, 15, 20]:
 	option1_protocol_evaluation(data_path=data_path, solr=solr, params=params_o1)
 	option2_protocol_evaluation(data_path=data_path, solr=solr, params=params_o2)

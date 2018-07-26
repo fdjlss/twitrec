@@ -134,7 +134,7 @@ def option1_protocol_evaluation(data_path, which_model, metric):
 			continue
 
 		for N in [5, 10, 15, 20]:
-			mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
+			mini_recs = dict((k, recs[k]) for k in list(recs.keys())[:N])
 			MRRs[N].append( MRR(recs=mini_recs, rel_thresh=1) )
 			nDCGs[N].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )		
 			APs[N].append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
@@ -180,7 +180,7 @@ def option2_protocol_evaluation(data_path, which_model, metric, representation):
 			continue
 
 		for N in [5, 10, 15, 20]:
-			mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
+			mini_recs = dict((k, recs[k]) for k in list(recs.keys())[:N])
 			MRRs[N].append( MRR(recs=mini_recs, rel_thresh=1) )
 			nDCGs[N].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )		
 			APs[N].append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
