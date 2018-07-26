@@ -397,6 +397,7 @@ def fastFM_protocol_evaluation(data_path, params):
 
 
 def fastFM_protocol_evaluation_bpr(data_path, params):
+	# userId = '33120270'
 	all_data, y_all, items = loadData_bpr("eval_all_N20.data")
 	v = DictVectorizer()
 	X_all = v.fit_transform(all_data)
@@ -423,14 +424,15 @@ def fastFM_protocol_evaluation_bpr(data_path, params):
 		user_rows = [ {'user_id': str(userId), 'item_id': str(itemId)} for itemId in items ]
 		X_te      = v.transform(user_rows)
 		preds     = fm.predict(X_te)
-		preds     = np.argsort(-preds)
+		preds     = np.argsort(-preds) # ordenamos las predicciones
 		book_recs = []
 		for i in range(len(preds)):
+			print("i={}".format(i))
 			pred_row = preds[i]
 			l = v.inverse_transform( X_te[pred_row,:] )[0].keys()
 			pred_itemId = [s for s in l if "item" in s][0].split('=')[-1]
 			book_recs.append(pred_itemId)
-			# if i==100: break
+			if i==100: break # no necesitamos más de 100
 
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
 		recs      = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
