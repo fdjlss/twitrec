@@ -140,6 +140,8 @@ def option1_protocol_evaluation(data_path, which_model, metric):
 			APs[N].append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
 			Rprecs[N].append( R_precision(n_relevants=N, recs=mini_recs) )
 
+	with open('TwitterRatings/word2vec/option1_protocol_'+which_model+'.txt', 'a') as file:
+		file.write( "METRIC: %s\n" % (metric, representation) )	
 
 	for N in [5, 10, 15, 20]:
 		with open('TwitterRatings/word2vec/option1_protocol_'+which_model+'.txt', 'a') as file:
@@ -186,8 +188,9 @@ def option2_protocol_evaluation(data_path, which_model, metric, representation):
 			APs[N].append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
 			Rprecs[N].append( R_precision(n_relevants=N, recs=mini_recs) )
 
+	with open('TwitterRatings/word2vec/option2_protocol_'+which_model+'.txt', 'a') as file:
+		file.write( "METRIC: %s \t REPR: %s\n" % (metric, representation) )	
 
-	for N in [5, 10, 15, 20]:
 		with open('TwitterRatings/word2vec/option2_protocol_'+which_model+'.txt', 'a') as file:
 			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
@@ -223,8 +226,14 @@ def main():
 
 	# CONVERTIR FLATTENED USERS AS TWEETS A USERS2VEC_TWEET PARA CADA GOOGLE Y WIKI
 	# .. PARA TWEET CONVERTIR FLAT USERS AS BOOKS A USERS2VEC_BOOKS
-	for metric in ['angular', 'euclidean']:
-		for which_model in models:
+
+	for metric in ['angular']:
+		for which_model in ['twit']:
+			for representation in ['books', 'tweets', 'mix']:
+				option2_protocol_evaluation(data_path= data_path, which_model=which_model, metric=metric, representation=representation)			
+
+	for metric in ['euclidean']:
+		for which_model in ['google', 'wiki', 'twit']:
 			# CORRER annoy_indexer ANTES DE..
 			# for N in [5, 10, 15, 20]:
 			option1_protocol_evaluation(data_path= data_path, which_model=which_model, metric=metric)
