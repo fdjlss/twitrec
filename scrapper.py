@@ -33,6 +33,9 @@ from jojFunkSvd import consumption, mean, stdev
 # from statistics import mean, stdev 
 import collections
 from pprint import pprint
+# Para requests al crear tabla authors
+from urllib import urlencode, quote_plus
+from urllib2 import urlopen
 #--------------------------------#
 
 #-----"PRIVATE" METHODS----------#
@@ -70,8 +73,8 @@ def relevance(user, q):
 		return mean(ratings)
 	return ((0.5**q) * stdev(ratings)) + mean(ratings)
 #--------------------------------#
-
-def reviews_wgetter(path_jsons, db_conn):
+# Parseo de userId y nombre de libro de JSONs - Scrapeo de GR con parseo de rating
+def create_user_reviews_table(path_jsons, db_conn):
 	"""
 	Recibe direccion de directorio de documentos JSON 
 	y el objeto de la conexión de la BD 
@@ -383,6 +386,53 @@ def create_users_table(path_jsons, db_conn):
 		# Manda los cambios al final de pasar por todos los tweets de cada usuario
 		db_conn.commit()
 
+def create_authors_table(solr, db_conn):
+	c = db_conn.cursor()
+
+	# Creacion de la tabla en la BD: user_reviews(user_id, url_review, rating)
+	table_name = 'authors'
+	col_id = 'id'
+	col_name = 'name'
+	col_role = 'role'
+	col_bookId = 'bookId'
+
+	c.execute( 'CREATE TABLE IF NOT EXISTS {0} ({1} {2}, {3} {4}, {5} {6}, {7} {8})'\
+	.format(table_name, \
+					col_id, 'INTEGER', \
+					col_name, 'TEXT', \
+					col_role, 'TEXT', \
+					col_bookId, 'INTEGER' ) )
+
+	url = solr + '/query?q=*:*&rows=100000' #n docs: 50,862 < 100,000
+	docs = json.loads( urlopen(url).read().decode('utf8') )
+	docs = docs['response']['docs']
+
+	for doc in docs:
+		hrefs = doc['author.authors.authorHref']
+		for i in range(len(hrefs)):
+			name = hrefs[i].split('.')[-1]
+			aid = int( hrefs[i].split('.')[-2].split('/')[-1] ) #capturamos el número entre el '.' y el '/'
+			url = hrefs[i]
+			bookId = doc['goodreadsId'][0]
+
+			role = ''
+			try:
+				role = doc['author.authors.authorRole'][i]
+			except KeyError as e:
+				logging.info("KeyError: Doc no muestra rol(es) de autor(es)")
+
+			# Insertando tupla (author_id, author_name, author_role, written_bookId) en la BD
+			try:
+				c.execute( "INSERT INTO {0} ({1}, {2}, {3}, {4}) VALUES (?, ?, ?, ?)" \
+					.format(table_name, col_id, col_name, col_role, col_bookId), \
+								 						 (aid   , name    , role    , bookId) )
+			except sqlite3.IntegrityError:
+				logging.info( 'Algo pasó en el documento {doc}, author i={i}'.format(doc=doc, i=i) )			
+			
+	db_conn.commit()
+
+
+# Deprecado. Ahora para los dataset uso evaluation_set()
 def ratings_maker(db_conn, folds, out_path):
 	"""
 	Guarda un set de entrenamiento y un set de test a partir
@@ -692,20 +742,21 @@ def main():
 	# Creando la conexion a la BD
 	sqlite_file = 'db/goodreads.sqlite'
 	conn = sqlite3.connect(sqlite_file)
-
+	# Para tabla de autores
+	solr = "http://localhost:8983/solr/grrecsys"
 	# Direccion de los archivos del dataset de Hamid
 	path_jsons = 'TwitterRatings/goodreads_renamed/'
 	# 1)
-	# reviews_wgetter(path_jsons, conn)
+	# create_user_reviews_table(path_jsons, conn)
 	# 2)
 	# add_column_book_url(conn)
 	# 3)
 	# books_wgetter(conn)
 	# 4)
 	# add_column_timestamp(db_conn= conn, alter_table= True)
-	# 5)
+	# 5 A) FORMA ANTIGUA
 	# ratings_maker(db_conn= conn, folds= 5, out_path='TwitterRatings/funkSVD/data/')
-	# 5.1)
+	# 5 B) FORMA ACTUAL
 	# evaluation_set(db_conn=conn, M=10, N=5, folds=5, out_path='TwitterRatings/funkSVD/data/')
 	# evaluation_set(db_conn=conn, M=20, N=10, folds=5, out_path='TwitterRatings/funkSVD/data/')
 	# evaluation_set(db_conn=conn, M=30, N=15, folds=5, out_path='TwitterRatings/funkSVD/data/')
@@ -715,13 +766,16 @@ def main():
 	# 7)
 	# statistics(db_conn= conn)
 	# 7.5)
-	statistics_language(path_jsons=path_jsons)
+	# statistics_language(path_jsons=path_jsons)
 	# 8)
 	# data_path = "TwitterRatings/funkSVD/data/"
 	# for N in [5, 10, 15, 20]:
 	# 	statistics_protocol(data_path= data_path, N= N, folds= 5)
+	# 9)
+	create_authors_table(solr=solr, db_conn=conn)
+
 	# # Cerramos la conexion a la BD
-	# conn.close()
+	conn.close()
 
 if __name__ == '__main__':
 	main()
