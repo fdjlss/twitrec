@@ -417,9 +417,11 @@ def create_authors_table(solr, db_conn):
 
 			role = ''
 			try:
-				role = doc['author.authors.authorRole'][i]
+				doc['author.authors.authorRole']
 			except KeyError as e:
-				logging.info("KeyError: Doc no muestra rol(es) de autor(es)")
+				logging.info("Un KeyError: Doc no muestra rol(es) de autor(es)")
+			else:
+				role = doc['author.authors.authorRole'][i]
 
 			# Insertando tupla (author_id, author_name, author_role, written_bookId) en la BD
 			try:
