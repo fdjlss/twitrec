@@ -396,11 +396,10 @@ def create_authors_table(solr, db_conn):
 	col_role = 'role'
 	col_bookId = 'bookId'
 
-	c.execute( 'CREATE TABLE IF NOT EXISTS {0} ({1} {2}, {3} {4}, {5} {6}, {7} {8})'\
+	c.execute( 'CREATE TABLE IF NOT EXISTS {0} ({1} {2}, {3} {4}, {5} {6})'\
 	.format(table_name, \
 					col_id, 'INTEGER', \
 					col_name, 'TEXT', \
-					col_role, 'TEXT', \
 					col_bookId, 'INTEGER' ) )
 
 	url = solr + '/query?q=*:*&rows=100000' #n docs: 50,862 < 100,000
@@ -415,19 +414,22 @@ def create_authors_table(solr, db_conn):
 			url = hrefs[i]
 			bookId = doc['goodreadsId'][0]
 
-			role = ''
-			try:
-				doc['author.authors.authorRole']
-			except KeyError as e:
-				logging.info("Un KeyError: Doc no muestra rol(es) de autor(es)")
-			else:
-				role = doc['author.authors.authorRole'][i]
+			# ME DI CUENTA QUE PARSIÉ MAL EL ROL DE LOS AUTORES
+			# ASÍ QUE NO ME VOY A DAR LA PAJA DE ARREGLARLO SÓLO
+			# POR PONER LA WEA EN LA DB
+			# role = ''
+			# try:
+			# 	doc['author.authors.authorRole']
+			# except KeyError as e:
+			# 	logging.info("Un KeyError: Doc no muestra rol(es) de autor(es)")
+			# else:
+			# 	role = doc['author.authors.authorRole'][i]
 
-			# Insertando tupla (author_id, author_name, author_role, written_bookId) en la BD
+			# Insertando tupla (author_id, author_name, written_bookId) en la BD
 			try:
-				c.execute( "INSERT INTO {0} ({1}, {2}, {3}, {4}) VALUES (?, ?, ?, ?)" \
-					.format(table_name, col_id, col_name, col_role, col_bookId), \
-								 						 (aid   , name    , role    , bookId) )
+				c.execute( "INSERT INTO {0} ({1}, {2}, {3}) VALUES (?, ?, ?)" \
+					.format(table_name, col_id, col_name, col_bookId), \
+								 						 (aid   , name    , bookId) )
 			except sqlite3.IntegrityError:
 				logging.info( 'Algo pasó en el documento {doc}, author i={i}'.format(doc=doc, i=i) )			
 			
