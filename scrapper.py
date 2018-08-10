@@ -208,10 +208,8 @@ def add_column_book_url(db_conn, alter_table=False):
 		except Exception as e:
 			logging.info("URL DE LIBRO NO ENCONTRADO: {}".format(e))
 			logging.info("Encontrado HTML conflictivo: {}".format(url_review))
-			
 			with open("non_user_reviews_htmls.txt", 'a+') as f:
 				f.write( "{0}\n".format(url_review) )
-
 			continue
 
 		try:
@@ -222,7 +220,6 @@ def add_column_book_url(db_conn, alter_table=False):
 								 url_review))
 		except sqlite3.IntegrityError:
 			logging.info( 'ERROR ACTUALIZANDO VALORES'.format(file_name) )
-
 
 	db_conn.commit()
 
@@ -312,6 +309,42 @@ def add_column_timestamp(db_conn, alter_table=False):
 		except sqlite3.IntegrityError:
 			logging.info( 'ERROR ACTUALIZANDO VALORES'.format(file_name) )
 			continue
+
+	db_conn.commit()
+
+def add_column_bookId(db_conn, alter_table=True):
+	db_conn.row_factory = lambda cursor, row: row[0]
+	c = db_conn.cursor()
+	table_name = 'user_reviews'
+	col_book = 'bookId'
+	books_path = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/books_data/"
+
+	# Creamos columna que contiene las URL de los libros en la tabla de consumos
+	if alter_table:
+		c.execute( "ALTER TABLE {0} ADD COLUMN {1} {2}".format(table_name, col_book, 'INTEGER') )
+
+	c.execute( "SELECT url_book FROM {0}".format(table_name) )
+	all_rows = c.fetchall()
+
+	i = 0
+	for url_book in all_rows:
+		logging.info("Viendo fila {0} de {1}".format(i, len(all_rows)) )
+		i+=1
+		filename = url_book.split('/')[-1]
+
+		with open( books_path+filename+'.html', 'r') as fp:
+			soup = BeautifulSoup(fp, 'html.parser')
+
+		bookId = soup.find('input', id="book_id").get('value')
+
+		try:
+			c.execute( "UPDATE {0} SET {1} = '{2}' WHERE url_review = '{3}'"\
+				.format(table_name,
+								col_book,
+								bookId,
+								url_book))
+		except sqlite3.IntegrityError:
+			logging.info( 'ERROR ACTUALIZANDO VALORES'.format(file_name) )
 
 	db_conn.commit()
 
@@ -756,11 +789,13 @@ def main():
 	# add_column_book_url(conn)
 	# 3)
 	# books_wgetter(conn)
-	# 4)
+	# 4 A)
 	# add_column_timestamp(db_conn= conn, alter_table= True)
-	# 5 A) FORMA ANTIGUA
+	# 4 B)
+	add_column_bookId(db_conn=conn, alter_table=True)
+	# (5) FORMA ANTIGUA
 	# ratings_maker(db_conn= conn, folds= 5, out_path='TwitterRatings/funkSVD/data/')
-	# 5 B) FORMA ACTUAL
+	# 5 FORMA ACTUAL
 	# evaluation_set(db_conn=conn, M=10, N=5, folds=5, out_path='TwitterRatings/funkSVD/data/')
 	# evaluation_set(db_conn=conn, M=20, N=10, folds=5, out_path='TwitterRatings/funkSVD/data/')
 	# evaluation_set(db_conn=conn, M=30, N=15, folds=5, out_path='TwitterRatings/funkSVD/data/')
@@ -776,7 +811,7 @@ def main():
 	# for N in [5, 10, 15, 20]:
 	# 	statistics_protocol(data_path= data_path, N= N, folds= 5)
 	# 9)
-	create_authors_table(solr=solr, db_conn=conn)
+	# create_authors_table(solr=solr, db_conn=conn)
 
 	# # Cerramos la conexion a la BD
 	conn.close()
