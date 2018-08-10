@@ -362,6 +362,8 @@ def fastFM_protocol_evaluation(data_path, params):
 												l2_reg_w=params['l2_reg_w'], l2_reg_V=params['l2_reg_V'], l2_reg=params['l2_reg'], step_size=params['step_size'])
 	fm.fit(X_tr, y_tr)
 
+
+
 	p=0
 	for userId in test_c:
 		logging.info("#u: {0}/{1}".format(p, len(test_c)))
@@ -369,14 +371,20 @@ def fastFM_protocol_evaluation(data_path, params):
 		user_rows = [ {'user_id': str(userId), 'item_id': str(itemId)} for itemId in items ]
 		X_te      = v.transform(user_rows)
 		preds     = fm.predict(X_te) #lista de ratings
-		book_recs = []
-		for i in range(len(preds)):
-			l = v.inverse_transform( X_te[i,:] )[0].keys()
-			pred_itemId = [s for s in l if "item" in s][0].split('=')[-1]
-			book_recs.append( [preds[i], pred_itemId] )
-			# if i==100: break #no necesitamos una lista de recomendaciones más larga que 100
 
-		book_recs = [ itemId for rating, itemId in sorted(book_recs, reverse=True) ] 
+		# book_recs = []
+		# for i in range(len(preds)):
+		# 	l = v.inverse_transform( X_te[i,:] )[0].keys()
+		# 	pred_itemId = [s for s in l if "item" in s][0].split('=')[-1]
+		# 	book_recs.append( [preds[i], pred_itemId] )
+		# 	# if i==100: break #no necesitamos una lista de recomendaciones más larga que 100
+		# book_recs = [ itemId for rating, itemId in sorted(book_recs, reverse=True) ] 
+
+		# Son equivalentes, dado que items->user_rows->X_te->(preds)->inverse_transform
+		# mantiene el orden de items
+		# Esto es más rápido:
+		book_recs = [itemId for _, itemId in sorted(zip(preds, items), reverse=True)]
+
 		book_recs = remove_consumed(user_consumption= train_c[userId], rec_list= book_recs)
 		recs      = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
 

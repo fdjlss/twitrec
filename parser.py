@@ -24,8 +24,10 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		with open( os.path.join(DATA_PATH, BOOKS_PATH, filename), 'r' , encoding="utf-8") as fp:
 			soup = BeautifulSoup(fp, 'html.parser')
 
-		"""Book ID"""
+		"""href"""
 		href = soup.find('link', rel="canonical").get('href') # string
+
+		"""Book ID"""
 		goodreadsId = soup.find('input', id="book_id").get('value') # string
 		
 		"""Title"""
