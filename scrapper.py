@@ -330,7 +330,11 @@ def add_column_bookId(db_conn, alter_table=True):
 	for url_book in all_rows:
 		logging.info("Viendo fila {0} de {1}".format(i, len(all_rows)) )
 		i+=1
-		filename = url_book.split('/')[-1]
+		try:
+			filename = url_book.split('/')[-1]
+		except AttributeError as e:
+			logging.info("un url_book es None")
+			continue
 
 		with open( books_path+filename+'.html', 'r') as fp:
 			soup = BeautifulSoup(fp, 'html.parser')
