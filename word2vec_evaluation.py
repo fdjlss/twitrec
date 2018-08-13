@@ -141,7 +141,7 @@ def option1_protocol_evaluation(data_path, which_model, metric):
 			Rprecs[N].append( R_precision(n_relevants=N, recs=mini_recs) )
 
 	with open('TwitterRatings/word2vec/option1_protocol_'+which_model+'.txt', 'a') as file:
-		file.write( "METRIC: %s\n" % (metric, representation) )	
+		file.write( "METRIC: %s\n" % (metric) )	
 
 	for N in [5, 10, 15, 20]:
 		with open('TwitterRatings/word2vec/option1_protocol_'+which_model+'.txt', 'a') as file:
@@ -191,6 +191,7 @@ def option2_protocol_evaluation(data_path, which_model, metric, representation):
 	with open('TwitterRatings/word2vec/option2_protocol_'+which_model+'.txt', 'a') as file:
 		file.write( "METRIC: %s \t REPR: %s\n" % (metric, representation) )	
 
+	for N in [5, 10, 15, 20]:
 		with open('TwitterRatings/word2vec/option2_protocol_'+which_model+'.txt', 'a') as file:
 			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
