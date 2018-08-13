@@ -336,8 +336,12 @@ def add_column_bookId(db_conn, alter_table=True):
 			logging.info("un url_book es None")
 			continue
 
-		with open( books_path+filename+'.html', 'r') as fp:
-			soup = BeautifulSoup(fp, 'html.parser')
+		try:
+			with open( books_path+filename+'.html', 'r') as fp:
+				soup = BeautifulSoup(fp, 'html.parser')
+		except IOError as e:
+			logging.info("El URL del libro está en la DB pero no se descargó su HTML")
+			continue
 
 		bookId = soup.find('input', id="book_id").get('value')
 
