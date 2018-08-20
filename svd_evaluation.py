@@ -116,23 +116,28 @@ def R_precision(n_relevants, recs):
 			s += 1
 	return s/n_relevants
 
-def consumption(ratings_path, rel_thresh, with_ratings):
+def consumption(ratings_path, rel_thresh, with_ratings, with_timestamps=False, with_authors=False):
 	c = {}
 	with open(ratings_path, 'r') as f:
-		if with_ratings:
-			for line in f:
-				userId, itemId, rating = line.strip().split(',')
-				if userId not in c:
+		for line in f:
+			userId, itemId, rating, timestamp = line.strip().split(',')
+			###########
+			if userId not in c:
+				if with_ratings:
 					c[userId] = {}
-				if int( rating ) >= rel_thresh:
-					c[userId][itemId] = rating
-		else:
-			for line in f:
-				userId, itemId, rating = line.strip().split(',')
-				if userId not in c:
+				else:
 					c[userId] = []
-				if int( rating ) >= rel_thresh:
-					c[userId].append(itemId)
+			if int( rating ) >= rel_thresh:
+				if with_ratings:
+					if with_timestamps:
+						c[userId][itemId] = (rating,timestamp)
+					else:
+						c[userId][itemId] = rating
+				else:
+					if with_timestamps:
+						c[userId].append( (itemId,timestamp) )
+					else:
+						c[userId].append( itemId )
 	return c
 
 def user_ranked_recs(user_recs, user_consumpt):
