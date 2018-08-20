@@ -794,7 +794,7 @@ def main():
 	# 4 A)
 	# add_column_timestamp(db_conn= db_conn, alter_table= True)
 	# 4 B)
-	add_column_bookId(db_conn=conn, alter_table=False)
+	add_column_bookId(db_conn=db_conn, alter_table=False)
 	# (5) FORMA ANTIGUA
 	# ratings_maker(db_conn= db_conn, folds= 5, out_path='TwitterRatings/funkSVD/data/')
 	# 5 FORMA ACTUAL
