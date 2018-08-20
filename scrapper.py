@@ -346,7 +346,7 @@ def add_column_bookId(db_conn, alter_table=True):
 		bookId = soup.find('input', id="book_id").get('value')
 
 		try:
-			c.execute( "UPDATE {0} SET {1} = '{2}' WHERE url_review = '{3}'"\
+			c.execute( "UPDATE {0} SET {1} = '{2}' WHERE url_book = '{3}'"\
 				.format(table_name,
 								col_book,
 								bookId,
@@ -476,7 +476,6 @@ def create_authors_table(solr, db_conn):
 			
 	db_conn.commit()
 
-
 # Deprecado. Ahora para los dataset uso evaluation_set()
 def ratings_maker(db_conn, folds, out_path):
 	"""
@@ -527,8 +526,8 @@ def ratings_maker(db_conn, folds, out_path):
 	with open(out_path+'ratings.total', 'w') as f:
 		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in interactions) )
 
-
-def evaluation_set(db_conn, M, N, folds, out_path):
+def evaluation_set(db_conn, M, N, folds, out_path, with_timestamps=False, with_authors=False):
+	# user_id=21245955
 	"""
 	Guarda un set de entrenamiento y un set de test a partir
 	de datos de la DB
@@ -549,7 +548,7 @@ def evaluation_set(db_conn, M, N, folds, out_path):
 	users = {}
 	logging.info("-> Iterando sobre resultado de la consulta 1..")
 	for tupl in all_rows:
-		user_id, url_review, rating, url_book, timestamp = tupl
+		user_id, url_review, rating, url_book, timestamp, bookId = tupl
 		book_id = url_book.split('/')[-1].split('-')[0].split('.')[0]
 		if user_id not in users:
 			users[user_id] = {}
@@ -565,30 +564,27 @@ def evaluation_set(db_conn, M, N, folds, out_path):
 	everything = {}
 	logging.info("-> Iterando sobre resultado de la consulta 2..")	
 	for tupl in all_rows:
-		user_id, url_review, rating, url_book, timestamp = tupl
+		user_id, url_review, rating, url_book, timestamp, bookId = tupl
 		book_id = url_book.split('/')[-1].split('-')[0].split('.')[0]
 		if user_id not in everything:
 			everything[user_id] = {}
-		everything[user_id][book_id] = rating		
+		everything[user_id][book_id] = (rating, timestamp)		
 
 	eval_test_set = {}
 	eval_train_set = {}
 	
 	"""Construcción Test Set"""
 	for user_id in users:
-		user_train_set = {} 
 		user_test_set = {}
 		od = collections.OrderedDict(sorted(users[user_id].items(), reverse=True))
 		user_ratings = { v[1] : v[0] for k, v in od.items() }
 
 		step = 0
 		while len(user_test_set) != N:
-
 			last_items_selected = {}
 			for timestamp, tupl in od.items():
 				if (tupl[0] >= relevance(user= od, q= step)) and (tupl[1] not in user_test_set.keys()): 
-					last_items_selected[tupl[1]] = tupl[0]
-
+					last_items_selected[tupl[1]] = (tupl[0], timestamp)
 			i = 0
 			while True:
 				try:
@@ -598,14 +594,12 @@ def evaluation_set(db_conn, M, N, folds, out_path):
 					print("Sample larger than population. Trying with k={}".format(N-len(user_test_set)-i))
 				else:
 					break
-
 			step += 1
 			if step == 11:
 				break
-
+				
 		if len(user_test_set) != N:
 			continue 
-
 		eval_test_set[user_id] = user_test_set 
 		# eval_train_set[user_id] = { item_id : user_ratings[item_id] for item_id in set(user_ratings) - set(user_test_set) }
 	
@@ -618,7 +612,7 @@ def evaluation_set(db_conn, M, N, folds, out_path):
 				else:
 					if user_id not in eval_train_set:
 						eval_train_set[user_id] = {}
-					eval_train_set[user_id][item_id] = everything[user_id][item_id]
+					eval_train_set[user_id][item_id] = everything[user_id][item_id] # = (rating, timestamp)
 
 	"""Construcción Folds de train/validation"""
 	lists = [ [] for _ in range(0, folds-1) ]
@@ -626,27 +620,27 @@ def evaluation_set(db_conn, M, N, folds, out_path):
 	for user_id in eval_train_set:
 		for item_id in eval_train_set[user_id]:
 			i += 1
-			lists[ i%(folds-1) ].append( (user_id, item_id, eval_train_set[user_id][item_id]) )
+			lists[ i%(folds-1) ].append( (user_id, item_id, eval_train_set[user_id][item_id][0], eval_train_set[user_id][item_id][1]) ) # .append( (userId,itemId,rating,timestamp) )
 
 	logging.info("Guardando test..")
 	with open(out_path+'test/test_N'+str(N)+'.data', 'w') as f:
 		for user, d in eval_test_set.items():
-			for item, rating in d.items():
-				f.write( '{user},{item},{rating}\n'.format(user=user, item=item, rating=rating) )
+			for item, tupl in d.items():
+				f.write( '{user},{item},{rating},{timestamp}\n'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1]) )
 
 	logging.info("Guardando train..")
 	with open(out_path+'eval_train_N'+str(N)+'.data', 'w') as f:
 		for user, d in eval_train_set.items():
-			for item, rating in d.items():
-				f.write( '{user},{item},{rating}\n'.format(user=user, item=item, rating=rating) )
+			for item, tupl in d.items():
+				f.write( '{user},{item},{rating},{timestamp}\n'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1]) )
 
 	logging.info("Guardando validation folds y training aggregated folds..")
 	for i in range(0, folds-1):
 		with open(out_path+'val/val_N'+str(N)+'.'+str(i+1), 'w') as f:
-			f.write( '\n'.join('%s,%s,%s' % x[:] for x in lists[i]) )
+			f.write( '\n'.join('%s,%s,%s,%s' % x[:] for x in lists[i]) )
 
 		with open(out_path+'train/train_N'+str(N)+'.'+str(i+1), 'w') as f:
-			f.write( '\n'.join('%s,%s,%s' % x[:] for l in lists[:i] + lists[i+1:] for x in l) )
+			f.write( '\n'.join('%s,%s,%s,%s' % x[:] for l in lists[:i] + lists[i+1:] for x in l) )
 
 	eval_all_set = {}
 	eval_all_set.update(eval_test_set)
@@ -654,8 +648,8 @@ def evaluation_set(db_conn, M, N, folds, out_path):
 	logging.info("Guardando total..")
 	with open(out_path+'eval_all_N'+str(N)+'.data', 'w') as f:
 		for user, d in eval_all_set.items():
-			for item, rating in d.items():
-				f.write( '{user},{item},{rating}\n'.format(user=user, item=item, rating=rating) )
+			for item, tupl in d.items():
+				f.write( '{user},{item},{rating},{timestamp}\n'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1]) )
 
 def statistics(db_conn):
 	"""Hay que correrlo en python 2.x"""
@@ -786,32 +780,32 @@ def statistics_protocol(data_path, N, folds):
 def main():
 	# Creando la conexion a la BD
 	sqlite_file = 'db/goodreads.sqlite'
-	conn = sqlite3.connect(sqlite_file)
+	db_conn = sqlite3.connect(sqlite_file)
 	# Para tabla de autores
 	solr = "http://localhost:8983/solr/grrecsys"
 	# Direccion de los archivos del dataset de Hamid
 	path_jsons = 'TwitterRatings/goodreads_renamed/'
 	# 1)
-	# create_user_reviews_table(path_jsons, conn)
+	# create_user_reviews_table(path_jsons, db_conn)
 	# 2)
-	# add_column_book_url(conn)
+	# add_column_book_url(db_conn)
 	# 3)
-	# books_wgetter(conn)
+	# books_wgetter(db_conn)
 	# 4 A)
-	# add_column_timestamp(db_conn= conn, alter_table= True)
+	# add_column_timestamp(db_conn= db_conn, alter_table= True)
 	# 4 B)
-	add_column_bookId(db_conn=conn, alter_table=False)
+	# add_column_bookId(db_conn=conn, alter_table=False)
 	# (5) FORMA ANTIGUA
-	# ratings_maker(db_conn= conn, folds= 5, out_path='TwitterRatings/funkSVD/data/')
+	# ratings_maker(db_conn= db_conn, folds= 5, out_path='TwitterRatings/funkSVD/data/')
 	# 5 FORMA ACTUAL
-	# evaluation_set(db_conn=conn, M=10, N=5, folds=5, out_path='TwitterRatings/funkSVD/data/')
-	# evaluation_set(db_conn=conn, M=20, N=10, folds=5, out_path='TwitterRatings/funkSVD/data/')
-	# evaluation_set(db_conn=conn, M=30, N=15, folds=5, out_path='TwitterRatings/funkSVD/data/')
-	# evaluation_set(db_conn=conn, M=40, N=20, folds=5, out_path='TwitterRatings/funkSVD/data/')
+	evaluation_set(db_conn=db_conn, M=10, N=5, folds=5, out_path='TwitterRatings/funkSVD/data/tmstmp/')
+	evaluation_set(db_conn=db_conn, M=20, N=10, folds=5, out_path='TwitterRatings/funkSVD/data/tmstmp/')
+	evaluation_set(db_conn=db_conn, M=30, N=15, folds=5, out_path='TwitterRatings/funkSVD/data/tmstmp/')
+	evaluation_set(db_conn=db_conn, M=40, N=20, folds=5, out_path='TwitterRatings/funkSVD/data/tmstmp/')
 	# 6)
-	# create_users_table(path_jsons= path_jsons, db_conn= conn)
+	# create_users_table(path_jsons= path_jsons, db_conn= db_conn)
 	# 7)
-	# statistics(db_conn= conn)
+	# statistics(db_conn= db_conn)
 	# 7.5)
 	# statistics_language(path_jsons=path_jsons)
 	# 8)
@@ -819,10 +813,10 @@ def main():
 	# for N in [5, 10, 15, 20]:
 	# 	statistics_protocol(data_path= data_path, N= N, folds= 5)
 	# 9)
-	# create_authors_table(solr=solr, db_conn=conn)
+	# create_authors_table(solr=solr, db_conn=db_conn)
 
 	# # Cerramos la conexion a la BD
-	conn.close()
+	db_conn.close()
 
 if __name__ == '__main__':
 	main()
