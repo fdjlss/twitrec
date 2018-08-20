@@ -230,7 +230,7 @@ def main():
 
 	for metric in ['angular']:
 		for which_model in ['twit']:
-			for representation in ['books', 'tweets', 'mix']:
+			for representation in ['mix']:#['books', 'tweets', 'mix']:
 				option2_protocol_evaluation(data_path= data_path, which_model=which_model, metric=metric, representation=representation)			
 
 	for metric in ['euclidean']:
