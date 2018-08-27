@@ -28,7 +28,7 @@ import sqlite3
 from bs4 import BeautifulSoup
 # Random numbers para fechas desconocidas. Sample para selección random de ítems candidatos en caso que sobren
 from random import randint, sample
-from jojFunkSvd import consumption, mean, stdev
+from svd_evaluation import consumption, mean, stdev
 # Solo en python 3.x
 # from statistics import mean, stdev 
 import collections
@@ -526,7 +526,7 @@ def ratings_maker(db_conn, folds, out_path):
 	with open(out_path+'ratings.total', 'w') as f:
 		f.write( '\n'.join('%s,%s,%s' % x[:-1] for x in interactions) )
 
-def evaluation_set(db_conn, M, N, folds, out_path, with_timestamps=False, with_authors=False):
+def evaluation_set(db_conn, M, N, folds, out_path):
 	# user_id=21245955
 	"""
 	Guarda un set de entrenamiento y un set de test a partir
@@ -548,8 +548,8 @@ def evaluation_set(db_conn, M, N, folds, out_path, with_timestamps=False, with_a
 	users = {}
 	logging.info("-> Iterando sobre resultado de la consulta 1..")
 	for tupl in all_rows:
-		user_id, url_review, rating, url_book, timestamp, bookId = tupl
-		book_id = url_book.split('/')[-1].split('-')[0].split('.')[0]
+		user_id, url_review, rating, url_book, timestamp, book_id = tupl
+		book_id = str(book_id) #url_book.split('/')[-1].split('-')[0].split('.')[0]
 		if user_id not in users:
 			users[user_id] = {}
 		users[user_id][int(timestamp)] = ( rating, book_id )
@@ -564,8 +564,8 @@ def evaluation_set(db_conn, M, N, folds, out_path, with_timestamps=False, with_a
 	everything = {}
 	logging.info("-> Iterando sobre resultado de la consulta 2..")	
 	for tupl in all_rows:
-		user_id, url_review, rating, url_book, timestamp, bookId = tupl
-		book_id = url_book.split('/')[-1].split('-')[0].split('.')[0]
+		user_id, url_review, rating, url_book, timestamp, book_id = tupl
+		book_id = str(book_id) #url_book.split('/')[-1].split('-')[0].split('.')[0]
 		if user_id not in everything:
 			everything[user_id] = {}
 		everything[user_id][book_id] = (rating, timestamp)		
@@ -650,6 +650,71 @@ def evaluation_set(db_conn, M, N, folds, out_path, with_timestamps=False, with_a
 		for user, d in eval_all_set.items():
 			for item, tupl in d.items():
 				f.write( '{user},{item},{rating},{timestamp}\n'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1]) )
+
+def evaluation_set_with_authors(db_conn, N, folds, out_path):
+	# 
+	"""
+	SÓLO SI YA SE EJECUTÓ ANTES evaluation_set().
+	Guarda set de train y test con autores de los libros
+	consumidos por los usuarios
+	"""
+	data_path = 'TwitterRatings/funkSVD/data/'
+	c = db_conn.cursor()
+	c.execute("SELECT DISTINCT user_reviews.bookId, authors.id, authors.name\
+						 FROM user_reviews\
+						 INNER JOIN authors\
+						 ON user_reviews.bookId=authors.bookId;")
+	all_rows = c.fetchall()
+	books = {}
+	for tupl in all_rows:
+		bookId, authorId, author_name = tupl
+		if str(bookId) not in books:
+			books[str(bookId)] = []
+		if str(authorId) not in books[str(bookId)]:
+			books[str(bookId)].append( str(authorId) )
+
+	logging.info("Guardando test..")
+	test = consumption(ratings_path=data_path+'test/test_N'+str(N)+'.data', rel_thresh=0, with_ratings=True, with_timestamps=True)
+	with open(out_path+'test/test_N'+str(N)+'.data', 'w') as f:
+		for user, d in test.items():
+			for item, tupl in d.items():
+				for author in books[item]:
+					f.write( '{user},{item},{rating},{timestamp},{author}\n'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1], author=author) )
+
+	logging.info("Guardando train..")
+	train = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=True, with_timestamps=True)
+	with open(out_path+'eval_train_N'+str(N)+'.data', 'w') as f:
+		for user, d in train.items():
+			for item, tupl in d.items():
+				for author in books[item]:
+					f.write( '{user},{item},{rating},{timestamp},{author}\n'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1], author=author) )
+
+
+	for i in range(1, folds):
+		logging.info("Guardando validation folds y training aggregated folds. Fold #i={}".format(i))
+		
+		val_f  = consumption(ratings_path=data_path+'val/val_N'+str(N)+'.'+str(i), rel_thresh=0, with_ratings=True, with_timestamps=True)
+		with open(out_path+'val/val_N'+str(N)+'.'+str(i), 'w') as f:
+			for user, d in val_f.items():
+				for item, tupl in d.items():
+					for author in books[item]:
+						f.write( '{user},{item},{rating},{timestamp},{author}\n'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1], author=author) )
+
+		train_f = consumption(ratings_path=data_path+'train/train_N'+str(N)+'.'+str(i), rel_thresh=0, with_ratings=True, with_timestamps=True)
+		with open(out_path+'train/train_N'+str(N)+'.'+str(i), 'w') as f:
+			for user, d in train_f.items():
+				for item, tupl in d.items():
+					for author in books[item]:
+						f.write( '{user},{item},{rating},{timestamp},{author}\n'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1], author=author) )
+
+	logging.info("Guardando total..")
+	everything = consumption(ratings_path=data_path+'eval_all_N'+str(N)+'.data', rel_thresh=0, with_ratings=True, with_timestamps=True)
+	with open(out_path+'eval_all_N'+str(N)+'.data', 'w') as f:
+		for user, d in everything.items():
+			for item, tupl in d.items():
+				for author in books[item]:
+					f.write( '{user},{item},{rating},{timestamp},{author}\n'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1], author=author) )
+
 
 def statistics(db_conn):
 	"""Hay que correrlo en python 2.x"""
@@ -785,6 +850,7 @@ def main():
 	solr = "http://localhost:8983/solr/grrecsys"
 	# Direccion de los archivos del dataset de Hamid
 	path_jsons = 'TwitterRatings/goodreads_renamed/'
+
 	# 1)
 	# create_user_reviews_table(path_jsons, db_conn)
 	# 2)
@@ -794,14 +860,16 @@ def main():
 	# 4 A)
 	# add_column_timestamp(db_conn= db_conn, alter_table= True)
 	# 4 B)
-	add_column_bookId(db_conn=db_conn, alter_table=False)
+	# add_column_bookId(db_conn=db_conn, alter_table=False)
 	# (5) FORMA ANTIGUA
 	# ratings_maker(db_conn= db_conn, folds= 5, out_path='TwitterRatings/funkSVD/data/')
-	# 5 FORMA ACTUAL
-	# evaluation_set(db_conn=db_conn, M=10, N=5, folds=5, out_path='TwitterRatings/funkSVD/data/tmstmp/')
-	# evaluation_set(db_conn=db_conn, M=20, N=10, folds=5, out_path='TwitterRatings/funkSVD/data/tmstmp/')
-	# evaluation_set(db_conn=db_conn, M=30, N=15, folds=5, out_path='TwitterRatings/funkSVD/data/tmstmp/')
-	# evaluation_set(db_conn=db_conn, M=40, N=20, folds=5, out_path='TwitterRatings/funkSVD/data/tmstmp/')
+	# 5 A) FORMA SIN AUTORES
+	# evaluation_set(db_conn=db_conn, M=10, N=5, folds=5, out_path='TwitterRatings/funkSVD/data/')
+	# evaluation_set(db_conn=db_conn, M=20, N=10, folds=5, out_path='TwitterRatings/funkSVD/data/')
+	# evaluation_set(db_conn=db_conn, M=30, N=15, folds=5, out_path='TwitterRatings/funkSVD/data/')
+	# evaluation_set(db_conn=db_conn, M=40, N=20, folds=5, out_path='TwitterRatings/funkSVD/data/')
+	# 5 B) FORMA CON AUTORES
+	evaluation_set_with_authors(db_conn=db_conn, N=20, folds=5, out_path='TwitterRatings/funkSVD/data_with_authors/')
 	# 6)
 	# create_users_table(path_jsons= path_jsons, db_conn= db_conn)
 	# 7)
