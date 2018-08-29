@@ -15,32 +15,36 @@ from math import sqrt
 
 #-----"PRIVATE" METHODS----------#
 def loadData(filename, data_path='TwitterRatings/funkSVD/data/', with_timestamps=False, with_authors=False):
-  data = []
-  y = []
-  items=set()
-  with open(data_path+filename, 'r') as f:
-    for line in f:
-      (userId,itemId,rating,timestamp)=line.split(',')
-      if with_timestamps:
-      	data.append({ "user_id": str(userId), "item_id": str(itemId), "timestamp": str(timestamp) })
-      else:
-      	data.append({ "user_id": str(userId), "item_id": str(itemId) })
-      y.append(float(rating))
-      items.add(itemId)
-  return data, np.array(y), items
+	data = []
+	y = []
+	items=set()
+	with open(data_path+filename, 'r') as f:
+		for line in f:
+			(userId,itemId,rating,timestamp,authorId)=line.split(',')
+			if with_timestamps and with_authors:
+				data.append({ "user_id": str(userId), "item_id": str(itemId), "timestamp": str(timestamp), "author_id": str(authorId) })
+			if with_timestamps and not with_authors:
+				data.append({ "user_id": str(userId), "item_id": str(itemId), "timestamp": str(timestamp) })
+			if not with_timestamps and with_authors:
+				data.append({ "user_id": str(userId), "item_id": str(itemId), "author_id": str(authorId) })
+			if not with_timestamps and not with_authors:
+				data.append({ "user_id": str(userId), "item_id": str(itemId) })
+			y.append(float(rating))
+			items.add(itemId)
+	return data, np.array(y), items
 
-def pyFMJob(data_path, params, N, vectorizer, with_timestamps=False):
+def pyFMJob(data_path, params, N, vectorizer, with_timestamps=False, with_authors=False):
 	rmses = []
 	logging.info("Evaluando con params: {0}".format(params))
 	for i in range(1, 4+1):
-		train_data, y_tr, _ = loadData('train/train_N'+str(N)+'.'+str(i), with_timestamps=with_timestamps)
+		train_data, y_tr, _ = loadData('train/train_N'+str(N)+'.'+str(i), data_path=data_path, with_timestamps=with_timestamps, with_authors=with_authors)
 		X_tr = vectorizer.transform(train_data)
 		fm = pylibfm.FM(num_factors=params['f'], num_iter=params['mi'], k0=params['bias'], k1=params['oneway'], init_stdev=params['init_stdev'], \
 										validation_size=params['val_size'], learning_rate_schedule=params['lr_s'], initial_learning_rate=params['lr'], \
 										power_t=params['invscale_pow'], t0=params['optimal_denom'], shuffle_training=params['shuffle'], seed=params['seed'], \
 										task='regression', verbose=True)
 		fm.fit(X_tr, y_tr)
-		val_data, y_va, _ = loadData('val/val_N'+str(N)+'.'+str(i), with_timestamps=with_timestamps)
+		val_data, y_va, _ = loadData('val/val_N'+str(N)+'.'+str(i), data_path=data_path, with_timestamps=with_timestamps, with_authors=with_authors)
 		X_va = vectorizer.transform(val_data)
 		preds = fm.predict(X_va)
 		rmse  = sqrt( mean_squared_error(y_va, preds) )
@@ -49,9 +53,9 @@ def pyFMJob(data_path, params, N, vectorizer, with_timestamps=False):
 	return mean(rmses)
 #--------------------------------#
 
-def pyFM_tuning(data_path, N, with_timestamps=False):
+def pyFM_tuning(data_path, N, with_timestamps=False, with_authors=False):
 
-	all_data, y_all, _ = loadData("eval_all_N"+str(N)+".data", with_timestamps=with_timestamps)
+	all_data, y_all, _ = loadData("eval_all_N"+str(N)+".data", data_path=data_path, with_timestamps=with_timestamps, with_authors=with_authors)
 	v = DictVectorizer()
 	X_all = v.fit_transform(all_data)
 
@@ -64,37 +68,37 @@ def pyFM_tuning(data_path, N, with_timestamps=False):
 		if param=='mi':
 			for i in [1, 5, 10, 20, 50, 100, 150, 200]: 
 				defaults['mi'] = i
-				results['mi'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps)
+				results['mi'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps, with_authors=with_authors)
 			defaults['mi'] = opt_value(results= results['mi'], metric= 'rmse')
 
 		elif param=='f': 
 			for i in range(20, 2020, 20):
 				defaults['f'] = i
-				results['f'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps)
+				results['f'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps, with_authors=with_authors)
 			defaults['f'] = opt_value(results= results['f'], metric= 'rmse')
 
 		elif param=='bias':
 			for i in [True, False]: 
 				defaults['bias'] = i
-				results['bias'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps)
+				results['bias'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps, with_authors=with_authors)
 			defaults['bias'] = opt_value(results= results['bias'], metric= 'rmse')
 
 		elif param=='oneway':
 			for i in [True, False]: 
 				defaults['oneway'] = i
-				results['oneway'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps)
+				results['oneway'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps, with_authors=with_authors)
 			defaults['oneway'] = opt_value(results= results['oneway'], metric= 'rmse')
 
 		elif param=='init_stdev':
 			for i in [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]: 
 				defaults['init_stdev'] = i
-				results['init_stdev'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps)
+				results['init_stdev'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps, with_authors=with_authors)
 			defaults['init_stdev'] = opt_value(results= results['init_stdev'], metric= 'rmse')
 
 		elif param=='val_size':
 			for i in [0.001, 0.01, 0.1, 0.5, 0.8, 0.9]: 
 				defaults['val_size'] = i
-				results['val_size'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps)
+				results['val_size'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps, with_authors=with_authors)
 			defaults['val_size'] = opt_value(results= results['val_size'], metric= 'rmse')
 
 		elif param=='lr_s':
@@ -104,43 +108,43 @@ def pyFM_tuning(data_path, N, with_timestamps=False):
 				if i=='optimal':
 					for j in [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5]:
 						defaults['optimal_denom'] = j
-						results['optimal_denom'][j] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps)
+						results['optimal_denom'][j] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps, with_authors=with_authors)
 					defaults['optimal_denom'] = opt_value(results= results['optimal_denom'], metric= 'rmse')
 					results['lr_s'][i] = results['optimal_denom'][ defaults['optimal_denom'] ]
 
 				elif i=='invscaling':
 					for j in [0.001, 0.05, 0.1, 0.5, 0.8, 1.0]:
 						defaults['invscale_pow'] = j
-						results['invscale_pow'][j] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps)
+						results['invscale_pow'][j] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps, with_authors=with_authors)
 					defaults['invscale_pow'] = opt_value(results= results['invscale_pow'], metric= 'rmse')
 					results['lr_s'][i] = results['invscale_pow'][ defaults['invscale_pow'] ]
 
 				elif i=='constant':
-					results['lr_s'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps)
+					results['lr_s'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps, with_authors=with_authors)
 
 			defaults['lr_s'] = opt_value(results= results['lr_s'], metric= 'rmse')
 
 		elif param=='lr':
 			for i in [0.001, 0.003, 0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.07, 0.08, 0.1]: 
 				defaults['lr'] = i
-				results['lr'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps)
+				results['lr'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps, with_authors=with_authors)
 			defaults['lr'] = opt_value(results= results['lr'], metric= 'rmse')
 
 		elif param=='shuffle':
 			for i in [True, False]: 
 				defaults['shuffle'] = i
-				results['shuffle'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps)
+				results['shuffle'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps, with_authors=with_authors)
 			defaults['shuffle'] = opt_value(results= results['shuffle'], metric= 'rmse')
 
 		elif param=='seed':
 			for i in [10, 20, 28, 30, 50]: 
 				defaults['seed'] = i
-				results['seed'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps)
+				results['seed'][i] = pyFMJob(data_path= data_path, params= defaults, N=N, vectorizer= v, with_timestamps=with_timestamps, with_authors=with_authors)
 			defaults['seed'] = opt_value(results= results['seed'], metric= 'rmse')
 
 
 	# Real testing
-	train_data, y_tr, _ = loadData('eval_train_N'+str(N)+'.data', with_timestamps=with_timestamps)
+	train_data, y_tr, _ = loadData('eval_train_N'+str(N)+'.data', data_path=data_path, with_timestamps=with_timestamps, with_authors=with_authors)
 	X_tr = v.transform(train_data)
 	fm   = pylibfm.FM(num_factors=defaults['f'], num_iter=defaults['mi'], k0=defaults['bias'], k1=defaults['oneway'], init_stdev=defaults['init_stdev'], \
 									validation_size=defaults['val_size'], learning_rate_schedule=defaults['lr_s'], initial_learning_rate=defaults['lr'], \
@@ -148,28 +152,28 @@ def pyFM_tuning(data_path, N, with_timestamps=False):
 									task='regression', verbose=True)
 	fm.fit(X_tr, y_tr)
 
-	test_data, y_te, _ = loadData('test/test_N'+str(N)+'.data', with_timestamps=with_timestamps)
+	test_data, y_te, _ = loadData('test/test_N'+str(N)+'.data', data_path=data_path, with_timestamps=with_timestamps, with_authors=with_authors)
 	X_te  = v.transform(test_data)
 	preds = fm.predict(X_te)
 	rmse  = sqrt( mean_squared_error(y_te, preds) )
 	print("FM RMSE: %.4f" % rmse)
 
 
-	with open('TwitterRatings/pyFM/opt_params_tmstmp'+str(with_timestamps)+'.txt', 'w') as f:
+	with open('TwitterRatings/pyFM/opt_params_tmstmp'+str(with_timestamps)+'_auth'+str(with_authors)+'.txt', 'w') as f:
 		for param in defaults:
 			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
 		f.write( "RMSE:{rmse}".format(rmse= rmse) )
 
-	with open('TwitterRatings/pyFM/params_rmses_tmstmp'+str(with_timestamps)+'.txt', 'w') as f:
+	with open('TwitterRatings/pyFM/params_rmses_tmstmp'+str(with_timestamps)+'_auth'+str(with_authors)+'.txt', 'w') as f:
 		for param in results:
 			for value in results[param]:
 				f.write( "{param}={value}\t : {RMSE}\n".format(param=param, value=value, RMSE=results[param][value]) )
 
 	return defaults
 
-def pyFM_protocol_evaluation(data_path, params, with_timestamps=False):
+def pyFM_protocol_evaluation(data_path, params, with_timestamps=False, with_authors=False):
 	# userId = '33120270'
-	all_data, y_all, items = loadData("eval_all_N20.data", with_timestamps=with_timestamps)
+	all_data, y_all, items = loadData("eval_all_N20.data", data_path=data_path, with_timestamps=with_timestamps, with_authors=with_authors)
 	v = DictVectorizer()
 	X_all = v.fit_transform(all_data)
 
@@ -181,7 +185,7 @@ def pyFM_protocol_evaluation(data_path, params, with_timestamps=False):
 	APs    = dict((N, []) for N in [5, 10, 15, 20])
 	Rprecs = dict((N, []) for N in [5, 10, 15, 20])
 
-	train_data, y_tr, _ = loadData('eval_train_N20.data', with_timestamps=with_timestamps)
+	train_data, y_tr, _ = loadData('eval_train_N20.data', data_path=data_path, with_timestamps=with_timestamps, with_authors=with_authors)
 	X_tr = v.transform(train_data)
 	fm   = pylibfm.FM(num_factors=params['f'], num_iter=params['mi'], k0=params['bias'], k1=params['oneway'], init_stdev=params['init_stdev'], \
 									validation_size=params['val_size'], learning_rate_schedule=params['lr_s'], initial_learning_rate=params['lr'], \
@@ -209,15 +213,15 @@ def pyFM_protocol_evaluation(data_path, params, with_timestamps=False):
 
 
 	for N in [5, 10, 15, 20]:
-		with open('TwitterRatings/pyFM/protocol_tmstmp'+str(with_timestamps)+'.txt', 'a') as file:
+		with open('TwitterRatings/pyFM/protocol_tmstmp'+str(with_timestamps)+'_auth'+str(with_authors)+'.txt', 'a') as file:
 			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
 
 
 
 def main():
-	data_path = 'TwitterRatings/funkSVD/data/'
-	opt_params = pyFM_tuning(data_path=data_path, N=20, with_timestamps=True)
+	data_path = 'TwitterRatings/funkSVD/data_with_authors/'
+	opt_params = pyFM_tuning(data_path=data_path, N=20, with_timestamps=True, with_authors=True)
 	# opt_params = {'lr_s':'invscaling',
 	# 							'val_size':0.001,
 	# 							'shuffle':False,
@@ -232,7 +236,7 @@ def main():
 	# 							'init_stdev':0.01}
 
 	# for N in [5, 10, 15, 20]:
-	pyFM_protocol_evaluation(data_path=data_path, params=opt_params, with_timestamps=True)
+	pyFM_protocol_evaluation(data_path=data_path, params=opt_params, with_timestamps=True, with_authors=True)
 
 if __name__ == '__main__':
 	main()
