@@ -20,13 +20,13 @@ def loadData(filename, data_path='TwitterRatings/funkSVD/data/', with_timestamps
 	items=set()
 	with open(data_path+filename, 'r') as f:
 		for line in f:
-			(userId,itemId,rating,timestamp,authorId)=line.split(',')
+			(userId,itemId,rating,timestamp,authorId1,authorId2,authorId3)=line.split(',')
 			if with_timestamps and with_authors:
-				data.append({ "user_id": str(userId), "item_id": str(itemId), "timestamp": str(timestamp), "author_id": str(authorId) })
+				data.append({ "user_id": str(userId), "item_id": str(itemId), "timestamp": str(timestamp), "author1_id": str(authorId1), "author2_id": str(authorId2), "author3_id": str(authorId3) })
 			if with_timestamps and not with_authors:
 				data.append({ "user_id": str(userId), "item_id": str(itemId), "timestamp": str(timestamp) })
 			if not with_timestamps and with_authors:
-				data.append({ "user_id": str(userId), "item_id": str(itemId), "author_id": str(authorId) })
+				data.append({ "user_id": str(userId), "item_id": str(itemId), "author1_id": str(authorId1), "author2_id": str(authorId2), "author3_id": str(authorId3) })
 			if not with_timestamps and not with_authors:
 				data.append({ "user_id": str(userId), "item_id": str(itemId) })
 			y.append(float(rating))
