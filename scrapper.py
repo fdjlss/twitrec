@@ -678,17 +678,35 @@ def evaluation_set_with_authors(db_conn, N, folds, out_path):
 	with open(out_path+'test/test_N'+str(N)+'.data', 'w') as f:
 		for user, d in test.items():
 			for item, tupl in d.items():
-				for author in books[item]:
-					f.write( '{user},{item},{rating},{timestamp},{author}\n'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1], author=author) )
+				s = '{user},{item},{rating},{timestamp}'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1])
+				for i in range(3):#for author in books[item]: Dejamos 3 autores
+					try:
+						author = books[item][i] 
+					except IndexError as e:
+						author = 0
+					if i!=2:
+						s+=',{author}'.format(author=author)
+					else:
+						s+=',{author}\n'.format(author=author)
+				f.write( s )
+
 
 	logging.info("Guardando train..")
 	train = consumption(ratings_path=data_path+'eval_train_N'+str(N)+'.data', rel_thresh=0, with_ratings=True, with_timestamps=True)
 	with open(out_path+'eval_train_N'+str(N)+'.data', 'w') as f:
 		for user, d in train.items():
 			for item, tupl in d.items():
-				for author in books[item]:
-					f.write( '{user},{item},{rating},{timestamp},{author}\n'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1], author=author) )
-
+				s = '{user},{item},{rating},{timestamp}'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1])
+				for i in range(3):#for author in books[item]: Dejamos 3 autores
+					try:
+						author = books[item][i] 
+					except IndexError as e:
+						author = 0
+					if i!=2:
+						s+=',{author}'.format(author=author)
+					else:
+						s+=',{author}\n'.format(author=author)
+				f.write( s )
 
 	for i in range(1, folds):
 		logging.info("Guardando validation folds y training aggregated folds. Fold #i={}".format(i))
@@ -697,23 +715,50 @@ def evaluation_set_with_authors(db_conn, N, folds, out_path):
 		with open(out_path+'val/val_N'+str(N)+'.'+str(i), 'w') as f:
 			for user, d in val_f.items():
 				for item, tupl in d.items():
-					for author in books[item]:
-						f.write( '{user},{item},{rating},{timestamp},{author}\n'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1], author=author) )
-
+					s = '{user},{item},{rating},{timestamp}'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1])
+					for i in range(3):#for author in books[item]: Dejamos 3 autores
+						try:
+							author = books[item][i] 
+						except IndexError as e:
+							author = 0
+						if i!=2:
+							s+=',{author}'.format(author=author)
+						else:
+							s+=',{author}\n'.format(author=author)
+					f.write( s )
+					
 		train_f = consumption(ratings_path=data_path+'train/train_N'+str(N)+'.'+str(i), rel_thresh=0, with_ratings=True, with_timestamps=True)
 		with open(out_path+'train/train_N'+str(N)+'.'+str(i), 'w') as f:
 			for user, d in train_f.items():
 				for item, tupl in d.items():
-					for author in books[item]:
-						f.write( '{user},{item},{rating},{timestamp},{author}\n'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1], author=author) )
+					s = '{user},{item},{rating},{timestamp}'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1])
+					for i in range(3):#for author in books[item]: Dejamos 3 autores
+						try:
+							author = books[item][i] 
+						except IndexError as e:
+							author = 0
+						if i!=2:
+							s+=',{author}'.format(author=author)
+						else:
+							s+=',{author}\n'.format(author=author)
+					f.write( s )
 
 	logging.info("Guardando total..")
 	everything = consumption(ratings_path=data_path+'eval_all_N'+str(N)+'.data', rel_thresh=0, with_ratings=True, with_timestamps=True)
 	with open(out_path+'eval_all_N'+str(N)+'.data', 'w') as f:
 		for user, d in everything.items():
 			for item, tupl in d.items():
-				for author in books[item]:
-					f.write( '{user},{item},{rating},{timestamp},{author}\n'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1], author=author) )
+				s = '{user},{item},{rating},{timestamp}'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1])
+				for i in range(3):#for author in books[item]: Dejamos 3 autores
+					try:
+						author = books[item][i] 
+					except IndexError as e:
+						author = 0
+					if i!=2:
+						s+=',{author}'.format(author=author)
+					else:
+						s+=',{author}\n'.format(author=author)
+				f.write( s )
 
 
 def statistics(db_conn):
