@@ -708,11 +708,11 @@ def evaluation_set_with_authors(db_conn, N, folds, out_path):
 						s+=',{author}\n'.format(author=author)
 				f.write( s )
 
-	for i in range(1, folds):
-		logging.info("Guardando validation folds y training aggregated folds. Fold #i={}".format(i))
+	for j in range(1, folds):
+		logging.info("Guardando validation folds y training aggregated folds. Fold #i={}".format(j))
 		
-		val_f  = consumption(ratings_path=data_path+'val/val_N'+str(N)+'.'+str(i), rel_thresh=0, with_ratings=True, with_timestamps=True)
-		with open(out_path+'val/val_N'+str(N)+'.'+str(i), 'w') as f:
+		val_f  = consumption(ratings_path=data_path+'val/val_N'+str(N)+'.'+str(j), rel_thresh=0, with_ratings=True, with_timestamps=True)
+		with open(out_path+'val/val_N'+str(N)+'.'+str(j), 'w') as f:
 			for user, d in val_f.items():
 				for item, tupl in d.items():
 					s = '{user},{item},{rating},{timestamp}'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1])
@@ -726,9 +726,9 @@ def evaluation_set_with_authors(db_conn, N, folds, out_path):
 						else:
 							s+=',{author}\n'.format(author=author)
 					f.write( s )
-					
-		train_f = consumption(ratings_path=data_path+'train/train_N'+str(N)+'.'+str(i), rel_thresh=0, with_ratings=True, with_timestamps=True)
-		with open(out_path+'train/train_N'+str(N)+'.'+str(i), 'w') as f:
+
+		train_f = consumption(ratings_path=data_path+'train/train_N'+str(N)+'.'+str(j), rel_thresh=0, with_ratings=True, with_timestamps=True)
+		with open(out_path+'train/train_N'+str(N)+'.'+str(j), 'w') as f:
 			for user, d in train_f.items():
 				for item, tupl in d.items():
 					s = '{user},{item},{rating},{timestamp}'.format(user=user, item=item, rating=tupl[0], timestamp=tupl[1])
