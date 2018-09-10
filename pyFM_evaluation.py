@@ -179,9 +179,8 @@ def pyFM_protocol_evaluation(data_path, params, with_timestamps=False, with_auth
 	v = DictVectorizer()
 	X_all = v.fit_transform(all_data)
 
-	test_c  = consumption(ratings_path= data_path+'test/test_N20.data', rel_thresh= 0, with_ratings= True)
-	train_c = consumption(ratings_path= data_path+'eval_train_N20.data', rel_thresh= 0, with_ratings= False)
-	all_c   = consumption(ratings_path= data_path+'eval_all_N20.data', rel_thresh= 0, with_ratings= True)
+	test_c  = consumption(ratings_path= 'TwitterRatings/funkSVD/data/test/test_N20.data', rel_thresh= 0, with_ratings= True)
+	train_c = consumption(ratings_path= 'TwitterRatings/funkSVD/data/eval_train_N20.data', rel_thresh= 0, with_ratings= False)
 	MRRs   = dict((N, []) for N in [5, 10, 15, 20])
 	nDCGs  = dict((N, []) for N in [5, 10, 15, 20])
 	APs    = dict((N, []) for N in [5, 10, 15, 20])
@@ -223,19 +222,19 @@ def pyFM_protocol_evaluation(data_path, params, with_timestamps=False, with_auth
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data_with_authors/'
-	opt_params = pyFM_tuning(data_path=data_path, N=20, with_timestamps=True, with_authors=True)
-	# opt_params = {'lr_s':'invscaling',
-	# 							'val_size':0.001,
-	# 							'shuffle':False,
-	# 							'bias':True,
-	# 							'invscale_pow':0.05,
-	# 							'f':20,
-	# 							'mi':5,
-	# 							'seed':20,
-	# 							'lr':0.01,
-	# 							'oneway':True,
-	# 							'optimal_denom':0.01,
-	# 							'init_stdev':0.01}
+	# opt_params = pyFM_tuning(data_path=data_path, N=20, with_timestamps=True, with_authors=True)
+	opt_params = {'lr_s':'invscaling',
+								'val_size':0.01,
+								'shuffle':True,
+								'bias':True,
+								'invscale_pow':0.05,
+								'f':40,
+								'mi':10,
+								'seed':28,
+								'lr':0.001,
+								'oneway':True,
+								'optimal_denom':0.01,
+								'init_stdev':0.01}
 
 	# for N in [5, 10, 15, 20]:
 	pyFM_protocol_evaluation(data_path=data_path, params=opt_params, with_timestamps=True, with_authors=True)
