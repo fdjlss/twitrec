@@ -116,7 +116,7 @@ def R_precision(n_relevants, recs):
 			s += 1
 	return s/n_relevants
 
-def consumption(ratings_path, rel_thresh, with_ratings, with_timestamps=False, with_authors=False):
+def consumption(ratings_path, rel_thresh, with_ratings, with_timestamps=False):
 	c = {}
 	with open(ratings_path, 'r') as f:
 		for line in f:
@@ -464,9 +464,9 @@ def generate_recommends(params):
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	# opt_params = svd_tuning(data_path= data_path)
+	opt_params = svd_tuning(data_path= data_path)
 	# RMSEMAE_distr(output_filename="results_8020.txt")
-	opt_params = {'f': 675, 'mi': 110, 'lr': 0.009, 'lamb': 0.05}
+	# opt_params = {'f': 675, 'mi': 110, 'lr': 0.009, 'lamb': 0.05}
 	# PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
 	# nDCGMAP_calculator(data_path= data_path, params=opt_params, topN=[10, 15, 20, 50], output_filename="nDCGMAP.txt")
 	# for N in [5, 10, 15, 20]:
