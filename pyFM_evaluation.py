@@ -59,13 +59,11 @@ def pyFM_tuning(data_path, N, with_timestamps=False, with_authors=False):
 	v = DictVectorizer()
 	X_all = v.fit_transform(all_data)
 
-	# defaults = {'f': 100, 'mi': 20, 'bias': True, 'oneway': True , 'init_stdev': 0.1, 'val_size': 0.01, 'lr_s': 'optimal', 'lr': 0.01, \
-							# 'invscale_pow': 0.5, 'optimal_denom': 0.001, 'shuffle': True, 'seed': 28} #cambio del original: f:20, mi:1
-	defaults = {'lr_s': 'invscaling', 'val_size': 0.01, 'shuffle': True, 'bias': True, 'invscale_pow': 0.05, 'f': 40, 'mi': 10, 'seed': 28, 'lr': 0.1, 'oneway': True, 'optimal_denom': 0.01, 'init_stdev': 0.01}
+	defaults = {'f': 100, 'mi': 20, 'bias': True, 'oneway': True , 'init_stdev': 0.1, 'val_size': 0.01, 'lr_s': 'optimal', 'lr': 0.01, \
+							'invscale_pow': 0.5, 'optimal_denom': 0.001, 'shuffle': True, 'seed': 28} #cambio del original: f:20, mi:1
 	results  = dict((param, {}) for param in defaults.keys())
 
-	# for param in ['mi', 'f', 'bias', 'oneway', 'init_stdev', 'val_size', 'lr_s', 'lr', 'invscale_pow', 'optimal_denom', 'shuffle', 'seed']:
-	for param in ['lr', 'invscale_pow', 'optimal_denom', 'shuffle', 'seed']:
+	for param in ['mi', 'f', 'bias', 'oneway', 'init_stdev', 'val_size', 'lr_s', 'lr', 'invscale_pow', 'optimal_denom', 'shuffle', 'seed']:
 
 		if param=='mi':
 			for i in [1, 5, 10, 20, 50, 100, 150, 200]: 
@@ -166,10 +164,10 @@ def pyFM_tuning(data_path, N, with_timestamps=False, with_authors=False):
 			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
 		f.write( "RMSE:{rmse}".format(rmse= rmse) )
 
-	# with open('TwitterRatings/pyFM/params_rmses_tmstmp'+str(with_timestamps)+'_auth'+str(with_authors)+'.txt', 'w') as f:
-	# 	for param in results:
-	# 		for value in results[param]:
-	# 			f.write( "{param}={value}\t : {RMSE}\n".format(param=param, value=value, RMSE=results[param][value]) )
+	with open('TwitterRatings/pyFM/params_rmses_tmstmp'+str(with_timestamps)+'_auth'+str(with_authors)+'.txt', 'w') as f:
+		for param in results:
+			for value in results[param]:
+				f.write( "{param}={value}\t : {RMSE}\n".format(param=param, value=value, RMSE=results[param][value]) )
 
 	return defaults
 
@@ -222,22 +220,22 @@ def pyFM_protocol_evaluation(data_path, params, with_timestamps=False, with_auth
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data_with_authors/'
-	# opt_params = pyFM_tuning(data_path=data_path, N=20, with_timestamps=True, with_authors=True)
-	opt_params = {'lr_s':'invscaling',
-								'val_size':0.01,
-								'shuffle':True,
-								'bias':True,
-								'invscale_pow':0.05,
-								'f':40,
-								'mi':10,
-								'seed':28,
-								'lr':0.001,
-								'oneway':True,
-								'optimal_denom':0.01,
-								'init_stdev':0.01}
+	opt_params = pyFM_tuning(data_path=data_path, N=20, with_timestamps=False, with_authors=True)
+	# opt_params = {'lr_s':'invscaling',
+	# 							'val_size':0.01,
+	# 							'shuffle':True,
+	# 							'bias':True,
+	# 							'invscale_pow':0.05,
+	# 							'f':40,
+	# 							'mi':10,
+	# 							'seed':28,
+	# 							'lr':0.001,
+	# 							'oneway':True,
+	# 							'optimal_denom':0.01,
+	# 							'init_stdev':0.01}
 
 	# for N in [5, 10, 15, 20]:
-	pyFM_protocol_evaluation(data_path=data_path, params=opt_params, with_timestamps=True, with_authors=True)
+	pyFM_protocol_evaluation(data_path=data_path, params=opt_params, with_timestamps=False, with_authors=True)
 
 if __name__ == '__main__':
 	main()
