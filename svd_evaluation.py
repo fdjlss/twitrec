@@ -398,13 +398,14 @@ def svd_protocol_evaluation(data_path, params):
 											itemcol   = 1,
 											ratingcol = 2 )
 	svd.train( factors= params['f'], maxiter= params['mi'], lr= params['lr'], lamb= params['lamb'] )
-	recommendationList = svd.testrec( input_file    = data_path+'test/test_N20.data',
+	recommendationList, map, ndcg = svd.testrec( input_file    = data_path+'test/test_N20.data',
                                       dlmchar     = b',',
                                       header      = False,
                                       usercol     = 0,
                                       itemcol     = 1,
                                       ratingcol   = 2,
                                       topn        = 100,
+                                      relevance_threshold=0,
                                       includeRated= False )
 
 	MRRs   = dict((N, []) for N in [5, 10, 15, 20])
@@ -466,7 +467,7 @@ def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	opt_params = svd_tuning(data_path= data_path)
 	# RMSEMAE_distr(output_filename="results_8020.txt")
-	# opt_params = {'f': 675, 'mi': 110, 'lr': 0.009, 'lamb': 0.05}
+	# opt_params = {'f': 700, 'mi': 110, 'lr': 0.009, 'lamb': 0.05}
 	# PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
 	# nDCGMAP_calculator(data_path= data_path, params=opt_params, topN=[10, 15, 20, 50], output_filename="nDCGMAP.txt")
 	# for N in [5, 10, 15, 20]:
