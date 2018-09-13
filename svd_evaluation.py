@@ -18,6 +18,7 @@ def remove_consumed(user_consumption, rec_list):
 	for itemId in rec_list:
 		if itemId in user_consumption: l.remove(itemId)
 	return l
+
 def mean(lst):
 	return float(sum(lst)) / len(lst)
 
@@ -418,7 +419,7 @@ def svd_protocol_evaluation(data_path, params):
 		recs       = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
 
 		for N in [5, 10, 15, 20]:
-			mini_recs = dict((k, recs[k]) for k in recs.keys()[:N])
+			mini_recs = dict((k, recs[k]) for k in list(recs.keys())[:N]) #python 3.x: list() es necesario
 			MRRs[N].append( MRR(recs=mini_recs, rel_thresh=1) )
 			nDCGs[N].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )		
 			APs[N].append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
