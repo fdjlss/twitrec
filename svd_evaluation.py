@@ -413,8 +413,8 @@ def svd_protocol_evaluation(data_path, params):
 	APs    = dict((N, []) for N in [5, 10, 15, 20])
 	Rprecs = dict((N, []) for N in [5, 10, 15, 20])
 
-	for userId in recommendationList[0]:
-		book_recs  = remove_consumed(user_consumption= train_c[userId], rec_list= recommendationList[0][userId]) #da lo mismo este paso, según Gabriel el testrec no devuelve items consumidos
+	for userId, recList in recommendationList.items():
+		book_recs  = remove_consumed(user_consumption= train_c[userId], rec_list= recommendationList[userId]) #da lo mismo este paso, según Gabriel el testrec no devuelve items consumidos
 		recs       = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
 
 		for N in [5, 10, 15, 20]:
@@ -465,9 +465,9 @@ def generate_recommends(params):
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	opt_params = svd_tuning(data_path= data_path)
+	# opt_params = svd_tuning(data_path= data_path)
 	# RMSEMAE_distr(output_filename="results_8020.txt")
-	# opt_params = {'f': 700, 'mi': 110, 'lr': 0.009, 'lamb': 0.05}
+	opt_params = {'f': 700, 'mi': 110, 'lr': 0.009, 'lamb': 0.05}
 	# PRF_calculator(params=opt_params, folds=5, topN=[10, 20, 50])
 	# nDCGMAP_calculator(data_path= data_path, params=opt_params, topN=[10, 15, 20, 50], output_filename="nDCGMAP.txt")
 	# for N in [5, 10, 15, 20]:
