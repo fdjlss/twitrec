@@ -21,7 +21,7 @@ import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 ###################################
-def hybrid_recs_naive(ALPHA, book_recs_cb, book_recs_cf)
+def hybrid_recs_naive(ALPHA, book_recs_cb, book_recs_cf):
 	methods = {'CB': int(ALPHA*100), 'CF': int((1-ALPHA)*100)}
 	book_recs_mix = dict((i, '') for i in range(40))
 	book_recs_cb = book_recs_cb[:20]
