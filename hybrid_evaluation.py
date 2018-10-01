@@ -7,7 +7,6 @@ from urllib2 import urlopen
 
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction import DictVectorizer
-from sklearn.metrics import mean_squared_error, mean_absolute_error
 from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
 import numpy as np
 import pandas as pd
@@ -87,31 +86,27 @@ def hybrid_recs(recs_cb, recs_cf, weight_cb, weight_cf):
 		scores[itemId] = item_score
 	return sorted(scores, key=scores.get, reverse=True)
 
-def hybridJob(data_path, data_path_context, solr, vectorizer, items, params_cb, params_cf, params_hy, N):
+def hybridJob(data_path, solr, cf_models, vectorizer, items, params_cb, params_hy, N):
 	nDCGs = []
 	for i in range(1, 4+1):
+		logging.info("fold {}".format(i))
 		users_nDCGs = []
 		# CB
 		train_c = consumption(ratings_path=data_path+'train/train_N'+str(N)+'.'+str(i), rel_thresh=0, with_ratings=False)
 		val_c   = consumption(ratings_path=data_path+'val/val_N'+str(N)+'.'+str(i), rel_thresh=0, with_ratings=True)
 		# CF
-		train_data, y_tr, _ = loadData('train/train_N'+str(N)+'.'+str(i), data_path=data_path_context, with_timestamps=False, with_authors=True)
-		X_tr = vectorizer.transform(train_data)
-		fm = pylibfm.FM(num_factors=params_cf['f'], num_iter=params_cf['mi'], k0=params_cf['bias'], k1=params_cf['oneway'], init_stdev=params_cf['init_stdev'], \
-										validation_size=params_cf['val_size'], learning_rate_schedule=params_cf['lr_s'], initial_learning_rate=params_cf['lr'], \
-										power_t=params_cf['invscale_pow'], t0=params_cf['optimal_denom'], shuffle_training=params_cf['shuffle'], seed=params_cf['seed'], \
-										task='regression', verbose=True)
-		fm.fit(X_tr, y_tr)
-
-		# val_data, y_va, _ = loadData('val/val_N'+str(N)+'.'+str(i), data_path=data_path_context, with_timestamps=False, with_authors=True)
-		# X_va = vectorizer.transform(val_data)
-		# preds = fm.predict(X_va) #acá no, pq uso nDCG para tunear, no RMSE
+		fm = cf_models[i]
 
 		for userId in val_c: #en solr_evaluation aparece "for userId in train_c", pero debiera ser lo mismo, ya que val_c y train_c debieran tener los mismos users
+			# CF
 			user_rows = [ {'user_id': str(userId), 'item_id': str(itemId)} for itemId in items ]
 			X_va      = vectorizer.transform(user_rows)
 			preds     = fm.predict(X_va)
 			recs_cf   = [itemId for _, itemId in sorted(zip(preds, items), reverse=True)]
+			recs_cf = remove_consumed(user_consumption= train_c[userId], rec_list= recs_cf)
+			recs_cf = recs_cf[:200]
+			logging.info("CF recs OK")
+
 			# CB
 			recs_cb = []
 			for itemId in train_c[userId]:
@@ -125,13 +120,13 @@ def hybridJob(data_path, data_path_context, solr, vectorizer, items, params_cb, 
 				recs_cb.append( [ str(doc['goodreadsId'][0]) for doc in docs ] )
 
 			recs_cb = flatten_list(list_of_lists=recs_cb, rows=params_cb['rows'])
-
-			recs_cf = remove_consumed(user_consumption= train_c[userId], rec_list= recs_cf)
-			recs_cf = recs_cf[:200]
 			recs_cb = remove_consumed(user_consumption= train_c[userId], rec_list= recs_cb)
 			recs_cb = recs_cb[:200]
+			logging.info("CB recs OK")
+
 			# HYBRID
 			recs_hy = hybrid_recs(recs_cb=recs_cb, recs_cf=recs_cf, weight_cb=params_hy['weight_cb'], weight_cf=params_hy['weight_cf'])
+			logging.info("HYBRID recs OK")
 			recs_hy = remove_consumed(user_consumption= train_c[userId], rec_list= recs_hy)
 			recs_hy = user_ranked_recs(user_recs= recs_hy, user_consumpt= val_c[userId])	
 			mini_recs = dict((k, recs_hy[k]) for k in recs_hy.keys()[:N])
@@ -147,6 +142,18 @@ def hybrid_tuning1(data_path, data_path_context, solr, params_cb, params_cf, N):
 	v = DictVectorizer()
 	X_all = v.fit_transform(all_data)
 
+	#caching, ya que son siempre los mismos params del CF
+	cf_models = {}
+	for i in range(1, 4+1):
+		train_data, y_tr, _ = loadData('train/train_N'+str(N)+'.'+str(i), data_path=data_path_context, with_timestamps=False, with_authors=True)
+		X_tr = v.transform(train_data)
+		fm = pylibfm.FM(num_factors=params_cf['f'], num_iter=params_cf['mi'], k0=params_cf['bias'], k1=params_cf['oneway'], init_stdev=params_cf['init_stdev'], \
+										validation_size=params_cf['val_size'], learning_rate_schedule=params_cf['lr_s'], initial_learning_rate=params_cf['lr'], \
+										power_t=params_cf['invscale_pow'], t0=params_cf['optimal_denom'], shuffle_training=params_cf['shuffle'], seed=params_cf['seed'], \
+										task='regression', verbose=True)
+		fm.fit(X_tr, y_tr)
+		cf_models[i] = fm 
+
 	defaults = {'weight_cb': 0.5, 'weight_cf': 0.5}
 	results = dict((param, {}) for param in defaults.keys())
 
@@ -156,14 +163,14 @@ def hybrid_tuning1(data_path, data_path_context, solr, params_cb, params_cf, N):
 			for i in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]: 
 				logging.info("param:{}, i={}".format(param, i))
 				defaults[param] = i
-				results[param][i] = hybridJob(data_path= data_path, data_path_context=data_path_context, solr=solr, vectorizer=v, items=items, params_cb=params_cb, params_cf=params_cf, params_hy=defaults, N=N)
+				results[param][i] = hybridJob(data_path= data_path, solr=solr, cf_models=cf_models, vectorizer=v, items=items, params_cb=params_cb, params_hy=defaults, N=N)
 			defaults[param] = opt_value(results= results[param], metric= 'ndcg')
 
 		elif param=='weight_cf':
 			for i in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]: 
 				logging.info("param:{}, i={}".format(param, i))
 				defaults[param] = i
-				results[param][i] = hybridJob(data_path= data_path, data_path_context=data_path_context, solr=solr, vectorizer=v, items=items, params_cb=params_cb, params_cf=params_cf, params_hy=defaults, N=N)
+				results[param][i] = hybridJob(data_path= data_path, solr=solr, cf_models=cf_models, vectorizer=v, items=items, params_cb=params_cb, params_hy=defaults, N=N)
 			defaults[param] = opt_value(results= results[param], metric= 'ndcg')
 
 	with open('TwitterRatings/hybrid/opt_params_CB-CF.txt', 'w') as f:
@@ -183,23 +190,35 @@ def hybrid_tuning2(data_path, data_path_context, solr, params_cb, params_cf, N):
 	v = DictVectorizer()
 	X_all = v.fit_transform(all_data)
 
-	defaults = {'weight_cb': 0.5, 'weight_cf': 0.5}
+	#caching, ya que son siempre los mismos params del CF
+	cf_models = {}
+	for i in range(1, 4+1):
+		train_data, y_tr, _ = loadData('train/train_N'+str(N)+'.'+str(i), data_path=data_path_context, with_timestamps=False, with_authors=True)
+		X_tr = v.transform(train_data)
+		fm = pylibfm.FM(num_factors=params_cf['f'], num_iter=params_cf['mi'], k0=params_cf['bias'], k1=params_cf['oneway'], init_stdev=params_cf['init_stdev'], \
+										validation_size=params_cf['val_size'], learning_rate_schedule=params_cf['lr_s'], initial_learning_rate=params_cf['lr'], \
+										power_t=params_cf['invscale_pow'], t0=params_cf['optimal_denom'], shuffle_training=params_cf['shuffle'], seed=params_cf['seed'], \
+										task='regression', verbose=True)
+		fm.fit(X_tr, y_tr)
+		cf_models[i] = fm 
+
+	defaults = {'weight_cf': 0.5, 'weight_cb': 0.5}
 	results = dict((param, {}) for param in defaults.keys())
 
-	for param in ['weight_cf', 'weight_cb']:
+	for param in ['weight_cb', 'weight_cf']:
 
 		if param=='weight_cb':
 			for i in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]: 
 				logging.info("param:{}, i={}".format(param, i))
 				defaults[param] = i
-				results[param][i] = hybridJob(data_path= data_path, data_path_context=data_path_context, solr=solr, vectorizer=v, items=items, params_cb=params_cb, params_cf=params_cf, params_hy=defaults, N=N)
+				results[param][i] = hybridJob(data_path= data_path, solr=solr, cf_models=cf_models, vectorizer=v, items=items, params_cb=params_cb, params_hy=defaults, N=N)
 			defaults[param] = opt_value(results= results[param], metric= 'ndcg')
 
 		elif param=='weight_cf':
 			for i in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]: 
 				logging.info("param:{}, i={}".format(param, i))
 				defaults[param] = i
-				results[param][i] = hybridJob(data_path= data_path, data_path_context=data_path_context, solr=solr, vectorizer=v, items=items, params_cb=params_cb, params_cf=params_cf, params_hy=defaults, N=N)
+				results[param][i] = hybridJob(data_path= data_path, solr=solr, cf_models=cf_models, vectorizer=v, items=items, params_cb=params_cb, params_hy=defaults, N=N)
 			defaults[param] = opt_value(results= results[param], metric= 'ndcg')
 
 	with open('TwitterRatings/hybrid/opt_params_CF-CB.txt', 'w') as f:
