@@ -141,7 +141,7 @@ def hybridJob(data_path, data_path_context, solr, vectorizer, items, params_cb, 
 	return mean(nDCGs)
 ###################################
 
-def hybrid_tuning(data_path, data_path_context, solr, params_cb, params_cf, N):
+def hybrid_tuning1(data_path, data_path_context, solr, params_cb, params_cf, N):
 
 	all_data, y_all, items = loadData("eval_all_N20.data", data_path=data_path_context, with_timestamps=False, with_authors=True)
 	v = DictVectorizer()
@@ -154,12 +154,14 @@ def hybrid_tuning(data_path, data_path_context, solr, params_cb, params_cf, N):
 
 		if param=='weight_cb':
 			for i in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]: 
+				logging.info("param:{}, i={}".format(param, i))
 				defaults[param] = i
 				results[param][i] = hybridJob(data_path= data_path, data_path_context=data_path_context, solr=solr, vectorizer=v, items=items, params_cb=params_cb, params_cf=params_cf, params_hy=defaults, N=N)
 			defaults[param] = opt_value(results= results[param], metric= 'ndcg')
 
 		elif param=='weight_cf':
 			for i in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]: 
+				logging.info("param:{}, i={}".format(param, i))
 				defaults[param] = i
 				results[param][i] = hybridJob(data_path= data_path, data_path_context=data_path_context, solr=solr, vectorizer=v, items=items, params_cb=params_cb, params_cf=params_cf, params_hy=defaults, N=N)
 			defaults[param] = opt_value(results= results[param], metric= 'ndcg')
@@ -169,6 +171,42 @@ def hybrid_tuning(data_path, data_path_context, solr, params_cb, params_cf, N):
 			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
 
 	with open('TwitterRatings/hybrid/params_ndcgs_CB-CF.txt', 'w') as f:
+		for param in defaults:
+			for value in results[param]:
+				f.write( "{param}={value}\t : {nDCG}\n".format(param=param, value=value, nDCG=results[param][value]) )
+
+	return defaults
+
+def hybrid_tuning2(data_path, data_path_context, solr, params_cb, params_cf, N):
+
+	all_data, y_all, items = loadData("eval_all_N20.data", data_path=data_path_context, with_timestamps=False, with_authors=True)
+	v = DictVectorizer()
+	X_all = v.fit_transform(all_data)
+
+	defaults = {'weight_cb': 0.5, 'weight_cf': 0.5}
+	results = dict((param, {}) for param in defaults.keys())
+
+	for param in ['weight_cf', 'weight_cb']:
+
+		if param=='weight_cb':
+			for i in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]: 
+				logging.info("param:{}, i={}".format(param, i))
+				defaults[param] = i
+				results[param][i] = hybridJob(data_path= data_path, data_path_context=data_path_context, solr=solr, vectorizer=v, items=items, params_cb=params_cb, params_cf=params_cf, params_hy=defaults, N=N)
+			defaults[param] = opt_value(results= results[param], metric= 'ndcg')
+
+		elif param=='weight_cf':
+			for i in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]: 
+				logging.info("param:{}, i={}".format(param, i))
+				defaults[param] = i
+				results[param][i] = hybridJob(data_path= data_path, data_path_context=data_path_context, solr=solr, vectorizer=v, items=items, params_cb=params_cb, params_cf=params_cf, params_hy=defaults, N=N)
+			defaults[param] = opt_value(results= results[param], metric= 'ndcg')
+
+	with open('TwitterRatings/hybrid/opt_params_CF-CB.txt', 'w') as f:
+		for param in defaults:
+			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
+
+	with open('TwitterRatings/hybrid/params_ndcgs_CF-CB.txt', 'w') as f:
 		for param in defaults:
 			for value in results[param]:
 				f.write( "{param}={value}\t : {nDCG}\n".format(param=param, value=value, nDCG=results[param][value]) )
@@ -270,10 +308,11 @@ def main():
 							'optimal_denom':0.01,
 							'init_stdev':0.0001}
 
-	opt_params= hybrid_tuning(data_path=data_path, data_path_context=data_path_context, solr=solr, params_cb=params_cb, params_cf=params_cf, N=20)
-	#Orden actual de tuneo de params: CB->CF. Luego invertir: CF->CB
+	opt_params_cbcf = hybrid_tuning1(data_path=data_path, data_path_context=data_path_context, solr=solr, params_cb=params_cb, params_cf=params_cf, N=20)
+	opt_params_cfcb = hybrid_tuning2(data_path=data_path, data_path_context=data_path_context, solr=solr, params_cb=params_cb, params_cf=params_cf, N=20)
 
-	# hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, solr=solr, params_cb=params_cb, params_cf=params_cf, params_hy=opt_params, N=20)
+	hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, solr=solr, params_cb=params_cb, params_cf=params_cf, params_hy=opt_params_cbcf, N=20)
+	hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, solr=solr, params_cb=params_cb, params_cf=params_cf, params_hy=opt_params_cfcb, N=20)
 
 if __name__ == '__main__':
 	main()
