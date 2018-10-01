@@ -98,6 +98,7 @@ def hybridJob(data_path, solr, cf_models, vectorizer, items, params_cb, params_h
 		fm = cf_models[i]
 
 		for userId in val_c: #en solr_evaluation aparece "for userId in train_c", pero debiera ser lo mismo, ya que val_c y train_c debieran tener los mismos users
+			logging.info("user {}".format(userId))
 			# CF
 			user_rows = [ {'user_id': str(userId), 'item_id': str(itemId)} for itemId in items ]
 			X_va      = vectorizer.transform(user_rows)
@@ -105,8 +106,6 @@ def hybridJob(data_path, solr, cf_models, vectorizer, items, params_cb, params_h
 			recs_cf   = [itemId for _, itemId in sorted(zip(preds, items), reverse=True)]
 			recs_cf = remove_consumed(user_consumption= train_c[userId], rec_list= recs_cf)
 			recs_cf = recs_cf[:200]
-			logging.info("CF recs OK")
-
 			# CB
 			recs_cb = []
 			for itemId in train_c[userId]:
@@ -122,11 +121,9 @@ def hybridJob(data_path, solr, cf_models, vectorizer, items, params_cb, params_h
 			recs_cb = flatten_list(list_of_lists=recs_cb, rows=params_cb['rows'])
 			recs_cb = remove_consumed(user_consumption= train_c[userId], rec_list= recs_cb)
 			recs_cb = recs_cb[:200]
-			logging.info("CB recs OK")
 
 			# HYBRID
 			recs_hy = hybrid_recs(recs_cb=recs_cb, recs_cf=recs_cf, weight_cb=params_hy['weight_cb'], weight_cf=params_hy['weight_cf'])
-			logging.info("HYBRID recs OK")
 			recs_hy = remove_consumed(user_consumption= train_c[userId], rec_list= recs_hy)
 			recs_hy = user_ranked_recs(user_recs= recs_hy, user_consumpt= val_c[userId])	
 			mini_recs = dict((k, recs_hy[k]) for k in recs_hy.keys()[:N])
