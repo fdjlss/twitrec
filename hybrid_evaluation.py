@@ -284,7 +284,7 @@ def hybrid_protocol_evaluation(data_path, data_path_context, solr, params_cb, pa
 			mini_recs = dict((k, recs_hy[k]) for k in recs_hy.keys()[:N])
 			MRRs[N].append( MRR(recs=mini_recs, rel_thresh=1) )
 			nDCGs[N].append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )		
-			APs[N].append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
+			APs[N].append( AP_at_N(n=N, recs=recs_hy, rel_thresh=1) )
 			Rprecs[N].append( R_precision(n_relevants=N, recs=mini_recs) )
 
 	for N in [5, 10, 15, 20]:
@@ -324,11 +324,11 @@ def main():
 							'optimal_denom':0.01,
 							'init_stdev':0.0001}
 
-	opt_params_cbcf = hybrid_tuning1(data_path=data_path, data_path_context=data_path_context, solr=solr, params_cb=params_cb, params_cf=params_cf, N=20)
-	opt_params_cfcb = hybrid_tuning2(data_path=data_path, data_path_context=data_path_context, solr=solr, params_cb=params_cb, params_cf=params_cf, N=20)
+	opt_params_cbcf = {'weight_cf': 0.1, 'weight_cb': 0.9} #hybrid_tuning1(data_path=data_path, data_path_context=data_path_context, solr=solr, params_cb=params_cb, params_cf=params_cf, N=20)
+	# opt_params_cfcb = {'weight_cf': 0.1, 'weight_cb': 0.9} #hybrid_tuning2(data_path=data_path, data_path_context=data_path_context, solr=solr, params_cb=params_cb, params_cf=params_cf, N=20)
 
 	hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, solr=solr, params_cb=params_cb, params_cf=params_cf, params_hy=opt_params_cbcf, N=20)
-	hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, solr=solr, params_cb=params_cb, params_cf=params_cf, params_hy=opt_params_cfcb, N=20)
+	# hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, solr=solr, params_cb=params_cb, params_cf=params_cf, params_hy=opt_params_cfcb, N=20)
 
 if __name__ == '__main__':
 	main()
