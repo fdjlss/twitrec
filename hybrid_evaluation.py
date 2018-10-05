@@ -182,9 +182,7 @@ def hybridJob(data_path, solr, cf_models, cf_lib, transformer, items, params_cb,
 
 def hybrid_tuning(data_path, cf_lib, solr, params_cb, params_cf, N):
 
-	if cf_lib=="pyFM":
-		cf_mods, transformer, items = cf_models(cf_lib=cf_lib, N=N, data_path=data_path, params=params_cf) #transformer: "pyFM"->vectorizer, "implicit"->idcoder
-
+	cf_mods, transformer, items = cf_models(cf_lib=cf_lib, N=N, data_path=data_path, params=params_cf) #transformer: "pyFM"->vectorizer, "implicit"->idcoder
 
 	defaults = {'weight_cb': 0.5, 'weight_cf': 0.5}
 	results = dict((param, {}) for param in defaults.keys())
