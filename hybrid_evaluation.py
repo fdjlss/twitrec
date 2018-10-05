@@ -92,7 +92,7 @@ def cf_models(cf_lib, N, data_path, params):
 	#caching, ya que son siempre los mismos params del CF
 	cf_models = {}
 	
-	all_data, y_all, items = loadData("eval_all_N"+str(N)+".data", data_path=data_path, with_timestamps=False, with_authors=True)
+	all_data, y_all, items = loadData("eval_all_N"+str(N)+".data", data_path='TwitterRatings/funkSVD/data_with_authors/', with_timestamps=False, with_authors=True) #hardcoded bc fuck it
 	if cf_lib == "pyFM":
 		v = DictVectorizer()
 		X_all = v.fit_transform(all_data)
