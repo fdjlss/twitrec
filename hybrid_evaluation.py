@@ -131,9 +131,13 @@ def hybridJob(data_path, solr, cf_models, cf_lib, transformer, items, params_cb,
 		# CB
 		train_c = consumption(ratings_path=data_path+'train/train_N'+str(N)+'.'+str(i), rel_thresh=0, with_ratings=False)
 		val_c   = consumption(ratings_path=data_path+'val/val_N'+str(N)+'.'+str(i), rel_thresh=0, with_ratings=True)
-
+		all_c   = consumption(ratings_path=data_path+'eval_all_N'+str(N)+'.data', rel_thresh=0, with_ratings= True)
 		# CF
 		model = cf_models[i]
+		if cf_lib=="implicit": #esto sólo para definir user_items y poder recomendar..
+			ones, row, col = get_data(data_path= data_path, all_c= all_c, idcoder= transformer, fold= i, N= N, mode= "tuning")
+			matrix         = csr_matrix((ones, (row, col)), dtype=np.float64 )
+			user_items     = matrix.T.tocsr()
 
 		for userId in val_c: #en solr_evaluation aparece "for userId in train_c", pero debiera ser lo mismo, ya que val_c y train_c debieran tener los mismos users
 			logging.info("user {}".format(userId))
@@ -178,7 +182,9 @@ def hybridJob(data_path, solr, cf_models, cf_lib, transformer, items, params_cb,
 
 def hybrid_tuning(data_path, cf_lib, solr, params_cb, params_cf, N):
 
-	cf_mods, transformer, items = cf_models(cf_lib=cf_lib, N=N, data_path=data_path, params=params_cf) #transformer: "pyFM"->vectorizer, "implicit"->idcoder
+	if cf_lib=="pyFM":
+		cf_mods, transformer, items = cf_models(cf_lib=cf_lib, N=N, data_path=data_path, params=params_cf) #transformer: "pyFM"->vectorizer, "implicit"->idcoder
+
 
 	defaults = {'weight_cb': 0.5, 'weight_cf': 0.5}
 	results = dict((param, {}) for param in defaults.keys())
@@ -245,7 +251,7 @@ def hybrid_tuning(data_path, cf_lib, solr, params_cb, params_cf, N):
 def hybrid_protocol_evaluation(data_path, data_path_context, cf_lib, solr, params_cb, params_cf, params_hy, N):
 	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
-	all_c   = consumption(ratings_path= data_path+'eval_all_N20.data', rel_thresh= 0, with_ratings= True)
+	all_c   = consumption(ratings_path=data_path+'eval_all_N20.data', rel_thresh=0, with_ratings=True)
 	MRRs   = dict((N, []) for N in [5, 10, 15, 20])
 	nDCGs  = dict((N, []) for N in [5, 10, 15, 20])
 	APs    = dict((N, []) for N in [5, 10, 15, 20])
