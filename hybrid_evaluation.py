@@ -178,7 +178,7 @@ def hybridJob(data_path, solr, cf_models, cf_lib, transformer, items, params_cb,
 
 def hybrid_tuning(data_path, data_path_context, cf_lib, solr, params_cb, params_cf, N):
 
-	cf_models, transformer, items = cf_models(cf_lib=cf_lib, N=N, data_path=data_path_context, params=params_cf) #transformer: "pyFM"->vectorizer, "implicit"->idcoder
+	cf_mods, transformer, items = cf_models(cf_lib=cf_lib, N=N, data_path=data_path_context, params=params_cf) #transformer: "pyFM"->vectorizer, "implicit"->idcoder
 
 	defaults = {'weight_cb': 0.5, 'weight_cf': 0.5}
 	results = dict((param, {}) for param in defaults.keys())
@@ -188,14 +188,14 @@ def hybrid_tuning(data_path, data_path_context, cf_lib, solr, params_cb, params_
 			for i in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]: 
 				logging.info("param:{}, i={}".format(param, i))
 				defaults[param] = i
-				results[param][i] = hybridJob(data_path= data_path, solr=solr, cf_models=cf_models, transformer=transformer, items=items, params_cb=params_cb, params_hy=defaults, N=N)
+				results[param][i] = hybridJob(data_path= data_path, solr=solr, cf_models=cf_mods, transformer=transformer, items=items, params_cb=params_cb, params_hy=defaults, N=N)
 			defaults[param] = opt_value(results= results[param], metric= 'ndcg')
 
 		elif param=='weight_cf':
 			for i in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]: 
 				logging.info("param:{}, i={}".format(param, i))
 				defaults[param] = i
-				results[param][i] = hybridJob(data_path= data_path, solr=solr, cf_models=cf_models, transformer=transformer, items=items, params_cb=params_cb, params_hy=defaults, N=N)
+				results[param][i] = hybridJob(data_path= data_path, solr=solr, cf_models=cf_mods, transformer=transformer, items=items, params_cb=params_cb, params_hy=defaults, N=N)
 			defaults[param] = opt_value(results= results[param], metric= 'ndcg')
 
 	with open('TwitterRatings/hybrid/opt_params_CB-CF'+str(cf_lib)+'.txt', 'w') as f:
@@ -218,14 +218,14 @@ def hybrid_tuning(data_path, data_path_context, cf_lib, solr, params_cb, params_
 			for i in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]: 
 				logging.info("param:{}, i={}".format(param, i))
 				defaults[param] = i
-				results[param][i] = hybridJob(data_path= data_path, solr=solr, cf_models=cf_models, transformer=transformer, items=items, params_cb=params_cb, params_hy=defaults, N=N)
+				results[param][i] = hybridJob(data_path= data_path, solr=solr, cf_models=cf_mods, transformer=transformer, items=items, params_cb=params_cb, params_hy=defaults, N=N)
 			defaults[param] = opt_value(results= results[param], metric= 'ndcg')
 
 		elif param=='weight_cf':
 			for i in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]: 
 				logging.info("param:{}, i={}".format(param, i))
 				defaults[param] = i
-				results[param][i] = hybridJob(data_path= data_path, solr=solr, cf_models=cf_models, transformer=transformer, items=items, params_cb=params_cb, params_hy=defaults, N=N)
+				results[param][i] = hybridJob(data_path= data_path, solr=solr, cf_models=cf_mods, transformer=transformer, items=items, params_cb=params_cb, params_hy=defaults, N=N)
 			defaults[param] = opt_value(results= results[param], metric= 'ndcg')
 
 	with open('TwitterRatings/hybrid/opt_params_CF'+str(cf_lib)+'-CB.txt', 'w') as f:
