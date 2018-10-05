@@ -176,9 +176,9 @@ def hybridJob(data_path, solr, cf_models, cf_lib, transformer, items, params_cb,
 	return mean(nDCGs)
 ###################################
 
-def hybrid_tuning(data_path, data_path_context, cf_lib, solr, params_cb, params_cf, N):
+def hybrid_tuning(data_path, cf_lib, solr, params_cb, params_cf, N):
 
-	cf_mods, transformer, items = cf_models(cf_lib=cf_lib, N=N, data_path=data_path_context, params=params_cf) #transformer: "pyFM"->vectorizer, "implicit"->idcoder
+	cf_mods, transformer, items = cf_models(cf_lib=cf_lib, N=N, data_path=data_path, params=params_cf) #transformer: "pyFM"->vectorizer, "implicit"->idcoder
 
 	defaults = {'weight_cb': 0.5, 'weight_cf': 0.5}
 	results = dict((param, {}) for param in defaults.keys())
@@ -356,7 +356,7 @@ def main():
 	params_imp = {'f': 20, 'lamb': 0.3, 'mi': 15}
 
 
-	opt_params_cbcf, opt_params_cfcb = hybrid_tuning(data_path=data_path, data_path_context=data_path_context, cf_lib='implicit', solr=solr, params_cb=params_cb, params_cf=params_imp, N=20)
+	opt_params_cbcf, opt_params_cfcb = hybrid_tuning(data_path=data_path, cf_lib='implicit', solr=solr, params_cb=params_cb, params_cf=params_imp, N=20) #"pyFM"->data_path_context, "implicit"->data_path
 
 	hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, cf_lib='implicit', solr=solr, params_cb=params_cb, params_cf=params_imp, params_hy=opt_params_cbcf, N=20)
 	hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, cf_lib='implicit', solr=solr, params_cb=params_cb, params_cf=params_imp, params_hy=opt_params_cfcb, N=20)
