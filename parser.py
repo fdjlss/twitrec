@@ -360,7 +360,7 @@ def new_booker(new_ids_list, save_path, DATA_PATH, BOOKS_PATH, NEW_SAVES):
 	books_parse(save_path= save_path_temp, DATA_PATH= DATA_PATH, BOOKS_PATH= NEW_SAVES)
 
 from goodreads import client
-def get_books_from_gr_api(query, api_key, api_secret)
+def get_books_from_gr_api(query, api_key, api_secret):
 	gc = client.GoodreadsClient(api_key, api_secret)
 	new_books = []
 	for i in range(1,2):
