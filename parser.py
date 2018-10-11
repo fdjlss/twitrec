@@ -318,7 +318,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 	with open( os.path.join(save_path, "books.json" ), 'w' ) as outfile:
 		json.dump( data, outfile )
 
-def new_booker(new_ids_list, save_path, DATA_PATH, BOOKS_PATH, NEW_SAVES):
+def new_booker(new_ids_list, DATA_PATH, BOOKS_PATH, NEW_SAVES):
 	# Remuevo los libros que ya descargué
 	save_path      = os.path.join(DATA_PATH, BOOKS_PATH)
 	saved_list     = os.listdir( save_path )
@@ -385,7 +385,7 @@ def main():
 	#TODO: ejecutar..
 	ids_list = get_books_from_gr_api(query="hola", api_key= api_key, api_secret= api_secret)
 
-	new_booker(new_ids_list= ids_list, save_path=, DATA_PATH, BOOKS_PATH)
+	new_booker(new_ids_list= ids_list, DATA_PATH=DATA_PATH, BOOKS_PATH=BOOKS_PATH, NEW_SAVES=NEW_SAVES)
 
 if __name__ == '__main__':
 	main()
