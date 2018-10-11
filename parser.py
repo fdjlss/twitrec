@@ -6,8 +6,8 @@ import json
 import os
 from bs4 import BeautifulSoup
 import re
-
-
+from shutil import copyfile
+from urllib import urlencode, quote_plus
 
 def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 	data = []
@@ -318,12 +318,74 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 	with open( os.path.join(save_path, "books.json" ), 'w' ) as outfile:
 		json.dump( data, outfile )
 
+def new_booker(new_ids_list, save_path, DATA_PATH, BOOKS_PATH, NEW_SAVES):
+	# Remuevo los libros que ya descargué
+	save_path      = os.path.join(DATA_PATH, BOOKS_PATH)
+	saved_list     = os.listdir( save_path )
+	saved_list     = [ book_url.split('.')[0].split('-')[0] for book_url in saved_list ] #capturamos el bookId desde la url ('3262719-more-than-meets-the-eye-official-guidebook-volume-2.html')
+	save_path_temp = os.path.join(DATA_PATH, NEW_SAVES)
+
+
+	copies = []
+	for bookId in new_ids_list:
+		if bookId in saved_list: 
+			logging.info("{} ya está descargado".format(url))
+			copies.append(bookId)
+
+	for bookId in copies:
+		new_ids_list.remove(bookId)
+
+	# Descargar libros a save_path (BOOKS_PATH) y a save_path_temp (NEW_SAVES)
+	prefix = 'https://www.goodreads.com/book/show/'
+
+	i = 0
+	for bookId in new_ids_list:
+		logging.info( "VIENDO LIBRO {0}... {1} DE {2}".format(bookId, i, len(books_urls)) )
+		i+=1
+		url = prefix+bookId
+
+		# Intenta descargar HTML del libro dado el url_book de la tabla
+		# OJO: aún así descarga el HTML redireccionado en caso de error al ingresar a la ruta
+		try:
+			file_name = url.split('/')[-1] 
+			save_file = save_path + file_name + ".html"
+			urllib.request.urlretrieve( url, save_file ) #Los nuevos no tendran la forma "bookId-book-name.html", sino "bookId.html"
+			save_file_temp = save_path_temp + file_name + ".html"
+			copyfile(save_file, save_file_temp)
+		except Exception as e:
+			logging.info( "NO PUDO ACCEDERSE A LIBRO {0}, Error: {1}".format(bookId, e) )
+			continue
+
+	# Parsea lo de save_path_temp y lo mete en un JSON guardado ahí mismo
+	books_parse(save_path= save_path_temp, DATA_PATH= DATA_PATH, BOOKS_PATH= NEW_SAVES)
+
+from goodreads import client
+def get_books_from_gr_api(query, api_key, api_secret)
+	gc = client.GoodreadsClient(api_key, api_secret)
+	new_books = []
+	for i in range(1,2):
+		try:
+			new_books += gc.search_books(q=query, page=i, search_field='all')
+		except:
+			continue
+
+	new_books = [ book.gid for book in new_books ]
+	new_books = list( set(new_books) )
+	return new_books
+
 def main():
 	DATA_PATH = "/mnt/f90f82f4-c2c7-4e53-b6af-7acc6eb85058/crawling_data/goodreads_crawl/"
 	BOOKS_PATH = "books_data/"
-	REVIEWS_PATH = "user_reviews/"
+	NEW_SAVES = "books_data_temp/"
 
-	books_parse(os.path.join(DATA_PATH, "books_data_parsed"), DATA_PATH, BOOKS_PATH)
+	# books_parse(save_path= os.path.join(DATA_PATH, "books_data_parsed"), DATA_PATH= DATA_PATH, BOOKS_PATH= BOOKS_PATH)
+	api_key = 'MNpblm5HetY1zSGowr0GXA'
+	api_secret = 'pf5pU1MmQ8UiyIVvbdo2BbZUvK1pZhVSREYA2Ftrak'
+	
+	#TODO: ejecutar..
+	ids_list = get_books_from_gr_api(query="hola", api_key= api_key, api_secret= api_secret)
+
+	new_booker(new_ids_list= ids_list, save_path=, DATA_PATH, BOOKS_PATH)
 
 if __name__ == '__main__':
 	main()
