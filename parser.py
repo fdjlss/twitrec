@@ -340,7 +340,7 @@ def new_booker(new_ids_list, DATA_PATH, BOOKS_PATH, NEW_SAVES):
 
 	i = 0
 	for bookId in new_ids_list:
-		logging.info( "VIENDO LIBRO {0}... {1} DE {2}".format(bookId, i, len(books_urls)) )
+		logging.info( "VIENDO LIBRO {0}... {1} DE {2}".format(bookId, i, len(new_ids_list)) )
 		i+=1
 		url = prefix+bookId
 
