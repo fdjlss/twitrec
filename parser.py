@@ -389,7 +389,7 @@ def main():
 	# new_booker(new_ids_list= ids_list, DATA_PATH=DATA_PATH, BOOKS_PATH=BOOKS_PATH, NEW_SAVES=NEW_SAVES)
 
 	# Parsea lo del arg BOOKS_PATH y lo mete en un JSON en arg save_path 
-	books_parse(save_path= os.path.join(DATA_PATH, "books_data_temp_parsed"), DATA_PATH= DATA_PATH, BOOKS_PATH= NEW_SAVES)
+	books_parse(save_path= os.path.join(DATA_PATH, "books_data_parsed_temp"), DATA_PATH= DATA_PATH, BOOKS_PATH= NEW_SAVES)
 
 
 if __name__ == '__main__':
