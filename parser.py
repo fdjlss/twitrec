@@ -7,7 +7,7 @@ import os
 from bs4 import BeautifulSoup
 import re
 from shutil import copyfile
-from urllib import urlencode, quote_plus
+import urllib
 
 def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 	data = []
@@ -340,8 +340,8 @@ def new_booker(new_ids_list, DATA_PATH, BOOKS_PATH, NEW_SAVES):
 
 	i = 0
 	for bookId in new_ids_list:
-		logging.info( "VIENDO LIBRO {0}... {1} DE {2}".format(bookId, i, len(new_ids_list)) )
 		i+=1
+		logging.info( "VIENDO LIBRO {0}... {1} DE {2}".format(bookId, i, len(new_ids_list)) )
 		url = prefix+bookId
 
 		# Intenta descargar HTML del libro dado el url_book de la tabla
@@ -349,7 +349,7 @@ def new_booker(new_ids_list, DATA_PATH, BOOKS_PATH, NEW_SAVES):
 		try:
 			file_name = url.split('/')[-1] 
 			save_file = save_path + file_name + ".html"
-			urllib.request.urlretrieve( url, save_file ) #Los nuevos no tendran la forma "bookId-book-name.html", sino "bookId.html"
+			urllib.urlretrieve( url, save_file ) #Los nuevos no tendran la forma "bookId-book-name.html", sino "bookId.html"
 			save_file_temp = save_path_temp + file_name + ".html"
 			copyfile(save_file, save_file_temp)
 		except Exception as e:
