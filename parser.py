@@ -347,15 +347,15 @@ def new_booker(new_ids_list, DATA_PATH, BOOKS_PATH, NEW_SAVES):
 
 		# Intenta descargar HTML del libro dado el url_book de la tabla
 		# OJO: aún así descarga el HTML redireccionado en caso de error al ingresar a la ruta
-		try:
-			file_name = url.split('/')[-1] 
-			save_file = save_path + file_name + ".html"
-			urllib.urlretrieve( url, save_file ) #Los nuevos no tendran la forma "bookId-book-name.html", sino "bookId.html"
-			save_file_temp = save_path_temp + file_name + ".html"
-			copyfile(save_file, save_file_temp)
-		except Exception as e:
-			logging.info( "NO PUDO ACCEDERSE A LIBRO {0}, Error: {1}".format(bookId, e) )
-			continue
+		# try:
+		file_name = url.split('/')[-1] 
+		save_file = save_path + file_name + ".html"
+		urllib.urlretrieve( url, save_file ) #Los nuevos no tendran la forma "bookId-book-name.html", sino "bookId.html"
+		save_file_temp = save_path_temp + file_name + ".html"
+		copyfile(save_file, save_file_temp)
+		# except Exception as e:
+		# logging.info( "NO PUDO ACCEDERSE A LIBRO {0}, Error: {1}".format(bookId, e) )
+			# continue
 
 	# Parsea lo de save_path_temp y lo mete en un JSON guardado ahí mismo
 	books_parse(save_path= save_path_temp, DATA_PATH= DATA_PATH, BOOKS_PATH= NEW_SAVES)
