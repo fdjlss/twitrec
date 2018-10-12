@@ -329,7 +329,7 @@ def new_booker(new_ids_list, DATA_PATH, BOOKS_PATH, NEW_SAVES):
 	copies = []
 	for bookId in new_ids_list:
 		if bookId in saved_list: 
-			logging.info("{} ya está descargado".format(url))
+			logging.info("{} ya está descargado".format(bookId))
 			copies.append(bookId)
 
 	for bookId in copies:
@@ -375,7 +375,7 @@ def get_books_from_gr_api(query, api_key, api_secret):
 from random import randint
 def get_books_from_rng(list_len):
 	new_books = []
-	for i in range(list_len):
+	for _ in range(list_len):
 		new_books.append( str(randint(0, 8000000)) )
 	
 	return new_books
