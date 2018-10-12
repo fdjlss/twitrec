@@ -326,7 +326,6 @@ def new_booker(new_ids_list, DATA_PATH, BOOKS_PATH, NEW_SAVES):
 	saved_list     = [ book_url.split('.')[0].split('-')[0] for book_url in saved_list ] #capturamos el bookId desde la url ('3262719-more-than-meets-the-eye-official-guidebook-volume-2.html')
 	save_path_temp = os.path.join(DATA_PATH, NEW_SAVES)
 
-
 	copies = []
 	for bookId in new_ids_list:
 		if bookId in saved_list: 
@@ -347,15 +346,15 @@ def new_booker(new_ids_list, DATA_PATH, BOOKS_PATH, NEW_SAVES):
 
 		# Intenta descargar HTML del libro dado el url_book de la tabla
 		# OJO: aún así descarga el HTML redireccionado en caso de error al ingresar a la ruta
-		# try:
 		file_name = url.split('/')[-1] 
 		save_file = save_path + file_name + ".html"
-		urllib.urlretrieve( url, save_file ) #Los nuevos no tendran la forma "bookId-book-name.html", sino "bookId.html"
-		save_file_temp = save_path_temp + file_name + ".html"
-		copyfile(save_file, save_file_temp)
-		# except Exception as e:
-		# logging.info( "NO PUDO ACCEDERSE A LIBRO {0}, Error: {1}".format(bookId, e) )
-			# continue
+		try:
+			urllib.urlretrieve( url, save_file ) #Los nuevos no tendran la forma "bookId-book-name.html", sino "bookId.html"
+			save_file_temp = save_path_temp + file_name + ".html"
+			copyfile(save_file, save_file_temp)
+		except Exception as e:
+			logging.info( "URL {} es invalida..".format(url) )
+			continue
 
 	logging.info("PROCESO EXITOSO")
 
@@ -363,7 +362,7 @@ from goodreads import client
 def get_books_from_gr_api(query, api_key, api_secret):
 	gc = client.GoodreadsClient(api_key, api_secret)
 	new_books = []
-	for i in range(1,2):
+	for i in range(1,10):
 		try:
 			new_books += gc.search_books(q=query, page=i, search_field='all')
 		except:
@@ -371,6 +370,14 @@ def get_books_from_gr_api(query, api_key, api_secret):
 
 	new_books = [ book.gid for book in new_books ]
 	new_books = list( set(new_books) )
+	return new_books
+
+from random import randint
+def get_books_from_rng(list_len):
+	new_books = []
+	for i in range(list_len):
+		new_books.append( str(randint(0, 8000000)) )
+	
 	return new_books
 
 def main():
@@ -382,14 +389,19 @@ def main():
 	api_key = 'MNpblm5HetY1zSGowr0GXA'
 	api_secret = 'pf5pU1MmQ8UiyIVvbdo2BbZUvK1pZhVSREYA2Ftrak'
 	
-	# Genera lista de bookIds desde GR
+	# Genera lista de bookIds desde busqueda en GR
 	# ids_list = get_books_from_gr_api(query="hola", api_key= api_key, api_secret= api_secret)
 
-	# Descarga HTMLs y ponlos en BOOKS_PATH y en NEW_SAVES
-	# new_booker(new_ids_list= ids_list, DATA_PATH=DATA_PATH, BOOKS_PATH=BOOKS_PATH, NEW_SAVES=NEW_SAVES)
+	# Lo hacemos gradual en caso que hayan problemas
+	for i in range(10):
+		# Genera lista de bookIds con RNG (no todos seran goodreadsId validos)
+		ids_list = get_books_from_rng(list_len= 1000)
+
+		# Descarga HTMLs y ponlos en BOOKS_PATH y en NEW_SAVES
+		new_booker(new_ids_list= ids_list, DATA_PATH=DATA_PATH, BOOKS_PATH=BOOKS_PATH, NEW_SAVES=NEW_SAVES)
 
 	# Parsea lo del arg BOOKS_PATH y lo mete en un JSON en arg save_path 
-	books_parse(save_path= os.path.join(DATA_PATH, "books_data_parsed_temp"), DATA_PATH= DATA_PATH, BOOKS_PATH= NEW_SAVES)
+	# books_parse(save_path= os.path.join(DATA_PATH, "books_data_parsed_temp"), DATA_PATH= DATA_PATH, BOOKS_PATH= NEW_SAVES)
 
 
 if __name__ == '__main__':
