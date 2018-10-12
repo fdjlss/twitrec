@@ -317,7 +317,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 	# endfor
 	print("DUMPEANDO JSON..")
 	with open( os.path.join(save_path, "books.json" ), 'w', encoding="utf-8" ) as outfile:
-		outfile.write(unicode( json.dump(data, outfile, ensure_ascii=False) ))
+		outfile.write(unicode( json.dumps(data, outfile, ensure_ascii=False) ))
 
 def new_booker(new_ids_list, DATA_PATH, BOOKS_PATH, NEW_SAVES):
 	# Remuevo los libros que ya descargué
