@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 import re
 from shutil import copyfile
 import urllib
+from io import open
 
 def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 	data = []
