@@ -19,7 +19,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 	# 	filename = os.listdir(os.path.join(DATA_PATH, BOOKS_PATH ))[j]
 	for filename in os.listdir( os.path.join(DATA_PATH, BOOKS_PATH) ):
 		i+=1
-		print("{0} de {1}. Parseando libro {2}..".format(i, leng, filename))
+		logging.info("{0} de {1}. Parseando libro {2}..".format(i, leng, filename))
 		book_data = {}
 		
 		with open( os.path.join(DATA_PATH, BOOKS_PATH, filename), 'r' , encoding="utf-8") as fp:
@@ -342,7 +342,7 @@ def new_booker(new_ids_list, DATA_PATH, BOOKS_PATH, NEW_SAVES):
 	i = 0
 	for bookId in new_ids_list:
 		i+=1
-		logging.info( "VIENDO LIBRO {0}... {1} DE {2}".format(bookId, i, len(new_ids_list)) )
+		logging.info( "DESCARGANDO LIBRO {0}... {1} DE {2}".format(bookId, i, len(new_ids_list)) )
 		url = prefix+bookId
 
 		# Intenta descargar HTML del libro dado el url_book de la tabla
@@ -357,8 +357,7 @@ def new_booker(new_ids_list, DATA_PATH, BOOKS_PATH, NEW_SAVES):
 		# logging.info( "NO PUDO ACCEDERSE A LIBRO {0}, Error: {1}".format(bookId, e) )
 			# continue
 
-	# Parsea lo de save_path_temp y lo mete en un JSON guardado ahí mismo
-	books_parse(save_path= save_path_temp, DATA_PATH= DATA_PATH, BOOKS_PATH= NEW_SAVES)
+	logging.info("PROCESO EXITOSO")
 
 from goodreads import client
 def get_books_from_gr_api(query, api_key, api_secret):
@@ -383,10 +382,15 @@ def main():
 	api_key = 'MNpblm5HetY1zSGowr0GXA'
 	api_secret = 'pf5pU1MmQ8UiyIVvbdo2BbZUvK1pZhVSREYA2Ftrak'
 	
-	#TODO: ejecutar..
-	ids_list = get_books_from_gr_api(query="hola", api_key= api_key, api_secret= api_secret)
+	# Genera lista de bookIds desde GR
+	# ids_list = get_books_from_gr_api(query="hola", api_key= api_key, api_secret= api_secret)
 
-	new_booker(new_ids_list= ids_list, DATA_PATH=DATA_PATH, BOOKS_PATH=BOOKS_PATH, NEW_SAVES=NEW_SAVES)
+	# Descarga HTMLs y ponlos en BOOKS_PATH y en NEW_SAVES
+	# new_booker(new_ids_list= ids_list, DATA_PATH=DATA_PATH, BOOKS_PATH=BOOKS_PATH, NEW_SAVES=NEW_SAVES)
+
+	# Parsea lo del arg BOOKS_PATH y lo mete en un JSON en arg save_path 
+	books_parse(save_path= os.path.join(DATA_PATH, "books_data_temp_parsed"), DATA_PATH= DATA_PATH, BOOKS_PATH= NEW_SAVES)
+
 
 if __name__ == '__main__':
 	main()
