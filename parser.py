@@ -27,6 +27,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			soup = BeautifulSoup(fp, 'html.parser')
 
 		"""href"""
+		# TIENE que tener este elemento. De modo contrario el html actual es una error page
 		try:
 			href = soup.find('link', rel="canonical").get('href') # string
 			num_books_parsed += 1 # For monitoring purposes
@@ -321,7 +322,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 
 
 	# endfor
-	logging.info("DUMPEANDO JSON CON {0} LIBROS PARSEADOS DE {1} DESCARGADOS..".forat(num_books_parsed, leng))
+	logging.info("DUMPEANDO JSON CON {0} LIBROS PARSEADOS DE {1} DESCARGADOS..".format(num_books_parsed, leng))
 	with open( os.path.join(save_path, "books.json" ), 'w', encoding="utf-8" ) as outfile:
 		outfile.write(unicode( json.dumps(data, outfile, ensure_ascii=False) ))
 
