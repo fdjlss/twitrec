@@ -378,6 +378,8 @@ def get_books_from_rng(list_len):
 	for _ in range(list_len):
 		new_books.append( str(randint(0, 8000000)) )
 	
+	new_books = list( set(new_books) )
+	
 	return new_books
 
 def main():
@@ -393,15 +395,15 @@ def main():
 	# ids_list = get_books_from_gr_api(query="hola", api_key= api_key, api_secret= api_secret)
 
 	# Lo hacemos gradual en caso que hayan problemas
-	for i in range(10):
+	# for i in range(10):
 		# Genera lista de bookIds con RNG (no todos seran goodreadsId validos)
-		ids_list = get_books_from_rng(list_len= 1000)
+		# ids_list = get_books_from_rng(list_len= 1000)
 
 		# Descarga HTMLs y ponlos en BOOKS_PATH y en NEW_SAVES
-		new_booker(new_ids_list= ids_list, DATA_PATH=DATA_PATH, BOOKS_PATH=BOOKS_PATH, NEW_SAVES=NEW_SAVES)
+		# new_booker(new_ids_list= ids_list, DATA_PATH=DATA_PATH, BOOKS_PATH=BOOKS_PATH, NEW_SAVES=NEW_SAVES)
 
 	# Parsea lo del arg BOOKS_PATH y lo mete en un JSON en arg save_path 
-	# books_parse(save_path= os.path.join(DATA_PATH, "books_data_parsed_temp"), DATA_PATH= DATA_PATH, BOOKS_PATH= NEW_SAVES)
+	books_parse(save_path= os.path.join(DATA_PATH, "books_data_parsed_temp"), DATA_PATH= DATA_PATH, BOOKS_PATH= NEW_SAVES)
 
 
 if __name__ == '__main__':
