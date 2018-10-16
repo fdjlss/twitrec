@@ -32,7 +32,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		goodreadsId = soup.find('input', id="book_id").get('value') # string
 		
 		"""Title"""
-		print("viendo título..\n")
+		logging.info("viendo título. ")
 		title_el = soup.find('h1', id="bookTitle")
 		titleOfficial = title_el.get_text().strip().split('\n')[0] # string
 		try:
@@ -47,7 +47,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		titleOg = soup.find('meta', {"property":'og:title'}).get('content') # string
 
 		"""Authors"""
-		print("viendo autores..\n")
+		logging.info("viendo autores. ")
 		authors_element = soup.find_all("a", class_="authorName")
 		nAuthors = len( authors_element ) # int
 		authorMulti = False # bool
@@ -105,7 +105,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			authors.append(author) # array
 
 		"""Ratings"""
-		print("viendo ratings..\n")
+		logging.info("viendo ratings. ")
 		ratingStarscore = 0 # int
 		for el in soup.find("span", class_="stars staticStars").contents:
 			ratingStarscore += int( el.get("class")[1].strip('p') )
@@ -142,7 +142,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 				pass
 
 		"""Description"""
-		print("viendo descripción..\n")
+		logging.info("viendo descripción. ")
 		descr_el = soup.find("div", id="description")
 		try:
 			if descr_el.find("a") != None:
@@ -156,7 +156,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 				pass
 
 		"""Details"""
-		print("viendo detalles..\n")
+		logging.info("viendo detalles. ")
 		try:
 			detailBookFormatType = soup.find("span", itemprop="bookFormatType").get_text() # string
 		except AttributeError as e:
@@ -174,7 +174,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 				pass
 
 		"""Also Enjoyed By Readers"""
-		print("viendo AEBR..\n")
+		logging.info("viendo AEBR. ")
 		readersBookIds = []
 		readers_el = soup.find("div", {"id" : re.compile("relatedWorks-*")} )
 		try:		
@@ -184,13 +184,13 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			pass
 
 		"""Books By Same Author"""
-		print("viendo BBSA..\n")
+		logging.info("viendo BBSA. ")
 		booksBySameAuthor = []
 		for el in soup.find_all("div", class_="tooltipTrigger"):
 			booksBySameAuthor.append( el.get("data-resource-id") ) # array of strings
 
 		"""Genres"""
-		print("viendo géneros..\n")
+		logging.info("viendo géneros. ")
 		genres = []
 		try:
 			genres_el = soup.find("div", class_="h2Container", text=re.compile("Genres")).find_next_sibling(class_="bigBoxBody")
@@ -209,7 +209,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			pass
 
 		"""Quotes"""
-		print("viendo quotes..")
+		logging.info("viendo quotes..")
 		quotes = []
 		try:
 			quotes_el = soup.find("div", class_="h2Container", text=re.compile("Quotes")).find_next_sibling(class_="bigBoxBody")
@@ -223,7 +223,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 		except AttributeError as e:
 			pass
 
-		print("GENERANDO DICT..")
+		logging.info("GENERANDO DICT..")
 		book_data = {
 			'href': href,
 			'goodreadsId': goodreadsId,
@@ -315,7 +315,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 
 
 	# endfor
-	print("DUMPEANDO JSON..")
+	logging.info("DUMPEANDO JSON..")
 	with open( os.path.join(save_path, "books.json" ), 'w', encoding="utf-8" ) as outfile:
 		outfile.write(unicode( json.dumps(data, outfile, ensure_ascii=False) ))
 
