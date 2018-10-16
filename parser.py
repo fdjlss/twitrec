@@ -13,6 +13,7 @@ from io import open
 def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 	data = []
 	i=0
+	num_books_parsed = 0
 	leng=len(os.listdir(os.path.join(DATA_PATH, BOOKS_PATH)) )
 	# """FOR DEBUGGING PURPOSES:"""
 	# for j in range(len( os.listdir(os.path.join(DATA_PATH, BOOKS_PATH )) )-10, len( os.listdir(os.path.join(DATA_PATH, BOOKS_PATH )) )):
@@ -26,7 +27,12 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 			soup = BeautifulSoup(fp, 'html.parser')
 
 		"""href"""
-		href = soup.find('link', rel="canonical").get('href') # string
+		try:
+			href = soup.find('link', rel="canonical").get('href') # string
+			num_books_parsed += 1 # For monitoring purposes
+		except AttributeError as e:
+			logging.info("Hit a bad link. Continuing..")
+			continue
 
 		"""Book ID"""
 		goodreadsId = soup.find('input', id="book_id").get('value') # string
@@ -315,7 +321,7 @@ def books_parse(save_path, DATA_PATH, BOOKS_PATH):
 
 
 	# endfor
-	logging.info("DUMPEANDO JSON..")
+	logging.info("DUMPEANDO JSON CON {0} LIBROS PARSEADOS DE {1} DESCARGADOS..".forat(num_books_parsed, leng))
 	with open( os.path.join(save_path, "books.json" ), 'w', encoding="utf-8" ) as outfile:
 		outfile.write(unicode( json.dumps(data, outfile, ensure_ascii=False) ))
 
@@ -379,7 +385,7 @@ def get_books_from_rng(list_len):
 		new_books.append( str(randint(0, 8000000)) )
 	
 	new_books = list( set(new_books) )
-	
+
 	return new_books
 
 def main():
