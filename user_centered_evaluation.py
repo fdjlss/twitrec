@@ -213,6 +213,7 @@ def diversity_calculation(data_path, solr, params_cb, params_cf, params_hy):
 		recs_cf    = remove_consumed(user_consumption= all_c[userId], rec_list= recs_cf)
 		recs_cf = recs_cf[:20]
 
+		recs_cb = []
 		for itemId in all_c[userId]:
 			encoded_params = urlencode(params_cb)
 			url            = solr + '/mlt?q=goodreadsId:'+ itemId + "&" + encoded_params
