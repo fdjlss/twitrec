@@ -113,71 +113,72 @@ def pyFM_recs(data_path, params, user):
 
 	return recs
 
-from gensim.models import KeyedVectors
-from word2vec_evaluation import doc2vec, docs2vecs
-from wmd_evaluation import flat_doc, flat_user, get_extremes
-def w2v_recs(data_path, which_model, items, userId):
-	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
-	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
-	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in items ]
+## SOLO EN PYTHON 3.X
+# from gensim.models import KeyedVectors
+# from word2vec_evaluation import doc2vec, docs2vecs
+# from wmd_evaluation import flat_doc, flat_user, get_extremes
+# def w2v_recs(data_path, which_model, items, userId):
+# 	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
+# 	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
+# 	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in items ]
 	
-	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
-	flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
-	extremes = get_extremes(flat_docs= flat_docs, n_below= 1, n_above= len(flat_docs) * 0.75)
+# 	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+# 	flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
+# 	extremes = get_extremes(flat_docs= flat_docs, n_below= 1, n_above= len(flat_docs) * 0.75)
 
-	# Alt 1: en docs2vec & users2vec no están los libros nuevos y el usuario nuevo, entonces hago acá el embedding manualmente y luego los guardo 
-	# flat_user_books = {}
-	# for itemId, rating, auth1, auth2, auth3 in items:
-	# 	logging.info("Flattening item {}".format(itemId))
-	# 	url      = solr + '/query?q=goodreadsId:' + str(itemId)
-	# 	response = json.loads( urlopen(url).read().decode('utf8') )
-	# 	doc      = response['response']['docs']
-	# 	flat_user_books[itemId] = flat_doc(document= doc[0], model= model, extremes= extremes)
-	# flat_user = flat_user(flat_docs= flat_user_books, consumption= consumpt)
-	# embd_user = doc2vec(list_document= flat_user, model= model)
+# 	# Alt 1: en docs2vec & users2vec no están los libros nuevos y el usuario nuevo, entonces hago acá el embedding manualmente y luego los guardo 
+# 	# flat_user_books = {}
+# 	# for itemId, rating, auth1, auth2, auth3 in items:
+# 	# 	logging.info("Flattening item {}".format(itemId))
+# 	# 	url      = solr + '/query?q=goodreadsId:' + str(itemId)
+# 	# 	response = json.loads( urlopen(url).read().decode('utf8') )
+# 	# 	doc      = response['response']['docs']
+# 	# 	flat_user_books[itemId] = flat_doc(document= doc[0], model= model, extremes= extremes)
+# 	# flat_user = flat_user(flat_docs= flat_user_books, consumption= consumpt)
+# 	# embd_user = doc2vec(list_document= flat_user, model= model)
 
-	# embd_user_books = {}
-	# for itemId, flat_doc in flat_user_books.items():
-	# 	embd_user_books[itemId] = doc2vec(list_document= flat_doc, model= model)
+# 	# embd_user_books = {}
+# 	# for itemId, flat_doc in flat_user_books.items():
+# 	# 	embd_user_books[itemId] = doc2vec(list_document= flat_doc, model= model)
 
-	# docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
-	# for itemId in embd_user_books:
-	# 	docs2vec[itemId] = embd_user_books[itemId]
-	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', docs2vec) #
+# 	# docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
+# 	# for itemId in embd_user_books:
+# 	# 	docs2vec[itemId] = embd_user_books[itemId]
+# 	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', docs2vec) #
 
-	# distances = dict((bookId, 0.0) for bookId in docs2vec)
-	# for bookId in docs2vec:
-	# 	distances[bookId] = spatial.distance.cosine(embd_user, docs2vec[bookId])
-
-
-	# Alt 2: en docs2vec y flattened_docs ya están los libros, dado que corrí el pipeline para hacer el embedding de todos los libros del index (incluídos los nuevos)
-	# (sería lo adecuado si es que descargo libros adicionales de GR a parte de los libros de los usuarios de prueba)
-	flat_docs = np.load('./w2v-tmp/flattened_docs_fea075b1.npy').item()
-	flat_user_books = dict( (itemId, flat_docs[itemId]) for itemId, rating, auth1, auth2, auth3 in items )
-	flat_user = flat_user(flat_docs= flat_user_books, consumption= consumpt)
-	embd_user = doc2vec(list_document= flat_user, model= model)
-
-	docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
-
-	distances = dict((bookId, 0.0) for bookId in docs2vec)
-	for bookId in docs2vec:
-		distances[bookId] = spatial.distance.cosine(embd_user, docs2vec[bookId])
+# 	# distances = dict((bookId, 0.0) for bookId in docs2vec)
+# 	# for bookId in docs2vec:
+# 	# 	distances[bookId] = spatial.distance.cosine(embd_user, docs2vec[bookId])
 
 
-	# LA RECOMENDACIÓN
-	sorted_sims = sorted(distances.items(), key=operator.itemgetter(1), reverse=False) #[(<grId>, MENOR dist), ..., (<grId>, MAYOR dist)]
-	recs   = [ bookId for bookId, sim in sorted_sims ]
-	recs   = remove_consumed(user_consumption=consumpt, rec_list=recs)
+# 	# Alt 2: en docs2vec y flattened_docs ya están los libros, dado que corrí el pipeline para hacer el embedding de todos los libros del index (incluídos los nuevos)
+# 	# (sería lo adecuado si es que descargo libros adicionales de GR a parte de los libros de los usuarios de prueba)
+# 	flat_docs = np.load('./w2v-tmp/flattened_docs_fea075b1.npy').item()
+# 	flat_user_books = dict( (itemId, flat_docs[itemId]) for itemId, rating, auth1, auth2, auth3 in items )
+# 	flat_user = flat_user(flat_docs= flat_user_books, consumption= consumpt)
+# 	embd_user = doc2vec(list_document= flat_user, model= model)
+
+# 	docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
+
+# 	distances = dict((bookId, 0.0) for bookId in docs2vec)
+# 	for bookId in docs2vec:
+# 		distances[bookId] = spatial.distance.cosine(embd_user, docs2vec[bookId])
 
 
-	# Por si necesito usar el usuario para subsiguientes recomendaciones con w2v 
-	users2vec = np.load('./w2v-tmp/'+which_model+'/users2vec_books_'+which_model+'.npy').item()
-	# Si es que es user de GR: ID de GR
-	# Si no: mock ID ("A0", "A1", etc..)
-	users2vec[userId] = embd_user
-	np.save('./w2v-tmp/'+which_model+'/users2vec_books_'+which_model+'.npy', users2vec) 
+# 	# LA RECOMENDACIÓN
+# 	sorted_sims = sorted(distances.items(), key=operator.itemgetter(1), reverse=False) #[(<grId>, MENOR dist), ..., (<grId>, MAYOR dist)]
+# 	recs   = [ bookId for bookId, sim in sorted_sims ]
+# 	recs   = remove_consumed(user_consumption=consumpt, rec_list=recs)
 
-	return recs
+
+# 	# Por si necesito usar el usuario para subsiguientes recomendaciones con w2v 
+# 	users2vec = np.load('./w2v-tmp/'+which_model+'/users2vec_books_'+which_model+'.npy').item()
+# 	# Si es que es user de GR: ID de GR
+# 	# Si no: mock ID ("A0", "A1", etc..)
+# 	users2vec[userId] = embd_user
+# 	np.save('./w2v-tmp/'+which_model+'/users2vec_books_'+which_model+'.npy', users2vec) 
+
+# 	return recs
 
 def hybrid_recommendation(data_path, solr, params_cb, params_cf, params_hy):
 	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in items ]
