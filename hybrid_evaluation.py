@@ -74,7 +74,7 @@ def hybrid_recs_naive(ALPHA, book_recs_cb, book_recs_cf):
 
 	return book_recs_mix
 
-def hybrid_recs(recs_cb, recs_cf, weight_cb, weight_cf):
+def hybridize_recs(recs_cb, recs_cf, weight_cb, weight_cf):
 	concat = recs_cb + recs_cf
 	all_items = list( set(recs_cb + recs_cf) )
 	scores = dict((itemId, 0) for itemId in all_items )
@@ -170,7 +170,7 @@ def hybridJob(data_path, solr, cf_models, cf_lib, transformer, items, params_cb,
 			recs_cb = recs_cb[:200]
 
 			# HYBRID
-			recs_hy = hybrid_recs(recs_cb=recs_cb, recs_cf=recs_cf, weight_cb=params_hy['weight_cb'], weight_cf=params_hy['weight_cf'])
+			recs_hy = hybridize_recs(recs_cb=recs_cb, recs_cf=recs_cf, weight_cb=params_hy['weight_cb'], weight_cf=params_hy['weight_cf'])
 			recs_hy = remove_consumed(user_consumption= train_c[userId], rec_list= recs_hy)
 			recs_hy = user_ranked_recs(user_recs= recs_hy, user_consumpt= val_c[userId])	
 			mini_recs = dict((k, recs_hy[k]) for k in recs_hy.keys()[:N])
@@ -309,7 +309,7 @@ def hybrid_protocol_evaluation(data_path, data_path_context, cf_lib, solr, param
 		recs_cb = remove_consumed(user_consumption= train_c[userId], rec_list= recs_cb)
 		recs_cb = recs_cb[:200]
 
-		recs_hy = hybrid_recs(recs_cb=recs_cb, recs_cf=recs_cf, weight_cb=params_hy['weight_cb'], weight_cf=params_hy['weight_cf'])
+		recs_hy = hybridize_recs(recs_cb=recs_cb, recs_cf=recs_cf, weight_cb=params_hy['weight_cb'], weight_cf=params_hy['weight_cf'])
 		recs_hy = remove_consumed(user_consumption= train_c[userId], rec_list= recs_hy)
 		recs_hy = user_ranked_recs(user_recs= recs_hy, user_consumpt= test_c[userId])	
 
