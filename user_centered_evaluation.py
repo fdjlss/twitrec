@@ -39,7 +39,10 @@ def solr_recs(solr, params, items):
 		encoded_params = urlencode(params)
 		url            = solr + '/mlt?q=goodreadsId:'+ itemId + "&" + encoded_params
 		response       = json.loads( urlopen(url).read().decode('utf8') )
-		docs         = response['response']['docs']
+		try:
+			docs         = response['response']['docs']
+		except:
+			continue
 		recs.append( [ str(doc['goodreadsId'][0]) for doc in docs ] )
 	recs = flatten_list(list_of_lists=recs, rows=params['rows'])
 	recs = remove_consumed(user_consumption= consumpt, rec_list= recs)
@@ -207,7 +210,10 @@ def diversity_calculation(data_path, solr, params_cb, params_cf, params_hy):
 	model          = implicit.als.AlternatingLeastSquares(factors= params_cf['f'], regularization= params_cf['lamb'], iterations= params_cf['mi'], dtype= np.float64)
 	model.fit(matrix)
 
+	i = 0
 	for userId in all_c: 
+		i += 1
+		logging.info("user {0} of {1}".format(i, len(all_c)))
 		recommends = model.recommend(userid= int(idcoder.coder('user', userId)), user_items= user_items, N= 200)
 		recs_cf    = [ idcoder.decoder('item', tupl[0]) for tupl in recommends ]
 		recs_cf    = remove_consumed(user_consumption= all_c[userId], rec_list= recs_cf)
@@ -218,7 +224,10 @@ def diversity_calculation(data_path, solr, params_cb, params_cf, params_hy):
 			encoded_params = urlencode(params_cb)
 			url            = solr + '/mlt?q=goodreadsId:'+ itemId + "&" + encoded_params
 			response       = json.loads( urlopen(url).read().decode('utf8') )
-			docs           = response['response']['docs']
+			try:
+				docs           = response['response']['docs']
+			except:
+				continue
 			recs_cb.append( [ str(doc['goodreadsId'][0]) for doc in docs ] )
 		recs_cb = flatten_list(list_of_lists=recs_cb, rows=params_cb['rows'])
 		recs_cb = remove_consumed(user_consumption= all_c[userId], rec_list= recs_cb)
