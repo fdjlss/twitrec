@@ -191,6 +191,7 @@ def hybrid_recommendation(data_path, solr, params_cb, params_cf, params_hy):
 
 	recs_hy = hybridize_recs(recs_cb=recs_cb, recs_cf=recs_cf, weight_cb=params_hy['weight_cb'], weight_cf=params_hy['weight_cf'])
 	recs_hy = remove_consumed(user_consumption= consumpt, rec_list= recs_hy)
+	recs_hy = recs_hy[:20]
 
 	return recs_hy
 
@@ -217,7 +218,7 @@ def diversity_calculation(data_path, solr, params_cb, params_cf, params_hy):
 		recommends = model.recommend(userid= int(idcoder.coder('user', userId)), user_items= user_items, N= 200)
 		recs_cf    = [ idcoder.decoder('item', tupl[0]) for tupl in recommends ]
 		recs_cf    = remove_consumed(user_consumption= all_c[userId], rec_list= recs_cf)
-		recs_cf = recs_cf[:20]
+		recs_cf    = recs_cf[:20]
 
 		recs_cb = []
 		for itemId in all_c[userId]:
@@ -235,10 +236,11 @@ def diversity_calculation(data_path, solr, params_cb, params_cf, params_hy):
 
 		recs_hy = hybridize_recs(recs_cb= recs_cb, recs_cf= recs_cf, weight_cb= params_hy['weight_cb'], weight_cf= params_hy['weight_cf'])
 		recs_hy = remove_consumed(user_consumption= all_c[userId], rec_list= recs_hy)
+		recs_hy = recs_hy[:20]
 
-		diversity_hy_cb.append( diversity(l1= recs_hy , l2= recs_cb, N= 20) )
-		diversity_hy_cf.append( diversity(l1= recs_hy , l2= recs_cf, N= 20) )
-		diversity_cb_cf.append( diversity(l1= recs_cb , l2= recs_cf, N= 20) )
+		diversity_hy_cb.append( diversity(l1= recs_hy, l2= recs_cb, N= 20) )
+		diversity_hy_cf.append( diversity(l1= recs_hy, l2= recs_cf, N= 20) )
+		diversity_cb_cf.append( diversity(l1= recs_cb, l2= recs_cf, N= 20) )
 
 	logging.info("Diversities")
 	logging.info("L1: HY. L2: CB \t {}".format( mean(diversity_hy_cb) ))
