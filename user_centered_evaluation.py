@@ -204,7 +204,7 @@ def diversity_calculation(data_path, solr, params_cb, params_cf, params_hy):
 	ones, row, col = get_data(data_path= data_path, all_c= all_c, idcoder= idcoder, fold= 0, N= 20, mode= "testing")
 	matrix         = csr_matrix((ones, (row, col)), dtype=np.float64 )
 	user_items     = matrix.T.tocsr()
-	model          = implicit.als.AlternatingLeastSquares(factors= params['f'], regularization= params['lamb'], iterations= params['mi'], dtype= np.float64)
+	model          = implicit.als.AlternatingLeastSquares(factors= params_cf['f'], regularization= params_cf['lamb'], iterations= params_cf['mi'], dtype= np.float64)
 	model.fit(matrix)
 
 	for userId in all_c: 
@@ -214,12 +214,12 @@ def diversity_calculation(data_path, solr, params_cb, params_cf, params_hy):
 		recs_cf = recs_cf[:20]
 
 		for itemId in all_c[userId]:
-			encoded_params = urlencode(params)
+			encoded_params = urlencode(params_cb)
 			url            = solr + '/mlt?q=goodreadsId:'+ itemId + "&" + encoded_params
 			response       = json.loads( urlopen(url).read().decode('utf8') )
 			docs           = response['response']['docs']
 			recs_cb.append( [ str(doc['goodreadsId'][0]) for doc in docs ] )
-		recs_cb = flatten_list(list_of_lists=recs_cb, rows=params['rows'])
+		recs_cb = flatten_list(list_of_lists=recs_cb, rows=params_cb['rows'])
 		recs_cb = remove_consumed(user_consumption= all_c[userId], rec_list= recs_cb)
 		recs_cb = recs_cb[:20]
 
