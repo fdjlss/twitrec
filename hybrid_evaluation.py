@@ -81,8 +81,8 @@ def hybridize_recs(recs_cb, recs_cf, weight_cb, weight_cf):
 	for itemId in scores:
 		score_cb = 0
 		score_cf = 0
-		if itemId in recs_cb: score_cb = weight_cb / (recs_cb.index(itemId) + 1) #pq index parten desde 0
-		if itemId in recs_cf: score_cf = weight_cf / (recs_cf.index(itemId) + 1)
+		if itemId in recs_cb: score_cb = weight_cb / float(recs_cb.index(itemId) + 1) #pq index parten desde 0
+		if itemId in recs_cf: score_cf = weight_cf / float(recs_cf.index(itemId) + 1)
 		occurs = concat.count(itemId)
 		item_score = (score_cb + score_cf) * occurs
 		scores[itemId] = item_score
