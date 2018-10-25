@@ -128,6 +128,7 @@ from svd_evaluation import consumption
 import json
 import numpy as np
 from scipy import spatial
+import operator
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 def w2v_recs(data_path, solr, which_model, items, userId, model):
