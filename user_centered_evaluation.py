@@ -315,7 +315,7 @@ def main():
 	
 	# lista_imp = implicit_recs(data_path= data_path, params= params_imp, items= user)
 
-	SOLO PYTHON 3.x
+	## SOLO PYTHON 3.x
 	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 	which_model = 'google'
 	# 1. Flatten todos los docs del index en Solr
