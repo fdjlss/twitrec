@@ -49,7 +49,7 @@ def solr_recs(solr, params, items):
 		recs.append( [ str(doc['goodreadsId'][0]) for doc in docs ] )
 	recs = flatten_list(list_of_lists=recs, rows=params['rows'])
 	recs = remove_consumed(user_consumption= consumpt, rec_list= recs)
-	recs = recs[:20]
+	# recs = recs[:20]
 	return recs
 
 def implicit_recs(data_path, params, items):
@@ -87,7 +87,7 @@ def implicit_recs(data_path, params, items):
 	recs = model.recommend(userid= int(idcoder.coder('user', new_user[0])), user_items= user_items, N= 200)
 	recs = [ idcoder.decoder('item', tupl[0]) for tupl in recs ]
 	recs = remove_consumed(user_consumption= consumpt, rec_list= recs)
-	recs = recs[:20]
+	# recs = recs[:20]
 
 	return recs
 
@@ -193,7 +193,7 @@ def hybrid_recommendation(data_path, solr, params_cb, params_cf, params_hy, item
 
 	recs_hy = hybridize_recs(recs_cb=recs_cb, recs_cf=recs_cf, weight_cb=params_hy['weight_cb'], weight_cf=params_hy['weight_cf'])
 	recs_hy = remove_consumed(user_consumption= consumpt, rec_list= recs_hy)
-	recs_hy = recs_hy[:20]
+	# recs_hy = recs_hy[:20]
 
 	return recs_hy
 
@@ -280,7 +280,7 @@ def main():
 							'init_stdev':0.0001}
 	params_hy = {'weight_cb': 0.9, 'weight_cf': 0.1}
 
-	denis = [('8267287', 0, '5650904', '83881', '0'), 
+	user = [('8267287', 0, '5650904', '83881', '0'), 
 					 ('158014', 0, '1113469', '0', '0'), 
 					 ('230514', 0, '134770', '0', '0'),
 					 ('19508', 0, '909675', '0', '0'),
@@ -304,11 +304,16 @@ def main():
 					 ('847635', 0, '201906', '0', '0'),
 					 ('13031462', 0, '25591', '0', '0'),
 					 ('214319', 0, '51808', '0', '0')] #[ (itemId, rating, authId1, authId2, authId3) ]
+	titles = []
+	for itemId, rating, author1, author, author3 in user:
+		url      = solr + '/select?q=goodreadsId:' + itemId + '&wt=json' 
+		response = json.loads( urlopen(url).read().decode('utf8') )
+		doc      = response['response']['docs'][0]
+		titles.append( doc['title.titleOfficial'][0] )
 
-
-	lista_hyb = hybrid_recommendation(data_path= data_path, solr= solr, params_cb= params_solr, params_cf= params_imp, params_hy= params_hy, items= denis)
+	lista_hyb = hybrid_recommendation(data_path= data_path, solr= solr, params_cb= params_solr, params_cf= params_imp, params_hy= params_hy, items= user)
 	
-	lista_imp = implicit_recs(data_path= data_path, params= params_imp, items= denis)
+	lista_imp = implicit_recs(data_path= data_path, params= params_imp, items= user)
 
 	# SOLO PYTHON 3.x
 	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
@@ -322,8 +327,28 @@ def main():
 	# # 4. Guarda los embeddings
 	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', dict_docs)
 	# # 5. Genera las recomendaciones
-	# lista_w2v = w2v_recs(data_path= data_path, which_model= which_model, items= denis, userId="denis")
+	# lista_w2v = w2v_recs(data_path= data_path, which_model= which_model, items= user, userId="denis")
 	
+	for item in lista_hyb:
+		url      = solr + '/select?q=goodreadsId:'+item+'&wt=json' 
+		response = json.loads( urlopen(url).read().decode('utf8') )
+		doc      = response['response']['docs'][0]
+		rec_title = doc['title.titleOfficial'][0]
+		if rec_title in titles: lista_hyb.remove(item)
+
+	for item in lista_imp:
+		url      = solr + '/select?q=goodreadsId:'+item+'&wt=json' 
+		response = json.loads( urlopen(url).read().decode('utf8') )
+		doc      = response['response']['docs'][0]
+		rec_title = doc['title.titleOfficial'][0]
+		if rec_title in titles: lista_imp.remove(item)
+
+	# for item in lista_w2v:
+	# 	url      = solr + '/select?q=goodreadsId:'+item+'&wt=json' 
+	# 	response = json.loads( urlopen(url).read().decode('utf8') )
+	# 	doc      = response['response']['docs'][0]
+	# 	rec_title = doc['title.titleOfficial'][0]
+	# 	if rec_title in titles: lista_w2v.remove(item)
 
 	i = 0
 	logging.info("RECOMENDADOR A")
