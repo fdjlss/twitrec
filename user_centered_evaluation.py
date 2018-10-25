@@ -129,7 +129,7 @@ import json
 import numpy as np
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-def w2v_recs(data_path, which_model, items, userId, model):
+def w2v_recs(data_path, solr, which_model, items, userId, model):
 	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
 	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in items ]
@@ -329,7 +329,7 @@ def main():
 	# # 4. Guarda los embeddings
 	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', dict_docs)
 	# # 5. Genera las recomendaciones
-	lista_w2v = w2v_recs(data_path= data_path, which_model= which_model, items= user, userId="denis", model= model)
+	lista_w2v = w2v_recs(data_path= data_path, solr= solr, which_model= which_model, items= user, userId="denis", model= model)
 	
 	# for item in lista_hyb:
 	# 	url      = solr + '/select?q=goodreadsId:'+item+'&wt=json' 
