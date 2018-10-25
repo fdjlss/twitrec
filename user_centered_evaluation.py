@@ -134,10 +134,10 @@ def w2v_recs(data_path, solr, which_model, items, userId, model):
 	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
 	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in items ]
 	
-	flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
-	extremes = get_extremes(flat_docs= flat_docs, n_below= 1, n_above= len(flat_docs) * 0.75)
 
 	# Alt 1: en docs2vec & users2vec no están los libros nuevos y el usuario nuevo, entonces hago acá el embedding manualmente y luego los guardo 
+	flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
+	extremes = get_extremes(flat_docs= flat_docs, n_below= 1, n_above= len(flat_docs) * 0.75)
 	flat_user_books = {}
 	for itemId, rating, auth1, auth2, auth3 in items:
 		logging.info("Flattening item {}".format(itemId))
@@ -149,8 +149,8 @@ def w2v_recs(data_path, solr, which_model, items, userId, model):
 	embd_user = doc2vec(list_document= flat_user, model= model)
 
 	embd_user_books = {}
-	for itemId, flat_doc in flat_user_books.items():
-		embd_user_books[itemId] = doc2vec(list_document= flat_doc, model= model)
+	for itemId, flat_item in flat_user_books.items():
+		embd_user_books[itemId] = doc2vec(list_document= flat_item, model= model)
 
 	docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
 	for itemId in embd_user_books:
