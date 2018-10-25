@@ -119,7 +119,8 @@ def pyFM_recs(data_path, params, user):
 ## SOLO EN PYTHON 3.X
 # from gensim.models import KeyedVectors
 # from word2vec_evaluation import doc2vec, docs2vecs
-# from wmd_evaluation import flat_doc, flat_user, get_extremes
+# from wmd_evaluation import flat_doc, flat_user, get_extremes, flatten_all_docs
+# from urllib.request import urlopen
 # def w2v_recs(data_path, which_model, items, userId):
 # 	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
 # 	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
@@ -154,7 +155,7 @@ def pyFM_recs(data_path, params, user):
 # 	# 	distances[bookId] = spatial.distance.cosine(embd_user, docs2vec[bookId])
 
 
-# 	# Alt 2: en docs2vec y flattened_docs ya están los libros, dado que corrí el pipeline para hacer el embedding de todos los libros del index (incluídos los nuevos)
+# 	# Alt 2: en docs2vec y flattened_docs ya están los libros nuevos, dado que corrí el pipeline para hacer el embedding de todos los libros del index (incluídos los nuevos)
 # 	# (sería lo adecuado si es que descargo libros adicionales de GR a parte de los libros de los usuarios de prueba)
 # 	flat_docs = np.load('./w2v-tmp/flattened_docs_fea075b1.npy').item()
 # 	flat_user_books = dict( (itemId, flat_docs[itemId]) for itemId, rating, auth1, auth2, auth3 in items )
@@ -167,12 +168,10 @@ def pyFM_recs(data_path, params, user):
 # 	for bookId in docs2vec:
 # 		distances[bookId] = spatial.distance.cosine(embd_user, docs2vec[bookId])
 
-
 # 	# LA RECOMENDACIÓN
 # 	sorted_sims = sorted(distances.items(), key=operator.itemgetter(1), reverse=False) #[(<grId>, MENOR dist), ..., (<grId>, MAYOR dist)]
 # 	recs   = [ bookId for bookId, sim in sorted_sims ]
 # 	recs   = remove_consumed(user_consumption=consumpt, rec_list=recs)
-
 
 # 	# Por si necesito usar el usuario para subsiguientes recomendaciones con w2v 
 # 	users2vec = np.load('./w2v-tmp/'+which_model+'/users2vec_books_'+which_model+'.npy').item()
@@ -183,7 +182,7 @@ def pyFM_recs(data_path, params, user):
 
 # 	return recs
 
-def hybrid_recommendation(data_path, solr, params_cb, params_cf, params_hy):
+def hybrid_recommendation(data_path, solr, params_cb, params_cf, params_hy, items):
 	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in items ]
 
 	recs_cb = solr_recs(solr= solr, params= params_cb, items= items)
@@ -278,9 +277,107 @@ def main():
 							'init_stdev':0.0001}
 	params_hy = {'weight_cb': 0.9, 'weight_cf': 0.1}
 
-	user = [('123', 3, '2222', '3333', '4444'), ('777', 5, '5435', '0', '0'), ('987', 4, '3213', '9999', '0')] #[ (itemId, rating, authId1, authId2, authId3) ]
+	denis = [('8267287', 0, '5650904', '83881', '0'), 
+					 ('158014', 0, '1113469', '0', '0'), 
+					 ('230514', 0, '134770', '0', '0'),
+					 ('19508', 0, '909675', '0', '0'),
+					 ('21031', 0, '909675', '0', '0'), 
+					 ('123632', 0, '38285', '100950', '574570'),
+					 ('17690', 0, '5223', '0', '0'),
+					 ('485894', 0, '5223', '0', '0'),
+					 ('56919', 0, '30195', '0', '0'),
+					 ('191373', 0, '25824', '0', '0'),
+					 ('4662', 0, '3190', '0', '0'),
+					 ('16207545', 0, '128195', '0', '0'),
+					 ('46170', 0, '1455', '0', '0'),
+					 ('9646', 0, '3706', '0', '0'),
+					 ('7144', 0, '3137322', '0', '0'),
+					 ('4934', 0, '3137322', '0', '0'),
+					 ('63034', 0, '72039', '0', '0'),
+					 ('820183', 0, '500', '0', '0'),
+					 ('426504', 0, '500', '0', '0'),
+					 ('338798', 0, '5144', '0', '0'),
+					 ('7588', 0, '5144', '0', '0'),
+					 ('847635', 0, '201906', '0', '0'),
+					 ('13031462', 0, '25591', '0', '0'),
+					 ('214319', 0, '51808', '0', '0')] #[ (itemId, rating, authId1, authId2, authId3) ]
 
-	diversity_calculation(data_path= data_path, solr= solr, params_cb= params_solr, params_cf= params_imp, params_hy= params_hy)
+
+	lista_hyb = hybrid_recommendation(data_path= data_path, solr= solr, params_cb= params_solr, params_cf= params_imp, params_hy= params_hy, items= denis)
+	
+	lista_imp = implicit_recs(data_path= data_path, params= params_imp, items= denis)
+
+	# SOLO PYTHON 3.x
+	# model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+	# which_model = 'google'
+	# # 1. Flatten todos los docs del index en Solr
+	# dict_docs =	flatten_all_docs(solr= solr, model= model, filter_extremes= True)
+	# # 2. Guarda flatten docs
+	# np.save('./w2v-tmp/flattened_docs_fea075b1.npy', dict_docs)
+	# # 3. Embedding de los flattened docs
+	# dict_docs =	docs2vecs(model= model) # (por dentro carga "./w2v-tmp/flattened_docs_fea075b1.npy")
+	# # 4. Guarda los embeddings
+	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', dict_docs)
+	# # 5. Genera las recomendaciones
+	# lista_w2v = w2v_recs(data_path= data_path, which_model= which_model, items= denis, userId="denis")
+	
+
+	i = 0
+	for item in lista_hyb:
+		i += 1
+		url      = solr + '/select?q=goodreadsId:'+item+'&wt=json' # ex. item: 7144 (Crime and Punishment)
+		response = json.loads( urlopen(url).read().decode('utf8') )
+		doc      = response['response']['docs'][0]
+		recs.append( [ str(doc['goodreadsId'][0]) for doc in docs ] )
+		logging.info("RECOMENDADOR A")
+		logging.info(i)
+		logging.info("Título: " + doc['title.titleOfficial'][0])
+		logging.info("Autor:" + doc['author.authors.authorName'][0])
+		logging.info("URL: " + doc['href'][0])
+		logging.info("- RELEVANTE / IRRELEVANTE")
+		logging.info("- NOVEDOSO / NO NOVEDOSO")
+		logging.info(" ")
+		if i==10: break
+	logging.info("Con esta lista en general me siento:")
+	logging.info("- SATISFECHO / NO SATISFECHO")
+
+	i = 0
+	for item in lista_imp:
+		i += 1
+		url      = solr + '/select?q=goodreadsId:'+item+'&wt=json'
+		response = json.loads( urlopen(url).read().decode('utf8') )
+		doc      = response['response']['docs'][0]
+		logging.info("RECOMENDADOR B")
+		logging.info(i)
+		logging.info("Título: " + doc['title.titleOfficial'][0])
+		logging.info("Autor:" + doc['author.authors.authorName'][0])
+		logging.info("URL: " + doc['href'][0])
+		logging.info("- RELEVANTE / IRRELEVANTE")
+		logging.info("- NOVEDOSO / NO NOVEDOSO")
+		logging.info(" ")
+		if i==10: break
+	logging.info("Con esta lista en general me siento:")
+	logging.info("- SATISFECHO / NO SATISFECHO")
+
+	# i = 0
+	# for item in lista_w2v:
+	# 	i += 1
+	# 	url      = solr + '/select?q=goodreadsId:'+item+'&wt=json'
+	# 	response = json.loads( urlopen(url).read().decode('utf8') )
+	# 	doc      = response['response']['docs'][0]
+	# 	logging.info("RECOMENDADOR C")
+	# 	logging.info(i)
+	# 	logging.info("Título: " + doc['title.titleOfficial'][0])
+	# 	logging.info("Autor:" + doc['author.authors.authorName'][0])
+	# 	logging.info("URL: " + doc['href'][0])
+	# 	logging.info("- RELEVANTE / IRRELEVANTE")
+	# 	logging.info("- NOVEDOSO / NO NOVEDOSO")
+	# 	logging.info(" ")
+	# 	if i==10: break
+	# logging.info("Con esta lista en general me siento:")
+	# logging.info("- SATISFECHO / NO SATISFECHO")	
+
+	# diversity_calculation(data_path= data_path, solr= solr, params_cb= params_solr, params_cf= params_imp, params_hy= params_hy)
 
 if __name__ == '__main__':
 	main()
