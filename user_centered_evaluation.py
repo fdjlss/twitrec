@@ -127,6 +127,8 @@ from urllib.request import urlopen
 from svd_evaluation import consumption
 import json
 import numpy as np
+import logging
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 def w2v_recs(data_path, which_model, items, userId, model):
 	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
