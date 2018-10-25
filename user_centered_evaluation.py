@@ -127,6 +127,7 @@ from urllib.request import urlopen
 from svd_evaluation import consumption
 import json
 import numpy as np
+from scipy import spatial
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 def w2v_recs(data_path, solr, which_model, items, userId, model):
@@ -364,8 +365,8 @@ def main():
 	# 	logging.info("Autor: " + doc['author.authors.authorName'][0])
 	# 	logging.info("ID: " + str(doc['goodreadsId'][0]))
 	# 	logging.info("URL: " + doc['href'][0])
-	# 	logging.info("- RELEVANTE / IRRELEVANTE")
-	# 	logging.info("- NOVEDOSO / NO NOVEDOSO")
+	# 	logging.info("- RELEVANTE / ALGO RELEVANTE / IRRELEVANTE")
+	# 	logging.info("- NOVEDOSO / ALGO NOVEDOSO / NO NOVEDOSO")
 	# 	logging.info(" ")
 	# 	if i==10: break
 	# logging.info("Con esta lista en general me siento:")
@@ -383,8 +384,8 @@ def main():
 	# 	logging.info("Autor: " + doc['author.authors.authorName'][0])
 	# 	logging.info("ID: " + str(doc['goodreadsId'][0]))
 	# 	logging.info("URL: " + doc['href'][0])
-	# 	logging.info("- RELEVANTE / IRRELEVANTE")
-	# 	logging.info("- NOVEDOSO / NO NOVEDOSO")
+	# 	logging.info("- RELEVANTE / ALGO RELEVANTE / IRRELEVANTE")
+	# 	logging.info("- NOVEDOSO / ALGO NOVEDOSO / NO NOVEDOSO")
 	# 	logging.info(" ")
 	# 	if i==10: break
 	# logging.info("Con esta lista en general me siento:")
@@ -401,8 +402,8 @@ def main():
 		logging.info("Título: " + doc['title.titleOfficial'][0])
 		logging.info("Autor: " + doc['author.authors.authorName'][0])
 		logging.info("URL: " + doc['href'][0])
-		logging.info("- RELEVANTE / IRRELEVANTE")
-		logging.info("- NOVEDOSO / NO NOVEDOSO")
+		logging.info("- RELEVANTE / ALGO RELEVANTE / IRRELEVANTE")
+		logging.info("- NOVEDOSO / ALGO NOVEDOSO / NO NOVEDOSO")
 		logging.info(" ")
 		if i==10: break
 	logging.info("Con esta lista en general me siento:")
