@@ -328,7 +328,6 @@ def main():
 		url      = solr + '/select?q=goodreadsId:'+item+'&wt=json' # ex. item: 7144 (Crime and Punishment)
 		response = json.loads( urlopen(url).read().decode('utf8') )
 		doc      = response['response']['docs'][0]
-		recs.append( [ str(doc['goodreadsId'][0]) for doc in docs ] )
 		logging.info("RECOMENDADOR A")
 		logging.info(i)
 		logging.info("Título: " + doc['title.titleOfficial'][0])
