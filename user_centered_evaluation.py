@@ -327,12 +327,12 @@ def main():
 	
 
 	i = 0
+	logging.info("RECOMENDADOR A")
 	for item in lista_hyb:
 		i += 1
 		url      = solr + '/select?q=goodreadsId:'+item+'&wt=json' # ex. item: 7144 (Crime and Punishment)
 		response = json.loads( urlopen(url).read().decode('utf8') )
 		doc      = response['response']['docs'][0]
-		logging.info("RECOMENDADOR A")
 		logging.info(i)
 		logging.info("Título: " + doc['title.titleOfficial'][0])
 		logging.info("Autor: " + doc['author.authors.authorName'][0])
@@ -345,12 +345,12 @@ def main():
 	logging.info("- SATISFECHO / NO SATISFECHO")
 
 	i = 0
+	logging.info("RECOMENDADOR B")
 	for item in lista_imp:
 		i += 1
 		url      = solr + '/select?q=goodreadsId:'+item+'&wt=json'
 		response = json.loads( urlopen(url).read().decode('utf8') )
 		doc      = response['response']['docs'][0]
-		logging.info("RECOMENDADOR B")
 		logging.info(i)
 		logging.info("Título: " + doc['title.titleOfficial'][0])
 		logging.info("Autor: " + doc['author.authors.authorName'][0])
@@ -363,12 +363,12 @@ def main():
 	logging.info("- SATISFECHO / NO SATISFECHO")
 
 	# i = 0
+	# logging.info("RECOMENDADOR C")
 	# for item in lista_w2v:
 	# 	i += 1
 	# 	url      = solr + '/select?q=goodreadsId:'+item+'&wt=json'
 	# 	response = json.loads( urlopen(url).read().decode('utf8') )
 	# 	doc      = response['response']['docs'][0]
-	# 	logging.info("RECOMENDADOR C")
 	# 	logging.info(i)
 	# 	logging.info("Título: " + doc['title.titleOfficial'][0])
 	# 	logging.info("Autor: " + doc['author.authors.authorName'][0])
