@@ -35,7 +35,7 @@ def solr_recs(solr, params, items):
 	recs = []
 	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in items ]
 
-	for itemId in items:
+	for itemId in consumpt:
 		encoded_params = urlencode(params)
 		url            = solr + '/mlt?q=goodreadsId:'+ itemId + "&" + encoded_params
 		response       = json.loads( urlopen(url).read().decode('utf8') )
