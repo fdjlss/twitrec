@@ -123,6 +123,7 @@
 from gensim.models import KeyedVectors
 from word2vec_evaluation import doc2vec, docs2vecs
 from wmd_evaluation import flat_doc, flat_user, get_extremes, flatten_all_docs
+from svd_evaluation import remove_consumed
 from urllib.request import urlopen
 from svd_evaluation import consumption
 import json
