@@ -145,8 +145,8 @@ def w2v_recs(data_path, solr, which_model, items, userId, model):
 		response = json.loads( urlopen(url).read().decode('utf8') )
 		doc      = response['response']['docs']
 		flat_user_books[itemId] = flat_doc(document= doc[0], model= model, extremes= extremes)
-	flat_user = flat_user(flat_docs= flat_user_books, consumption= consumpt)
-	embd_user = doc2vec(list_document= flat_user, model= model)
+	flat_dude = flat_user(flat_docs= flat_user_books, consumption= consumpt)
+	embd_user = doc2vec(list_document= flat_dude, model= model)
 
 	embd_user_books = {}
 	for itemId, flat_item in flat_user_books.items():
@@ -166,8 +166,8 @@ def w2v_recs(data_path, solr, which_model, items, userId, model):
 	# (sería lo adecuado si es que descargo libros adicionales de GR a parte de los libros de los usuarios de prueba)
 	# flat_docs = np.load('./w2v-tmp/flattened_docs_fea075b1.npy').item()
 	# flat_user_books = dict( (itemId, flat_docs[itemId]) for itemId, rating, auth1, auth2, auth3 in items )
-	# flat_user = flat_user(flat_docs= flat_user_books, consumption= consumpt)
-	# embd_user = doc2vec(list_document= flat_user, model= model)
+	# flat_dude = flat_user(flat_docs= flat_user_books, consumption= consumpt)
+	# embd_user = doc2vec(list_document= flat_dude, model= model)
 	# docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
 	# distances = dict((bookId, 0.0) for bookId in docs2vec)
 	# for bookId in docs2vec:
