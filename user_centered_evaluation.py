@@ -38,7 +38,6 @@ def diversity(l1, l2, N):
 def solr_recs(solr, params, items):
 	recs = []
 	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in items ]
-
 	for itemId in consumpt:
 		encoded_params = urlencode(params)
 		url            = solr + '/mlt?q=goodreadsId:'+ itemId + "&" + encoded_params
@@ -336,6 +335,7 @@ def main():
 		logging.info(i)
 		logging.info("Título: " + doc['title.titleOfficial'][0])
 		logging.info("Autor: " + doc['author.authors.authorName'][0])
+		logging.info("ID: " + doc['goodreadsId'][0])
 		logging.info("URL: " + doc['href'][0])
 		logging.info("- RELEVANTE / IRRELEVANTE")
 		logging.info("- NOVEDOSO / NO NOVEDOSO")
@@ -354,6 +354,7 @@ def main():
 		logging.info(i)
 		logging.info("Título: " + doc['title.titleOfficial'][0])
 		logging.info("Autor: " + doc['author.authors.authorName'][0])
+		logging.info("ID: " + doc['goodreadsId'][0])
 		logging.info("URL: " + doc['href'][0])
 		logging.info("- RELEVANTE / IRRELEVANTE")
 		logging.info("- NOVEDOSO / NO NOVEDOSO")
