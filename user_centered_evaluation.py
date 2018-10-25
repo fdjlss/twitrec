@@ -126,6 +126,7 @@ from wmd_evaluation import flat_doc, flat_user, get_extremes, flatten_all_docs
 from urllib.request import urlopen
 from svd_evaluation import consumption
 import json
+import numpy as np
 def w2v_recs(data_path, which_model, items, userId, model):
 	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
