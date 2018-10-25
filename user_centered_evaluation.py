@@ -410,23 +410,23 @@ def main():
 	# logging.info("Con esta lista en general me siento:")
 	# logging.info("- SATISFECHO / NO SATISFECHO")
 
-	# i = 0
-	# logging.info("RECOMENDADOR C")
-	# for item in lista_w2v:
-	# 	i += 1
-	# 	url      = solr + '/select?q=goodreadsId:'+item+'&wt=json'
-	# 	response = json.loads( urlopen(url).read().decode('utf8') )
-	# 	doc      = response['response']['docs'][0]
-	# 	logging.info(i)
-	# 	logging.info("Título: " + doc['title.titleOfficial'][0])
-	# 	logging.info("Autor: " + doc['author.authors.authorName'][0])
-	# 	logging.info("URL: " + doc['href'][0])
-	# 	logging.info("- RELEVANTE / ALGO RELEVANTE / IRRELEVANTE")
-	# 	logging.info("- NOVEDOSO / ALGO NOVEDOSO / NO NOVEDOSO")
-	# 	logging.info(" ")
-	# 	if i==10: break
-	# logging.info("Con esta lista en general me siento:")
-	# logging.info("- SATISFECHO / NO SATISFECHO")	
+	i = 0
+	logging.info("RECOMENDADOR C")
+	for item in lista_w2v:
+		i += 1
+		url      = solr + '/select?q=goodreadsId:'+item+'&wt=json'
+		response = json.loads( urlopen(url).read().decode('utf8') )
+		doc      = response['response']['docs'][0]
+		logging.info(i)
+		logging.info("Título: " + doc['title.titleOfficial'][0])
+		logging.info("Autor: " + doc['author.authors.authorName'][0])
+		logging.info("URL: " + doc['href'][0])
+		logging.info("- RELEVANTE / ALGO RELEVANTE / IRRELEVANTE")
+		logging.info("- NOVEDOSO / ALGO NOVEDOSO / NO NOVEDOSO")
+		logging.info(" ")
+		if i==10: break
+	logging.info("Con esta lista en general me siento:")
+	logging.info("- SATISFECHO / NO SATISFECHO")	
 
 	# diversity_calculation(data_path= data_path, solr= solr, params_cb= params_solr, params_cf= params_imp, params_hy= params_hy)
 
