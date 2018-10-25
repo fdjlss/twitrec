@@ -264,6 +264,7 @@ def recs_cleaner(solr, consumpt_hrefs, recs):
 		if rec_href in consumpt_hrefs: recs.remove(item)
 
 	# Saca todos los ítems con hrefs iguales
+	lista_dict = {}
 	for item in recs:
 		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
 		response = json.loads( urlopen(url).read().decode('utf8') )
