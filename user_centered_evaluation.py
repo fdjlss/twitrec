@@ -135,42 +135,40 @@ def w2v_recs(data_path, which_model, items, userId, model):
 	extremes = get_extremes(flat_docs= flat_docs, n_below= 1, n_above= len(flat_docs) * 0.75)
 
 	# Alt 1: en docs2vec & users2vec no están los libros nuevos y el usuario nuevo, entonces hago acá el embedding manualmente y luego los guardo 
-	# flat_user_books = {}
-	# for itemId, rating, auth1, auth2, auth3 in items:
-	# 	logging.info("Flattening item {}".format(itemId))
-	# 	url      = solr + '/query?q=goodreadsId:' + str(itemId)
-	# 	response = json.loads( urlopen(url).read().decode('utf8') )
-	# 	doc      = response['response']['docs']
-	# 	flat_user_books[itemId] = flat_doc(document= doc[0], model= model, extremes= extremes)
-	# flat_user = flat_user(flat_docs= flat_user_books, consumption= consumpt)
-	# embd_user = doc2vec(list_document= flat_user, model= model)
-
-	# embd_user_books = {}
-	# for itemId, flat_doc in flat_user_books.items():
-	# 	embd_user_books[itemId] = doc2vec(list_document= flat_doc, model= model)
-
-	# docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
-	# for itemId in embd_user_books:
-	# 	docs2vec[itemId] = embd_user_books[itemId]
-	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', docs2vec) #
-
-	# distances = dict((bookId, 0.0) for bookId in docs2vec)
-	# for bookId in docs2vec:
-	# 	distances[bookId] = spatial.distance.cosine(embd_user, docs2vec[bookId])
-
-
-	# Alt 2: en docs2vec y flattened_docs ya están los libros nuevos, dado que corrí el pipeline para hacer el embedding de todos los libros del index (incluídos los nuevos)
-	# (sería lo adecuado si es que descargo libros adicionales de GR a parte de los libros de los usuarios de prueba)
-	flat_docs = np.load('./w2v-tmp/flattened_docs_fea075b1.npy').item()
-	flat_user_books = dict( (itemId, flat_docs[itemId]) for itemId, rating, auth1, auth2, auth3 in items )
+	flat_user_books = {}
+	for itemId, rating, auth1, auth2, auth3 in items:
+		logging.info("Flattening item {}".format(itemId))
+		url      = solr + '/query?q=goodreadsId:' + str(itemId)
+		response = json.loads( urlopen(url).read().decode('utf8') )
+		doc      = response['response']['docs']
+		flat_user_books[itemId] = flat_doc(document= doc[0], model= model, extremes= extremes)
 	flat_user = flat_user(flat_docs= flat_user_books, consumption= consumpt)
 	embd_user = doc2vec(list_document= flat_user, model= model)
 
+	embd_user_books = {}
+	for itemId, flat_doc in flat_user_books.items():
+		embd_user_books[itemId] = doc2vec(list_document= flat_doc, model= model)
+
 	docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
+	for itemId in embd_user_books:
+		docs2vec[itemId] = embd_user_books[itemId]
+	np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', docs2vec) #
 
 	distances = dict((bookId, 0.0) for bookId in docs2vec)
 	for bookId in docs2vec:
 		distances[bookId] = spatial.distance.cosine(embd_user, docs2vec[bookId])
+
+
+	# Alt 2: en docs2vec y flattened_docs ya están los libros nuevos, dado que corrí el pipeline para hacer el embedding de todos los libros del index (incluídos los nuevos)
+	# (sería lo adecuado si es que descargo libros adicionales de GR a parte de los libros de los usuarios de prueba)
+	# flat_docs = np.load('./w2v-tmp/flattened_docs_fea075b1.npy').item()
+	# flat_user_books = dict( (itemId, flat_docs[itemId]) for itemId, rating, auth1, auth2, auth3 in items )
+	# flat_user = flat_user(flat_docs= flat_user_books, consumption= consumpt)
+	# embd_user = doc2vec(list_document= flat_user, model= model)
+	# docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
+	# distances = dict((bookId, 0.0) for bookId in docs2vec)
+	# for bookId in docs2vec:
+	# 	distances[bookId] = spatial.distance.cosine(embd_user, docs2vec[bookId])
 
 	# LA RECOMENDACIÓN
 	sorted_sims = sorted(distances.items(), key=operator.itemgetter(1), reverse=False) #[(<grId>, MENOR dist), ..., (<grId>, MAYOR dist)]
@@ -316,18 +314,18 @@ def main():
 	
 	# lista_imp = implicit_recs(data_path= data_path, params= params_imp, items= user)
 
-	## SOLO PYTHON 3.x
+	## SOLO PYTHON 3.x y Alt. 2
 	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
 	which_model = 'google'
-	# 1. Flatten todos los docs del index en Solr
-	dict_docs =	flatten_all_docs(solr= solr, model= model, filter_extremes= True)
-	# 2. Guarda flatten docs
-	np.save('./w2v-tmp/flattened_docs_fea075b1.npy', dict_docs)
-	# 3. Embedding de los flattened docs
-	dict_docs =	docs2vecs(model= model) # (por dentro carga "./w2v-tmp/flattened_docs_fea075b1.npy")
-	# 4. Guarda los embeddings
-	np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', dict_docs)
-	# 5. Genera las recomendaciones
+	# # 1. Flatten todos los docs del index en Solr
+	# dict_docs =	flatten_all_docs(solr= solr, model= model, filter_extremes= True)
+	# # 2. Guarda flatten docs
+	# np.save('./w2v-tmp/flattened_docs_fea075b1.npy', dict_docs)
+	# # 3. Embedding de los flattened docs
+	# dict_docs =	docs2vecs(model= model) # (por dentro carga "./w2v-tmp/flattened_docs_fea075b1.npy")
+	# # 4. Guarda los embeddings
+	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', dict_docs)
+	# # 5. Genera las recomendaciones
 	lista_w2v = w2v_recs(data_path= data_path, which_model= which_model, items= user, userId="denis", model= model)
 	
 	# for item in lista_hyb:
