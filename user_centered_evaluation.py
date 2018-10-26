@@ -376,6 +376,7 @@ def main():
 	logging.info("---------------")
 	logging.info("RECOMENDADOR A")
 	logging.info("---------------")
+	logging.info(" ")
 	for item in lista_solr:
 		i += 1
 		url      = solr + '/select?q=goodreadsId:'+item+'&wt=json' # ex. item: 7144 (Crime and Punishment)
@@ -389,7 +390,7 @@ def main():
 		logging.info("- NOVEDOSO / ALGO NOVEDOSO / NO NOVEDOSO")
 		logging.info(" ")
 		if i==10: break
-	logging.info("Con repsecto al recomendador A:")
+	logging.info("Respecto al recomendador A:")
 	logging.info("- SATISFECHO / NO SATISFECHO")
 	logging.info(" ")
 	logging.info(" ")
@@ -399,6 +400,7 @@ def main():
 	logging.info("---------------")
 	logging.info("RECOMENDADOR B")
 	logging.info("---------------")
+	logging.info(" ")
 	for item in lista_imp:
 		i += 1
 		url      = solr + '/select?q=goodreadsId:'+item+'&wt=json'
@@ -412,13 +414,14 @@ def main():
 		logging.info("- NOVEDOSO / ALGO NOVEDOSO / NO NOVEDOSO")
 		logging.info(" ")
 		if i==10: break
-	logging.info("Con repsecto al recomendador B:")
+	logging.info("Respecto al recomendador B:")
 	logging.info("- SATISFECHO / NO SATISFECHO")
 
 	# i = 0
 	# logging.info("---------------")
 	# logging.info("RECOMENDADOR C")
 	# logging.info("---------------")
+	# logging.info(" ")
 	# for item in lista_w2v:
 	# 	i += 1
 	# 	url      = solr + '/select?q=goodreadsId:'+item+'&wt=json'
@@ -433,6 +436,7 @@ def main():
 	# 	logging.info(" ")
 	# 	if i==10: break
 	# logging.info("Con repsecto al recomendador C:")
+	# logging.info("Respecto al recomendador C:")
 	# logging.info("- SATISFECHO / NO SATISFECHO")	
 
 	# diversity_calculation(data_path= data_path, solr= solr, params_cb= params_solr, params_cf= params_imp, params_hy= params_hy)
