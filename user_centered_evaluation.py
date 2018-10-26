@@ -26,43 +26,14 @@
 # import logging
 # logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
-# #--------------------------------#
+#--------------------------------#
 # def diversity(l1, l2, N):
 # 	# Todos los de l2 que no están en l1
 # 	relative_complement = set( l2 ) - set( l1 )
 # 	diversity = len( relative_complement ) / float( N )
 
 # 	return diversity
-# def recs_cleaner(solr, consumpt_hrefs, recs):
-# 	# Saca todos los items cuyos hrefs ya los tenga el usuario
-# 	for item in recs:
-# 		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
-# 		response = json.loads( urlopen(url).read().decode('utf8') )
-# 		doc      = response['response']['docs'][0]
-# 		rec_href = doc['href'][0]
-# 		if rec_href in consumpt_hrefs: recs.remove(item)
-
-# 	# Saca todos los ítems con hrefs iguales
-# 	lista_dict = {}
-# 	for item in recs:
-# 		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
-# 		response = json.loads( urlopen(url).read().decode('utf8') )
-# 		doc      = response['response']['docs'][0]
-# 		rec_href = doc['href'][0]		
-# 		if rec_href not in lista_dict:
-# 			lista_dict[rec_href] = []
-# 		else:
-# 			lista_dict[rec_href].append( item )
-		
-# 	clean_recs = recs
-# 	rep_hrefs = []
-# 	for href in lista_dict: lista_dict[href] = lista_dict[href][:-1]
-# 	for href in lista_dict: rep_hrefs += lista_dict[href]
-
-# 	for rep_href in rep_hrefs: clean_recs.remove(rep_href)
-
-# 	return clean_recs
-# #--------------------------------#
+#--------------------------------#
 
 # def solr_recs(solr, params, items):
 # 	recs = []
@@ -219,6 +190,36 @@ def w2v_recs(data_path, solr, which_model, items, userId, model):
 
 	return recs
 
+def recs_cleaner(solr, consumpt_hrefs, recs):
+	# Saca todos los items cuyos hrefs ya los tenga el usuario
+	for item in recs:
+		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
+		response = json.loads( urlopen(url).read().decode('utf8') )
+		doc      = response['response']['docs'][0]
+		rec_href = doc['href'][0]
+		if rec_href in consumpt_hrefs: recs.remove(item)
+
+	# Saca todos los ítems con hrefs iguales
+	lista_dict = {}
+	for item in recs:
+		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
+		response = json.loads( urlopen(url).read().decode('utf8') )
+		doc      = response['response']['docs'][0]
+		rec_href = doc['href'][0]		
+		if rec_href not in lista_dict:
+			lista_dict[rec_href] = []
+		else:
+			lista_dict[rec_href].append( item )
+		
+	clean_recs = recs
+	rep_hrefs = []
+	for href in lista_dict: lista_dict[href] = lista_dict[href][:-1]
+	for href in lista_dict: rep_hrefs += lista_dict[href]
+
+	for rep_href in rep_hrefs: clean_recs.remove(rep_href)
+
+	return clean_recs
+	
 # def hybrid_recommendation(data_path, solr, params_cb, params_cf, params_hy, items):
 # 	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in items ]
 
