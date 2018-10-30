@@ -401,23 +401,33 @@ def main():
 	# Genera lista de bookIds desde busqueda en GR
 	# ids_list = get_books_from_gr_api(query="hola", api_key= api_key, api_secret= api_secret)
 	# Lista desde consumo de los usuarios del estudio
-	ids_list = ['84369',
-							'65641',
-							'84119',
-							'121749',
-							'65605',
-							'140225',
-							'7332',
-							'18512',
-							'15241',
-							'29579',
-							'23566799',
-							'13615',
-							'5907',
-							'100915',
-							'34',
-							'17157681',
-							'3']
+	ids_list = [
+							'297673',
+							'13037816',
+							'60371',
+							'60364',
+							'24529201',
+							'7779571',
+							'22041881',
+							'11869206',
+							'6745991',
+							'42424958',
+							'40595529',
+							'7056969',
+							'859888',
+							'7992363',
+							'41725366',
+							'24796',
+							'522776',
+							'5987468',
+							'23212883',
+							'10876733',
+							'41973399',
+							'22085341',
+							'18050082',
+							'1089597',
+							'8062894'
+							]
 
 	# # Lo hacemos gradual en caso que hayan problemas
 	# for i in range(10):
