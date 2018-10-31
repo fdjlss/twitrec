@@ -333,14 +333,14 @@ def new_booker(new_ids_list, DATA_PATH, BOOKS_PATH, NEW_SAVES):
 	saved_list     = [ book_url.split('.')[0].split('-')[0] for book_url in saved_list ] #capturamos el bookId desde la url ('3262719-more-than-meets-the-eye-official-guidebook-volume-2.html')
 	save_path_temp = os.path.join(DATA_PATH, NEW_SAVES)
 
-	copies = []
-	for bookId in new_ids_list:
-		if bookId in saved_list: 
-			logging.info("{} ya está descargado".format(bookId))
-			copies.append(bookId)
+	# copies = []
+	# for bookId in new_ids_list:
+	# 	if bookId in saved_list: 
+	# 		logging.info("{} ya está descargado".format(bookId))
+	# 		copies.append(bookId)
 
-	for bookId in copies:
-		new_ids_list.remove(bookId)
+	# for bookId in copies:
+	# 	new_ids_list.remove(bookId)
 
 	# Descargar libros a save_path (BOOKS_PATH) y a save_path_temp (NEW_SAVES)
 	prefix = 'https://www.goodreads.com/book/show/'
@@ -402,75 +402,7 @@ def main():
 	# ids_list = get_books_from_gr_api(query="hola", api_key= api_key, api_secret= api_secret)
 	# Lista desde consumo de los usuarios del estudio
 	ids_list = [
-							'18927777',
-							'29740489',
-							'34948542',
-							'34546496',
-							'36406402',
-							'34550147',
-							'24872479',
-							'34546480',
-							'23381203',
-							'18042462',
-							'18042459',
-							'34546558',
-							'27852745',
-							'34546505',
-							'23382497',
-							'23384429',
-							'24872400',
-							'18927785',
-							'23381215',
-							'23382498',
-							'17900389',
-							'24872366',
-							'13145328',
-							'25989238',
-							'17900370',
-							'19539271',
-							'17900388',
-							'17900362',
-							'12254015',
-							'18042460',
-							'12254020',
-							'17900364',
-							'23788065',
-							'20263218',
-							'22800468',
-							'22608495',
-							'22884125',
-							'25011719',
-							'23546982',
-							'17661519',
-							'13562860',
-							'36665733',
-							'30811396',
-							'36665721',
-							'36290178',
-							'15835797',
-							'18207591',
-							'23345520',
-							'23345514',
-							'23345527',
-							'23270963',
-							'10397256',
-							'7419434',
-							'7104807',
-							'23264935',
-							'23264934',
-							'23264932',
-							'23264926',
-							'29069989',
-							'41899',
-							'13153400',
-							'3398257',
-							'3398249',
-							'1620063',
-							'3235059',
-							'1408083',
-							'186669',
-							'77161',
-							'77160'
+						'17689'
 							]
 
 	# # Lo hacemos gradual en caso que hayan problemas
