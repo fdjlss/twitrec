@@ -1,192 +1,121 @@
 # coding=utf-8
-# import sys  
+import sys  
 
-# reload(sys)  
-# sys.setdefaultencoding('utf8')
+reload(sys)  
+sys.setdefaultencoding('utf8')
 
-# import os
-# import json
-# from urllib import urlencode, quote_plus
-# from urllib2 import urlopen
-
-# from sklearn.model_selection import train_test_split
-# from sklearn.feature_extraction import DictVectorizer
-# from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
-# import numpy as np
-# import pandas as pd
-# from pyfm import pylibfm
-
-# from svd_evaluation import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, user_ranked_recs, opt_value
-# from solr_evaluation import remove_consumed, flatten_list
-# from pyFM_evaluation import loadData
-# from implicit_evaluation import IdCoder, get_data
-# from hybrid_evaluation import hybridize_recs
-# import implicit
-
-# import logging
-# logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-
-#--------------------------------#
-# def diversity(l1, l2, N):
-# 	# Todos los de l2 que no están en l1
-# 	relative_complement = set( l2 ) - set( l1 )
-# 	diversity = len( relative_complement ) / float( N )
-
-# 	return diversity
-#--------------------------------#
-
-# def solr_recs(solr, params, items):
-# 	recs = []
-# 	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in items ]
-# 	for itemId in consumpt:
-# 		encoded_params = urlencode(params)
-# 		url            = solr + '/mlt?q=goodreadsId:'+ itemId + "&" + encoded_params
-# 		response       = json.loads( urlopen(url).read().decode('utf8') )
-# 		try:
-# 			docs         = response['response']['docs']
-# 		except:
-# 			continue
-# 		recs.append( [ str(doc['goodreadsId'][0]) for doc in docs ] )
-# 	recs = flatten_list(list_of_lists=recs, rows=params['rows'])
-# 	recs = remove_consumed(user_consumption= consumpt, rec_list= recs)
-# 	# recs = recs[:20]
-# 	return recs
-
-# def implicit_recs(data_path, params, items):
-# 	all_c   = consumption(ratings_path=data_path+'eval_all_N20.data', rel_thresh=0, with_ratings=True)
-
-# 	# Agregamos el nuevo usuario a los datos
-# 	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in items ]
-# 	new_user = ('0', dict((str(itemId), str(rating)) for itemId, rating, auth1, auth2, auth3 in items) ) #mock userId: '0'
-# 	all_c[ new_user[0] ] = new_user[1]
-# 	items_ids = list(set( [ itemId for userId, itemsDict in all_c.items() for itemId in itemsDict ] ))
-# 	idcoder   = IdCoder(items_ids, all_c.keys())
-
-# 	# get_data() de implicit_eval, pero usando TODA la data, no sólo el set de train
-# 	arrays  = {'items':[], 'users':[], 'data':[]}
-# 	for userId in all_c:
-# 		r_u = mean( map( int, all_c[userId].values() ) )
-# 		for itemId in all_c[userId]:
-# 			if int(all_c[userId][itemId]) >= r_u:
-# 				arrays['items'].append(int( idcoder.coder('item', itemId) ))
-# 				arrays['users'].append(int( idcoder.coder('user', userId) ))
-# 				arrays['data'].append(1)
-# 			else:
-# 				arrays['items'].append(int( idcoder.coder('item', itemId) ))
-# 				arrays['users'].append(int( idcoder.coder('user', userId) ))
-# 				arrays['data'].append(0)
-# 	ones = np.array( arrays['data'] )
-# 	row = arrays['items']
-# 	col = arrays['users']
-
-# 	matrix         = csr_matrix((ones, (row, col)), dtype=np.float64 )
-# 	user_items     = matrix.T.tocsr()
-# 	model          = implicit.als.AlternatingLeastSquares(factors= params['f'], regularization= params['lamb'], iterations= params['mi'], dtype= np.float64)
-# 	model.fit(matrix)
-
-# 	recs = model.recommend(userid= int(idcoder.coder('user', new_user[0])), user_items= user_items, N= 200)
-# 	recs = [ idcoder.decoder('item', tupl[0]) for tupl in recs ]
-# 	recs = remove_consumed(user_consumption= consumpt, rec_list= recs)
-# 	# recs = recs[:20]
-
-# 	return recs
-
-# def pyFM_recs(data_path, params, user):
-# 	all_data, y_all, items = loadData("eval_all_N20.data", data_path=data_path, with_timestamps=False, with_authors=True)
-	
-# 	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in items ]
-
-# 	for itemId, rating, auth1, auth2, auth3 in user:
-# 		all_data.append( { 'item_id': str(itemId), 'author1_id': str(auth1), 'author3_id': str(auth3)+'\n', 'user_id': '0', 'author2_id': str(auth2) } )
-# 		y_all = np.append(y_all, rating)
-# 		items.add( str(itemId) )
-
-# 	v = DictVectorizer()
-# 	X_all = v.fit_transform(all_data)
-
-# 	fm   = pylibfm.FM(num_factors=params['f'], num_iter=params['mi'], k0=params['bias'], k1=params['oneway'], init_stdev=params['init_stdev'], \
-# 									validation_size=params['val_size'], learning_rate_schedule=params['lr_s'], initial_learning_rate=params['lr'], \
-# 									power_t=params['invscale_pow'], t0=params['optimal_denom'], shuffle_training=params['shuffle'], seed=params['seed'], \
-# 									task='regression', verbose=True)
-# 	fm.fit(X_all, y_tr)
-
-# 	user_rows = [ {'user_id': '0', 'item_id': str(itemId)} for itemId in items ]
-# 	X_te      = v.transform(user_rows)
-# 	preds     = fm.predict(X_te)
-# 	recs      = [itemId for _, itemId in sorted(zip(preds, items), reverse=True)]
-# 	recs      = remove_consumed(user_consumption= consumpt, rec_list= recs)
-# 	recs      = recs[:20]
-
-# 	return recs
-
-# SOLO EN PYTHON 3.X
-from gensim.models import KeyedVectors
-from word2vec_evaluation import doc2vec, docs2vecs
-from wmd_evaluation import flat_doc, flat_user, get_extremes, flatten_all_docs
-from svd_evaluation import remove_consumed
-from urllib.request import urlopen
-from svd_evaluation import consumption
+import os
 import json
+from urllib import urlencode, quote_plus
+from urllib2 import urlopen
+
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction import DictVectorizer
+from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
 import numpy as np
-from scipy import spatial
-import operator
+import pandas as pd
+from pyfm import pylibfm
+
+from svd_evaluation import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, user_ranked_recs, opt_value
+from solr_evaluation import remove_consumed, flatten_list
+from pyFM_evaluation import loadData
+from implicit_evaluation import IdCoder, get_data
+from hybrid_evaluation import hybridize_recs
+import implicit
+
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-def w2v_recs(data_path, solr, which_model, items, userId, model):
-	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
-	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
+
+--------------------------------#
+def diversity(l1, l2, N):
+	# Todos los de l2 que no están en l1
+	relative_complement = set( l2 ) - set( l1 )
+	diversity = len( relative_complement ) / float( N )
+
+	return diversity
+--------------------------------#
+
+def solr_recs(solr, params, items):
+	recs = []
 	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in items ]
+	for itemId in consumpt:
+		encoded_params = urlencode(params)
+		url            = solr + '/mlt?q=goodreadsId:'+ itemId + "&" + encoded_params
+		response       = json.loads( urlopen(url).read().decode('utf8') )
+		try:
+			docs         = response['response']['docs']
+		except:
+			continue
+		recs.append( [ str(doc['goodreadsId'][0]) for doc in docs ] )
+	recs = flatten_list(list_of_lists=recs, rows=params['rows'])
+	recs = remove_consumed(user_consumption= consumpt, rec_list= recs)
+	# recs = recs[:20]
+	return recs
+
+def implicit_recs(data_path, params, items):
+	all_c   = consumption(ratings_path=data_path+'eval_all_N20.data', rel_thresh=0, with_ratings=True)
+
+	# Agregamos el nuevo usuario a los datos
+	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in items ]
+	new_user = ('0', dict((str(itemId), str(rating)) for itemId, rating, auth1, auth2, auth3 in items) ) #mock userId: '0'
+	all_c[ new_user[0] ] = new_user[1]
+	items_ids = list(set( [ itemId for userId, itemsDict in all_c.items() for itemId in itemsDict ] ))
+	idcoder   = IdCoder(items_ids, all_c.keys())
+
+	# get_data() de implicit_eval, pero usando TODA la data, no sólo el set de train
+	arrays  = {'items':[], 'users':[], 'data':[]}
+	for userId in all_c:
+		r_u = mean( map( int, all_c[userId].values() ) )
+		for itemId in all_c[userId]:
+			if int(all_c[userId][itemId]) >= r_u:
+				arrays['items'].append(int( idcoder.coder('item', itemId) ))
+				arrays['users'].append(int( idcoder.coder('user', userId) ))
+				arrays['data'].append(1)
+			else:
+				arrays['items'].append(int( idcoder.coder('item', itemId) ))
+				arrays['users'].append(int( idcoder.coder('user', userId) ))
+				arrays['data'].append(0)
+	ones = np.array( arrays['data'] )
+	row = arrays['items']
+	col = arrays['users']
+
+	matrix         = csr_matrix((ones, (row, col)), dtype=np.float64 )
+	user_items     = matrix.T.tocsr()
+	model          = implicit.als.AlternatingLeastSquares(factors= params['f'], regularization= params['lamb'], iterations= params['mi'], dtype= np.float64)
+	model.fit(matrix)
+
+	recs = model.recommend(userid= int(idcoder.coder('user', new_user[0])), user_items= user_items, N= 200)
+	recs = [ idcoder.decoder('item', tupl[0]) for tupl in recs ]
+	recs = remove_consumed(user_consumption= consumpt, rec_list= recs)
+	# recs = recs[:20]
+
+	return recs
+
+def pyFM_recs(data_path, params, user):
+	all_data, y_all, items = loadData("eval_all_N20.data", data_path=data_path, with_timestamps=False, with_authors=True)
 	
+	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in items ]
 
-	# Alt 1: en docs2vec & users2vec no están los libros nuevos y el usuario nuevo, entonces hago acá el embedding manualmente y luego los guardo 
-	flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
-	extremes = get_extremes(flat_docs= flat_docs, n_below= 1, n_above= len(flat_docs) * 0.75)
-	flat_user_books = {}
-	for itemId, rating, auth1, auth2, auth3 in items:
-		logging.info("Flattening item {}".format(itemId))
-		url      = solr + '/query?q=goodreadsId:' + str(itemId)
-		response = json.loads( urlopen(url).read().decode('utf8') )
-		doc      = response['response']['docs']
-		flat_user_books[itemId] = flat_doc(document= doc[0], model= model, extremes= extremes)
-	flat_dude = flat_user(flat_docs= flat_user_books, consumption= consumpt)
-	embd_user = doc2vec(list_document= flat_dude, model= model)
+	for itemId, rating, auth1, auth2, auth3 in user:
+		all_data.append( { 'item_id': str(itemId), 'author1_id': str(auth1), 'author3_id': str(auth3)+'\n', 'user_id': '0', 'author2_id': str(auth2) } )
+		y_all = np.append(y_all, rating)
+		items.add( str(itemId) )
 
-	embd_user_books = {}
-	for itemId, flat_item in flat_user_books.items():
-		embd_user_books[itemId] = doc2vec(list_document= flat_item, model= model)
+	v = DictVectorizer()
+	X_all = v.fit_transform(all_data)
 
-	docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
-	for itemId in embd_user_books:
-		docs2vec[itemId] = embd_user_books[itemId]
-	np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', docs2vec) #
+	fm   = pylibfm.FM(num_factors=params['f'], num_iter=params['mi'], k0=params['bias'], k1=params['oneway'], init_stdev=params['init_stdev'], \
+									validation_size=params['val_size'], learning_rate_schedule=params['lr_s'], initial_learning_rate=params['lr'], \
+									power_t=params['invscale_pow'], t0=params['optimal_denom'], shuffle_training=params['shuffle'], seed=params['seed'], \
+									task='regression', verbose=True)
+	fm.fit(X_all, y_tr)
 
-	distances = dict((bookId, 0.0) for bookId in docs2vec)
-	for bookId in docs2vec:
-		distances[bookId] = spatial.distance.cosine(embd_user, docs2vec[bookId])
-
-
-	# Alt 2: en docs2vec y flattened_docs ya están los libros nuevos, dado que corrí el pipeline para hacer el embedding de todos los libros del index (incluídos los nuevos)
-	# (sería lo adecuado si es que descargo libros adicionales de GR a parte de los libros de los usuarios de prueba)
-	# flat_docs = np.load('./w2v-tmp/flattened_docs_fea075b1.npy').item()
-	# flat_user_books = dict( (itemId, flat_docs[itemId]) for itemId, rating, auth1, auth2, auth3 in items )
-	# flat_dude = flat_user(flat_docs= flat_user_books, consumption= consumpt)
-	# embd_user = doc2vec(list_document= flat_dude, model= model)
-	# docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
-	# distances = dict((bookId, 0.0) for bookId in docs2vec)
-	# for bookId in docs2vec:
-	# 	distances[bookId] = spatial.distance.cosine(embd_user, docs2vec[bookId])
-
-	# LA RECOMENDACIÓN
-	sorted_sims = sorted(distances.items(), key=operator.itemgetter(1), reverse=False) #[(<grId>, MENOR dist), ..., (<grId>, MAYOR dist)]
-	recs   = [ bookId for bookId, sim in sorted_sims ]
-	recs   = remove_consumed(user_consumption=consumpt, rec_list=recs)
-
-	# Por si necesito usar el usuario para subsiguientes recomendaciones con w2v 
-	users2vec = np.load('./w2v-tmp/'+which_model+'/users2vec_books_'+which_model+'.npy').item()
-	# Si es que es user de GR: ID de GR
-	# Si no: mock ID ("A0", "A1", etc..)
-	users2vec[userId] = embd_user
-	np.save('./w2v-tmp/'+which_model+'/users2vec_books_'+which_model+'.npy', users2vec) 
+	user_rows = [ {'user_id': '0', 'item_id': str(itemId)} for itemId in items ]
+	X_te      = v.transform(user_rows)
+	preds     = fm.predict(X_te)
+	recs      = [itemId for _, itemId in sorted(zip(preds, items), reverse=True)]
+	recs      = remove_consumed(user_consumption= consumpt, rec_list= recs)
+	recs      = recs[:20]
 
 	return recs
 
@@ -220,68 +149,68 @@ def recs_cleaner(solr, consumpt_hrefs, recs):
 
 	return clean_recs
 	
-# def hybrid_recommendation(data_path, solr, params_cb, params_cf, params_hy, items):
-# 	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in items ]
+def hybrid_recommendation(data_path, solr, params_cb, params_cf, params_hy, items):
+	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in items ]
 
-# 	recs_cb = solr_recs(solr= solr, params= params_cb, items= items)
-# 	recs_cf = implicit_recs(data_path= data_path, params= params_cf, items= items)
+	recs_cb = solr_recs(solr= solr, params= params_cb, items= items)
+	recs_cf = implicit_recs(data_path= data_path, params= params_cf, items= items)
 
-# 	recs_hy = hybridize_recs(recs_cb=recs_cb, recs_cf=recs_cf, weight_cb=params_hy['weight_cb'], weight_cf=params_hy['weight_cf'])
-# 	recs_hy = remove_consumed(user_consumption= consumpt, rec_list= recs_hy)
-# 	# recs_hy = recs_hy[:20]
+	recs_hy = hybridize_recs(recs_cb=recs_cb, recs_cf=recs_cf, weight_cb=params_hy['weight_cb'], weight_cf=params_hy['weight_cf'])
+	recs_hy = remove_consumed(user_consumption= consumpt, rec_list= recs_hy)
+	# recs_hy = recs_hy[:20]
 
-# 	return recs_hy
+	return recs_hy
 
-# def diversity_calculation(data_path, solr, params_cb, params_cf, params_hy):
-# 	diversity_hy_cb = []
-# 	diversity_hy_cf = []
-# 	diversity_cb_cf = []
+def diversity_calculation(data_path, solr, params_cb, params_cf, params_hy):
+	diversity_hy_cb = []
+	diversity_hy_cf = []
+	diversity_cb_cf = []
 
-# 	all_c   = consumption(ratings_path= data_path+'eval_all_N20.data', rel_thresh= 0, with_ratings= True)
-# 	items_ids = list(set( [ itemId for userId, itemsDict in all_c.items() for itemId in itemsDict ] ))
-# 	idcoder   = IdCoder(items_ids, all_c.keys())
+	all_c   = consumption(ratings_path= data_path+'eval_all_N20.data', rel_thresh= 0, with_ratings= True)
+	items_ids = list(set( [ itemId for userId, itemsDict in all_c.items() for itemId in itemsDict ] ))
+	idcoder   = IdCoder(items_ids, all_c.keys())
 
-# 	ones, row, col = get_data(data_path= data_path, all_c= all_c, idcoder= idcoder, fold= 0, N= 20, mode= "testing")
-# 	matrix         = csr_matrix((ones, (row, col)), dtype=np.float64 )
-# 	user_items     = matrix.T.tocsr()
-# 	model          = implicit.als.AlternatingLeastSquares(factors= params_cf['f'], regularization= params_cf['lamb'], iterations= params_cf['mi'], dtype= np.float64)
-# 	model.fit(matrix)
+	ones, row, col = get_data(data_path= data_path, all_c= all_c, idcoder= idcoder, fold= 0, N= 20, mode= "testing")
+	matrix         = csr_matrix((ones, (row, col)), dtype=np.float64 )
+	user_items     = matrix.T.tocsr()
+	model          = implicit.als.AlternatingLeastSquares(factors= params_cf['f'], regularization= params_cf['lamb'], iterations= params_cf['mi'], dtype= np.float64)
+	model.fit(matrix)
 
-# 	i = 0
-# 	for userId in all_c: 
-# 		i += 1
-# 		logging.info("user {0} of {1}".format(i, len(all_c)))
-# 		recommends = model.recommend(userid= int(idcoder.coder('user', userId)), user_items= user_items, N= 200)
-# 		recs_cf    = [ idcoder.decoder('item', tupl[0]) for tupl in recommends ]
-# 		recs_cf    = remove_consumed(user_consumption= all_c[userId], rec_list= recs_cf)
-# 		recs_cf    = recs_cf[:20]
+	i = 0
+	for userId in all_c: 
+		i += 1
+		logging.info("user {0} of {1}".format(i, len(all_c)))
+		recommends = model.recommend(userid= int(idcoder.coder('user', userId)), user_items= user_items, N= 200)
+		recs_cf    = [ idcoder.decoder('item', tupl[0]) for tupl in recommends ]
+		recs_cf    = remove_consumed(user_consumption= all_c[userId], rec_list= recs_cf)
+		recs_cf    = recs_cf[:20]
 
-# 		recs_cb = []
-# 		for itemId in all_c[userId]:
-# 			encoded_params = urlencode(params_cb)
-# 			url            = solr + '/mlt?q=goodreadsId:'+ itemId + "&" + encoded_params
-# 			response       = json.loads( urlopen(url).read().decode('utf8') )
-# 			try:
-# 				docs           = response['response']['docs']
-# 			except:
-# 				continue
-# 			recs_cb.append( [ str(doc['goodreadsId'][0]) for doc in docs ] )
-# 		recs_cb = flatten_list(list_of_lists=recs_cb, rows=params_cb['rows'])
-# 		recs_cb = remove_consumed(user_consumption= all_c[userId], rec_list= recs_cb)
-# 		recs_cb = recs_cb[:20]
+		recs_cb = []
+		for itemId in all_c[userId]:
+			encoded_params = urlencode(params_cb)
+			url            = solr + '/mlt?q=goodreadsId:'+ itemId + "&" + encoded_params
+			response       = json.loads( urlopen(url).read().decode('utf8') )
+			try:
+				docs           = response['response']['docs']
+			except:
+				continue
+			recs_cb.append( [ str(doc['goodreadsId'][0]) for doc in docs ] )
+		recs_cb = flatten_list(list_of_lists=recs_cb, rows=params_cb['rows'])
+		recs_cb = remove_consumed(user_consumption= all_c[userId], rec_list= recs_cb)
+		recs_cb = recs_cb[:20]
 
-# 		recs_hy = hybridize_recs(recs_cb= recs_cb, recs_cf= recs_cf, weight_cb= params_hy['weight_cb'], weight_cf= params_hy['weight_cf'])
-# 		recs_hy = remove_consumed(user_consumption= all_c[userId], rec_list= recs_hy)
-# 		recs_hy = recs_hy[:20]
+		recs_hy = hybridize_recs(recs_cb= recs_cb, recs_cf= recs_cf, weight_cb= params_hy['weight_cb'], weight_cf= params_hy['weight_cf'])
+		recs_hy = remove_consumed(user_consumption= all_c[userId], rec_list= recs_hy)
+		recs_hy = recs_hy[:20]
 
-# 		diversity_hy_cb.append( diversity(l1= recs_hy, l2= recs_cb, N= 20) )
-# 		diversity_hy_cf.append( diversity(l1= recs_hy, l2= recs_cf, N= 20) )
-# 		diversity_cb_cf.append( diversity(l1= recs_cb, l2= recs_cf, N= 20) )
+		diversity_hy_cb.append( diversity(l1= recs_hy, l2= recs_cb, N= 20) )
+		diversity_hy_cf.append( diversity(l1= recs_hy, l2= recs_cf, N= 20) )
+		diversity_cb_cf.append( diversity(l1= recs_cb, l2= recs_cf, N= 20) )
 
-# 	logging.info("Diversities")
-# 	logging.info("L1: HY. L2: CB \t {}".format( mean(diversity_hy_cb) ))
-# 	logging.info("L1: HY. L2: CF \t {}".format( mean(diversity_hy_cf) ))
-# 	logging.info("L1: CB. L2: CF \t {}".format( mean(diversity_cb_cf) ))
+	logging.info("Diversities")
+	logging.info("L1: HY. L2: CB \t {}".format( mean(diversity_hy_cb) ))
+	logging.info("L1: HY. L2: CF \t {}".format( mean(diversity_hy_cf) ))
+	logging.info("L1: CB. L2: CF \t {}".format( mean(diversity_cb_cf) ))
 
 
 
@@ -317,7 +246,7 @@ def main():
 							'init_stdev':0.0001}
 	params_hy = {'weight_cb': 0.9, 'weight_cf': 0.1}
 
-	user = [('8267287', 0, '5650904', '83881', '0'), 
+	denis = [('8267287', 0, '5650904', '83881', '0'), 
 					 ('158014', 0, '1113469', '0', '0'), 
 					 ('230514', 0, '134770', '0', '0'),
 					 ('19508', 0, '909675', '0', '0'),
@@ -341,6 +270,155 @@ def main():
 					 ('847635', 0, '201906', '0', '0'),
 					 ('13031462', 0, '25591', '0', '0'),
 					 ('214319', 0, '51808', '0', '0')] #[ (itemId, rating, authId1, authId2, authId3) ]
+	reschilling=[
+								(	'84369',4,'1069006','0','0'),
+								(	'65641',3,'1069006','25523','0'),
+								(	'84119',4,'1069006','0','0'),
+								(	'121749',3,'1069006','0','0'),
+								(	'65605',4,'1069006','0','0'),
+								(	'140225',3,'1069006','0','0'),
+								(	'7332',5,'656983','9533','4938'),
+								(	'18512',5,'656983','0','0'),
+								(	'15241',5,'656983','0','0'),
+								(	'29579',0,'16667','0','0'),
+								(	'23566799',5,'6567626','0','0'),
+								(	'13615',5,'15577045','0','0'),
+								(	'5907',5,'656983','0','0'),
+								(	'100915',3,'1069006','0','0'),
+								(	'34',5,'656983','0','0'),
+								(	'17157681',5,'656983','0','0'),
+								(	'3',4,'1077326','0','0')]
+	andrescarvallo = [
+										('297673', 5, '55215', '0', '0'),
+										('13037816', 3, '5324300', '242659', '0'),
+										('60371', 2, '34031', '0', '0'),
+										('60364', 3, '34031', '3874874', '0'),
+										('24529201', 2, '34031', '3197885', '0'),
+										('7779571', 3, '34031', '222757', '0'),
+										('22041881', 3, '766034', '0', '0'),
+										('11869206', 5, '766034', '0', '0'),
+										('6745991', 5, '766034', '0', '0'),
+										('42424958', 4, '1063732', '0', '0'),
+										('40595529', 3, '4725841', '0', '0'),
+										('7056969', 4, '4142981', '0', '0'),
+										('859888', 5, '2934', '0', '0'),
+										('7992363', 4, '3465954', '0', '0'),
+										('41725366', 4, '1662945', '0', '0'),
+										('24796', 3, '2238', '0', '0'),
+										('522776', 3, '289953', '0', '0'),
+										('5987468', 5, '706255', '4967061', '0'),
+										('23212883', 4, '395812', '0', '0'),
+										('10876733', 5, '43139', '0', '0'),
+										('41973399', 3, '9887', '0', '0'),
+										('22085341', 4, '822613', '3098123', '0'),
+										('18050082', 5, '38457', '0', '0'),
+										('1089597', 3, '38457', '0', '0'),
+										('8062894', 5, '38457', '0', '0')
+											]
+	mfsepulveda = [
+									('41804', 3, '16667', '0', '0'),
+									('7082', 3, '4764', '0', '0'),
+									('1836303', 5, '957894', '1086744', '0'),
+									('2998', 3, '2041', '0', '0'),
+									('52036', 4, '1113469', '0', '0'),
+									('17689', 4, '877884', '3070002', '5223'),
+									('485894', 5, '5223', '0', '0'),
+									('157993', 5, '1020792', '0', '0'),
+									('23704928', 5, '13661', '0', '0'),
+									('1470844', 1, '21778', '0', '0'),
+									('916114', 4, '227771', '0', '0'),
+									('53447', 4, '5775606', '0', '0'),
+									('11531083', 3, '13450', '0', '0'),
+									('54008', 3, '25824', '0', '0'),
+									('370523', 5, '13450', '0', '0'),
+									('7144', 5, '3137322', '0', '0'),
+									('40961427', 4, '3706', '0', '0'),
+									('457264', 4, '5548', '0', '0'),
+									('36525023', 5, '97783', '0', '0'),
+									('2099048', 0, '35668', '0', '0'),
+									('7278752', 2, '3389', '0', '0'),
+									('6320534', 1, '3389', '0', '0'),
+									('10614', 2, '3389', '0', '0'),
+									('292228', 5, '27804', '0', '0'),
+									('42428455', 4, '27804', '0', '0'),
+									('67932', 5, '27804', '0', '0'),
+									('16141559', 3, '27804', '0', '0'),
+									('67931', 4, '27804', '0', '0')
+										]
+	hfvaldivieso = [
+									('18927777', 0, '9640322', '0', '0'),
+									('29740489', 5, '9640322', '0', '0'),
+									('34948542', 0, '9640322', '0', '0'),
+									('34546496', 0, '9640322', '0', '0'),
+									('36406402', 0, '9640322', '0', '0'),
+									('34550147', 5, '9640322', '0', '0'),
+									('24872479', 5, '9640322', '0', '0'),
+									('34546480', 0, '9640322', '0', '0'),
+									('23381203', 0, '9640322', '0', '0'),
+									('18042462', 0, '9640322', '0', '0'),
+									('18042459', 0, '9640322', '0', '0'),
+									('34546558', 0, '9640322', '0', '0'),
+									('27852745', 5, '9640322', '0', '0'),
+									('34546505', 0, '9640322', '0', '0'),
+									('23382497', 5, '9640322', '0', '0'),
+									('23384429', 5, '9640322', '0', '0'),
+									('24872400', 0, '9640322', '0', '0'),
+									('18927785', 0, '9640322', '0', '0'),
+									('23381215', 0, '9640322', '0', '0'),
+									('23382498', 0, '9640322', '0', '0'),
+									('17900389', 5, '9640322', '0', '0'),
+									('24872366', 0, '9640322', '0', '0'),
+									('13145328', 5, '9640322', '0', '0'),
+									('25989238', 5, '9640322', '0', '0'),
+									('17900370', 5, '9640322', '0', '0'),
+									('19539271', 5, '9640322', '0', '0'),
+									('17900388', 5, '9640322', '0', '0'),
+									('17900362', 5, '9640322', '0', '0'),
+									('12254015', 5, '9640322', '0', '0'),
+									('18042460', 5, '9640322', '0', '0'),
+									('12254020', 5, '9640322', '0', '0'),
+									('17900364', 5, '9640322', '0', '0'),
+									('23788065', 5, '9640322', '0', '0'),
+									('20263218', 4, '7009690', '0', '0'),
+									('22800468', 4, '7009690', '0', '0'),
+									('22608495', 4, '7009690', '0', '0'),
+									('22884125', 4, '7009690', '0', '0'),
+									('25011719', 4, '7009690', '0', '0'),
+									('23546982', 4, '7009690', '0', '0'),
+									('17661519', 4, '7009690', '0', '0'),
+									('13562860', 0, '1351002', '0', '0'),
+									('36665733', 5, '17177260', '0', '0'),
+									('30811396', 1, '6293730', '0', '0'),
+									('36665721', 5, '17177260', '0', '0'),
+									('36290178', 5, '17177260', '0', '0'),
+									('15835797', 0, '6472544', '0', '0'),
+									('18207591', 0, '7022844', '0', '0'),
+									('23345520', 5, '14010620', '0', '0'),
+									('23345514', 5, '14010620', '0', '0'),
+									('23345527', 5, '14010620', '0', '0'),
+									('23270963', 5, '14010620', '0', '0'),
+									('10397256', 3, '5786', '0', '0'),
+									('7419434', 2, '5786', '0', '0'),
+									('7104807', 2, '43697', '0', '0'),
+									('23264935', 5, '8591556', '0', '0'),
+									('23264934', 5, '8591556', '0', '0'),
+									('23264932', 5, '8591556', '0', '0'),
+									('23264926', 5, '8591556', '0', '0'),
+									('29069989', 3, '5042201', '3439408', '1077326'),
+									('41899', 3, '57983', '1077326', '0'),
+									('13153400', 4, '1510073', '0', '0'),
+									('3398257', 5, '700231', '0', '0'),
+									('3398249', 5, '700231', '0', '0'),
+									('1620063', 5, '700231', '0', '0'),
+									('3235059', 5, '700231', '0', '0'),
+									('1408083', 4, '43784', '0', '0'),
+									('186669', 5, '43784', '0', '0'),
+									('77161', 5, '43784', '0', '0'),
+									('77160', 5, '43784', '0', '0')
+										]
+
+	user = reschilling
+	
 	hrefs = []
 	for itemId, rating, author1, author, author3 in user:
 		url      = solr + '/select?q=goodreadsId:' + itemId + '&wt=json' 
@@ -349,78 +427,42 @@ def main():
 		hrefs.append( doc['href'][0] )
 
 	# lista_hyb = hybrid_recommendation(data_path= data_path, solr= solr, params_cb= params_solr, params_cf= params_imp, params_hy= params_hy, items= user)
-	# lista_solr = solr_recs(solr= solr, params= params_solr, items= user)
-	
-	# lista_imp = implicit_recs(data_path= data_path, params= params_imp, items= user)
-
-	# # SOLO PYTHON 3.x y Alt. 2
-	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
-	which_model = 'google'
-	# # 1. Flatten todos los docs del index en Solr
-	# dict_docs =	flatten_all_docs(solr= solr, model= model, filter_extremes= True)
-	# # 2. Guarda flatten docs
-	# np.save('./w2v-tmp/flattened_docs_fea075b1.npy', dict_docs)
-	# # 3. Embedding de los flattened docs
-	# dict_docs =	docs2vecs(model= model) # (por dentro carga "./w2v-tmp/flattened_docs_fea075b1.npy")
-	# # 4. Guarda los embeddings
-	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', dict_docs)
-	# # 5. Genera las recomendaciones
-	lista_w2v = w2v_recs(data_path= data_path, solr= solr, which_model= which_model, items= user, userId="denis", model= model)
+	lista_solr = solr_recs(solr= solr, params= params_solr, items= user)
+	lista_imp = implicit_recs(data_path= data_path, params= params_imp, items= user)
 	
 	# lista_hyb = recs_cleaner(solr= solr, consumpt_hrefs= hrefs, recs= lista_hyb)
-	# lista_solr = recs_cleaner(solr= solr, consumpt_hrefs= hrefs, recs= lista_solr)
-	# lista_imp = recs_cleaner(solr= solr, consumpt_hrefs= hrefs, recs= lista_imp)
-	lista_w2v = recs_cleaner(solr= solr, consumpt_hrefs= hrefs, recs= lista_w2v)
+	lista_solr = recs_cleaner(solr= solr, consumpt_hrefs= hrefs, recs= lista_solr)
+	lista_imp = recs_cleaner(solr= solr, consumpt_hrefs= hrefs, recs= lista_imp)
 
-
-	# i = 0
-	# logging.info("---------------")
-	# logging.info("RECOMENDADOR A")
-	# logging.info("---------------")
-	# for item in lista_solr:
-	# 	i += 1
-	# 	url      = solr + '/select?q=goodreadsId:'+item+'&wt=json' # ex. item: 7144 (Crime and Punishment)
-	# 	response = json.loads( urlopen(url).read().decode('utf8') )
-	# 	doc      = response['response']['docs'][0]
-	# 	logging.info(i)
-	# 	logging.info("Título: " + doc['title.titleOfficial'][0])
-	# 	logging.info("Autor: " + doc['author.authors.authorName'][0])
-	# 	logging.info("URL: " + doc['href'][0])
-	# 	logging.info("- RELEVANTE / ALGO RELEVANTE / IRRELEVANTE")
-	# 	logging.info("- NOVEDOSO / ALGO NOVEDOSO / NO NOVEDOSO")
-	# 	logging.info(" ")
-	# 	if i==10: break
-	# logging.info("Respecto al recomendador A:")
-	# logging.info("- SATISFECHO / NO SATISFECHO")
-	# logging.info(" ")
-	# logging.info(" ")
-
-
-	# i = 0
-	# logging.info("---------------")
-	# logging.info("RECOMENDADOR B")
-	# logging.info("---------------")
-	# for item in lista_imp:
-	# 	i += 1
-	# 	url      = solr + '/select?q=goodreadsId:'+item+'&wt=json'
-	# 	response = json.loads( urlopen(url).read().decode('utf8') )
-	# 	doc      = response['response']['docs'][0]
-	# 	logging.info(i)
-	# 	logging.info("Título: " + doc['title.titleOfficial'][0])
-	# 	logging.info("Autor: " + doc['author.authors.authorName'][0])
-	# 	logging.info("URL: " + doc['href'][0])
-	# 	logging.info("- RELEVANTE / ALGO RELEVANTE / IRRELEVANTE")
-	# 	logging.info("- NOVEDOSO / ALGO NOVEDOSO / NO NOVEDOSO")
-	# 	logging.info(" ")
-	# 	if i==10: break
-	# logging.info("Respecto al recomendador B:")
-	# logging.info("- SATISFECHO / NO SATISFECHO")
 
 	i = 0
 	logging.info("---------------")
-	logging.info("RECOMENDADOR C")
+	logging.info("RECOMENDADOR A")
 	logging.info("---------------")
-	for item in lista_w2v:
+	for item in lista_solr:
+		i += 1
+		url      = solr + '/select?q=goodreadsId:'+item+'&wt=json' # ex. item: 7144 (Crime and Punishment)
+		response = json.loads( urlopen(url).read().decode('utf8') )
+		doc      = response['response']['docs'][0]
+		logging.info(i)
+		logging.info("Título: " + doc['title.titleOfficial'][0])
+		logging.info("Autor: " + doc['author.authors.authorName'][0])
+		logging.info("URL: " + doc['href'][0])
+		logging.info("- RELEVANTE / ALGO RELEVANTE / IRRELEVANTE")
+		logging.info("- NOVEDOSO / ALGO NOVEDOSO / NO NOVEDOSO")
+		logging.info(" ")
+		if i==10: break
+	logging.info("Respecto al recomendador A:")
+	logging.info("- SATISFECHO / NO SATISFECHO")
+	logging.info(" ")
+	logging.info(" ")
+
+
+	i = 0
+	logging.info("---------------")
+	logging.info("RECOMENDADOR B")
+	logging.info("---------------")
+	for item in lista_imp:
 		i += 1
 		url      = solr + '/select?q=goodreadsId:'+item+'&wt=json'
 		response = json.loads( urlopen(url).read().decode('utf8') )
@@ -433,9 +475,8 @@ def main():
 		logging.info("- NOVEDOSO / ALGO NOVEDOSO / NO NOVEDOSO")
 		logging.info(" ")
 		if i==10: break
-	logging.info("Con repsecto al recomendador C:")
-	logging.info("Respecto al recomendador C:")
-	logging.info("- SATISFECHO / NO SATISFECHO")	
+	logging.info("Respecto al recomendador B:")
+	logging.info("- SATISFECHO / NO SATISFECHO")
 
 	# diversity_calculation(data_path= data_path, solr= solr, params_cb= params_solr, params_cf= params_imp, params_hy= params_hy)
 
