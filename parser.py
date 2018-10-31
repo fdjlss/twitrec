@@ -333,14 +333,14 @@ def new_booker(new_ids_list, DATA_PATH, BOOKS_PATH, NEW_SAVES):
 	saved_list     = [ book_url.split('.')[0].split('-')[0] for book_url in saved_list ] #capturamos el bookId desde la url ('3262719-more-than-meets-the-eye-official-guidebook-volume-2.html')
 	save_path_temp = os.path.join(DATA_PATH, NEW_SAVES)
 
-	# copies = []
-	# for bookId in new_ids_list:
-	# 	if bookId in saved_list: 
-	# 		logging.info("{} ya está descargado".format(bookId))
-	# 		copies.append(bookId)
+	copies = []
+	for bookId in new_ids_list:
+		if bookId in saved_list: 
+			logging.info("{} ya está descargado".format(bookId))
+			copies.append(bookId)
 
-	# for bookId in copies:
-	# 	new_ids_list.remove(bookId)
+	for bookId in copies:
+		new_ids_list.remove(bookId)
 
 	# Descargar libros a save_path (BOOKS_PATH) y a save_path_temp (NEW_SAVES)
 	prefix = 'https://www.goodreads.com/book/show/'
