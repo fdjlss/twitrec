@@ -421,6 +421,7 @@ def main():
 
 	hrefs = []
 	for itemId, rating, author1, author, author3 in user:
+		logging.info(itemId)
 		url      = solr + '/select?q=goodreadsId:' + itemId + '&wt=json' 
 		response = json.loads( urlopen(url).read().decode('utf8') )
 		doc      = response['response']['docs'][0]
