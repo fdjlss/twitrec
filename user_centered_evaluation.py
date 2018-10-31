@@ -26,14 +26,14 @@ import implicit
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
---------------------------------#
+#--------------------------------#
 def diversity(l1, l2, N):
 	# Todos los de l2 que no están en l1
 	relative_complement = set( l2 ) - set( l1 )
 	diversity = len( relative_complement ) / float( N )
 
 	return diversity
---------------------------------#
+#--------------------------------#
 
 def solr_recs(solr, params, items):
 	recs = []
@@ -418,7 +418,7 @@ def main():
 										]
 
 	user = reschilling
-	
+
 	hrefs = []
 	for itemId, rating, author1, author, author3 in user:
 		url      = solr + '/select?q=goodreadsId:' + itemId + '&wt=json' 
