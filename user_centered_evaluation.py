@@ -442,7 +442,7 @@ def main():
 							('25855506', 0, '14144506', '0', '0')
 								]
 	
-	user = alan004
+	user = evelonce
 
 	hrefs = []
 	for itemId, rating, author1, author, author3 in user:
