@@ -333,14 +333,14 @@ def new_booker(new_ids_list, DATA_PATH, BOOKS_PATH, NEW_SAVES):
 	saved_list     = [ book_url.split('.')[0].split('-')[0] for book_url in saved_list ] #capturamos el bookId desde la url ('3262719-more-than-meets-the-eye-official-guidebook-volume-2.html')
 	save_path_temp = os.path.join(DATA_PATH, NEW_SAVES)
 
-	# copies = []
-	# for bookId in new_ids_list:
-	# 	if bookId in saved_list: 
-	# 		logging.info("{} ya está descargado".format(bookId))
-	# 		copies.append(bookId)
+	copies = []
+	for bookId in new_ids_list:
+		if bookId in saved_list: 
+			logging.info("{} ya está descargado".format(bookId))
+			copies.append(bookId)
 
-	# for bookId in copies:
-	# 	new_ids_list.remove(bookId)
+	for bookId in copies:
+		new_ids_list.remove(bookId)
 
 	# Descargar libros a save_path (BOOKS_PATH) y a save_path_temp (NEW_SAVES)
 	prefix = 'https://www.goodreads.com/book/show/'
@@ -402,7 +402,26 @@ def main():
 	# ids_list = get_books_from_gr_api(query="hola", api_key= api_key, api_secret= api_secret)
 	# Lista desde consumo de los usuarios del estudio
 	ids_list = [
-						'17689'
+							'1202',
+							'129327',
+							'5129',
+							'5470',
+							'19288043',
+							'9969571',
+							'29059',
+							'7076703',
+							'375802',
+							'9460487',
+							'15783514',
+							'186074',
+							'3',
+							'31685789',
+							'11387515',
+							'8909152',
+							'15745753',
+							'16068905',
+							'20820994',
+							'25855506'
 							]
 
 	# # Lo hacemos gradual en caso que hayan problemas
