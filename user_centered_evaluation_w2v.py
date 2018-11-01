@@ -73,7 +73,7 @@ def w2v_recs(data_path, solr, which_model, items, userId, model):
 
 def recs_cleaner(solr, consumpt_hrefs, recs):
 	# Saca todos los items cuyos hrefs ya los tenga el usuario
-	for item in recs:
+	for item in reversed(recs):
 		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
 		response = json.loads( urlopen(url).read().decode('utf8') )
 		doc      = response['response']['docs'][0]
@@ -89,6 +89,7 @@ def recs_cleaner(solr, consumpt_hrefs, recs):
 		rec_href = doc['href'][0]		
 		if rec_href not in lista_dict:
 			lista_dict[rec_href] = []
+			lista_dict[rec_href].append( item )
 		else:
 			lista_dict[rec_href].append( item )
 		
@@ -101,7 +102,6 @@ def recs_cleaner(solr, consumpt_hrefs, recs):
 
 	return clean_recs
 	
-
 
 def main():
 	data_path_context = 'TwitterRatings/funkSVD/data_with_authors/'
@@ -303,7 +303,7 @@ def main():
 							('25855506', 0, '14144506', '0', '0')
 								]
 	
-	user = alan004
+	user = reschilling
 
 	hrefs = []
 	for itemId, rating, author1, author, author3 in user:
@@ -324,7 +324,7 @@ def main():
 	# # 4. Guarda los embeddings
 	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', dict_docs)
 	# # 5. Genera las recomendaciones
-	lista_w2v = w2v_recs(data_path= data_path, solr= solr, which_model= which_model, items= user, userId="hfvaldivieso", model= model)
+	lista_w2v = w2v_recs(data_path= data_path, solr= solr, which_model= which_model, items= user, userId="reschilling", model= model)
 	lista_w2v = recs_cleaner(solr= solr, consumpt_hrefs= hrefs, recs= lista_w2v)
 
 

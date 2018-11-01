@@ -121,7 +121,7 @@ def pyFM_recs(data_path, params, user):
 
 def recs_cleaner(solr, consumpt_hrefs, recs):
 	# Saca todos los items cuyos hrefs ya los tenga el usuario
-	for item in recs:
+	for item in reversed(recs):
 		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
 		response = json.loads( urlopen(url).read().decode('utf8') )
 		doc      = response['response']['docs'][0]
@@ -137,6 +137,7 @@ def recs_cleaner(solr, consumpt_hrefs, recs):
 		rec_href = doc['href'][0]		
 		if rec_href not in lista_dict:
 			lista_dict[rec_href] = []
+			lista_dict[rec_href].append( item )
 		else:
 			lista_dict[rec_href].append( item )
 		
@@ -441,7 +442,7 @@ def main():
 							('25855506', 0, '14144506', '0', '0')
 								]
 	
-	user = alan004
+	user = reschilling
 
 	hrefs = []
 	for itemId, rating, author1, author, author3 in user:
