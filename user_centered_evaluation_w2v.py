@@ -426,7 +426,7 @@ def main():
 								('102868', 5, '2448', '0', '0'),
 								('13599706', 5, '5816342', '0', '0')]
 
-	user = carlarc28
+	user = flowerscata
 
 	hrefs = []
 	for itemId, rating, author1, author, author3 in user:
@@ -447,7 +447,7 @@ def main():
 	# # 4. Guarda los embeddings
 	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', dict_docs)
 	# # 5. Genera las recomendaciones
-	lista_w2v = w2v_recs(data_path= data_path, solr= solr, which_model= which_model, items= user, userId="carlarc28", model= model)
+	lista_w2v = w2v_recs(data_path= data_path, solr= solr, which_model= which_model, items= user, userId="flowerscata", model= model)
 	lista_w2v = recs_cleaner(solr= solr, consumpt_hrefs= hrefs, recs= lista_w2v)
 
 
