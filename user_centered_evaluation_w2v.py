@@ -425,8 +425,30 @@ def main():
 								('485894', 5, '5223', '141558', '0'),
 								('102868', 5, '2448', '0', '0'),
 								('13599706', 5, '5816342', '0', '0')]
-
-	user = flowerscata
+	jonathan = [('3', 5, '1077326', '2927', '3911856'),
+							('5', 4, '1077326', '2927', '0'),
+							('15881', 4, '1077326', '2927', '1946159'),
+							('6', 5, '1077326', '2927', '0'),
+							('2', 5, '1077326', '2927', '0'),
+							('1', 5, '1077326', '2927', '0'),
+							('526071', 5, '11586', '0', '0'),
+							('618177', 5, '11586', '0', '0'),
+							('613991', 5, '11586', '0', '0'),
+							('568099', 5, '11586', '0', '0'),
+							('870808', 5, '11586', '0', '0'),
+							('613994', 5, '11586', '0', '0'),
+							('568102', 5, '11586', '0', '0'),
+							('568116', 5, '11586', '0', '0'),
+							('9361589', 5, '4370565', '0', '0'),
+							('384962', 5, '11586', '0', '0'),
+							('19298', 5, '11586', '0', '0'),
+							('433567', 3, '3093075', '168631', '0'),
+							('9460487', 4, '3046613', '0', '0'),
+							('41044147', 4, '3046613', '0', '0'),
+							('1845', 5, '1235', '0', '0')
+							]
+	
+	user = jonathan
 
 	hrefs = []
 	for itemId, rating, author1, author, author3 in user:
@@ -447,7 +469,7 @@ def main():
 	# # 4. Guarda los embeddings
 	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', dict_docs)
 	# # 5. Genera las recomendaciones
-	lista_w2v = w2v_recs(data_path= data_path, solr= solr, which_model= which_model, items= user, userId="flowerscata", model= model)
+	lista_w2v = w2v_recs(data_path= data_path, solr= solr, which_model= which_model, items= user, userId="jonathan", model= model)
 	lista_w2v = recs_cleaner(solr= solr, consumpt_hrefs= hrefs, recs= lista_w2v)
 
 
