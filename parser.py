@@ -402,7 +402,8 @@ def main():
 	# ids_list = get_books_from_gr_api(query="hola", api_key= api_key, api_secret= api_secret)
 	# Lista desde consumo de los usuarios del estudio
 	ids_list = [
-						'14289306'
+						'14289306',
+						'16127270'
 							]
 
 	# # Lo hacemos gradual en caso que hayan problemas
