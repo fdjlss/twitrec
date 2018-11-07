@@ -16,10 +16,7 @@ def recs_cleaner(solr, consumpt, recs):
 	for itemId in consumpt:
 		url      = solr + '/select?q=goodreadsId:' + itemId + '&wt=json' 
 		response = json.loads( urlopen(url).read().decode('utf8') )
-		try:
-			doc      = response['response']['docs'][0]
-		except:
-			logging.info(itemId)
+		doc      = response['response']['docs'][0]
 		consumpt_hrefs.append( doc['href'][0] )
 
 	# Saca todos los items cuyos hrefs ya los tenga el usuario
@@ -82,6 +79,7 @@ def option1Job(data_path, solr, params, N):
 		train_c = consumption(ratings_path=data_path+'train/train_N'+str(N)+'.'+str(i), rel_thresh=0, with_ratings=False)
 		val_c   = consumption(ratings_path=data_path+'val/val_N'+str(N)+'.'+str(i), rel_thresh=0, with_ratings=True)
 		for userId in train_c:
+			if i==1: logging.info("User: {}".format(str(i), str(userId)))
 			book_recs = []
 			for itemId in train_c[userId]:
 				encoded_params = urlencode(params)
