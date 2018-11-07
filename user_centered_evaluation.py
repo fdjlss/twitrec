@@ -1,8 +1,4 @@
 # coding=utf-8
-import sys  
-
-reload(sys)  
-sys.setdefaultencoding('utf8')
 
 import os
 import json
@@ -119,7 +115,15 @@ def pyFM_recs(data_path, params, user):
 
 	return recs
 
-def recs_cleaner(solr, consumpt_hrefs, recs):
+def recs_cleaner(solr, consumpt, recs):
+	# Ve los canonical hrefs de los items consumidos
+	consumpt_hrefs = []
+	for itemId in consumpt:
+		url      = solr + '/select?q=goodreadsId:' + itemId + '&wt=json' 
+		response = json.loads( urlopen(url).read().decode('utf8') )
+		doc      = response['response']['docs'][0]
+		consumpt_hrefs.append( doc['href'][0] )
+
 	# Saca todos los items cuyos hrefs ya los tenga el usuario
 	for item in reversed(recs):
 		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
@@ -217,6 +221,11 @@ def diversity_calculation(data_path, solr, params_cb, params_cf, params_hy):
 
 
 def main():
+	import sys  
+
+	reload(sys)  
+	sys.setdefaultencoding('utf8')
+
 	data_path_context = 'TwitterRatings/funkSVD/data_with_authors/'
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = "http://localhost:8983/solr/grrecsys"
@@ -588,23 +597,18 @@ def main():
 							]
 
 	user = jonathan
+	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in user ]
 
 
 
-	hrefs = []
-	for itemId, rating, author1, author, author3 in user:
-		url      = solr + '/select?q=goodreadsId:' + itemId + '&wt=json' 
-		response = json.loads( urlopen(url).read().decode('utf8') )
-		doc      = response['response']['docs'][0]
-		hrefs.append( doc['href'][0] )
 
 	# lista_hyb = hybrid_recommendation(data_path= data_path, solr= solr, params_cb= params_solr, params_cf= params_imp, params_hy= params_hy, items= user)
 	lista_solr = solr_recs(solr= solr, params= params_solr, items= user)
 	lista_imp = implicit_recs(data_path= data_path, params= params_imp, items= user)
 	
-	# lista_hyb = recs_cleaner(solr= solr, consumpt_hrefs= hrefs, recs= lista_hyb)
-	lista_solr = recs_cleaner(solr= solr, consumpt_hrefs= hrefs, recs= lista_solr)
-	lista_imp = recs_cleaner(solr= solr, consumpt_hrefs= hrefs, recs= lista_imp)
+	# lista_hyb = recs_cleaner(solr= solr, consumpts= consumpt, recs= lista_hyb)
+	lista_solr = recs_cleaner(solr= solr, consumpts= consumpt, recs= lista_solr)
+	lista_imp = recs_cleaner(solr= solr, consumpts= consumpt, recs= lista_imp)
 
 
 	i = 0
