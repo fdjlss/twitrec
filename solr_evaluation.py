@@ -16,7 +16,10 @@ def recs_cleaner(solr, consumpt, recs):
 	for itemId in consumpt:
 		url      = solr + '/select?q=goodreadsId:' + itemId + '&wt=json' 
 		response = json.loads( urlopen(url).read().decode('utf8') )
-		doc      = response['response']['docs'][0]
+		try:
+			doc      = response['response']['docs'][0]
+		except:
+			logging.info(itemId)
 		consumpt_hrefs.append( doc['href'][0] )
 
 	# Saca todos los items cuyos hrefs ya los tenga el usuario
@@ -92,7 +95,7 @@ def option1Job(data_path, solr, params, N):
 
 			book_recs = flatten_list(list_of_lists=book_recs, rows=params['rows'])
 			book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
-			book_recs = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs)
+			book_recs = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:50])
 			try:
 				recs = user_ranked_recs(user_recs=book_recs, user_consumpt=val_c[userId]) #...puede que en val. no esté el mismo usuario...
 			except KeyError as e:
@@ -127,7 +130,7 @@ def option2Job(data_path, solr, params, N):
 				continue 
 			book_recs      = [ str(doc['goodreadsId'][0]) for doc in docs] 
 			book_recs      = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
-			book_recs      = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs)
+			book_recs      = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:50])
 			try:
 				recs         = user_ranked_recs(user_recs=book_recs, user_consumpt=val_c[userId]) #...puede que en val. no esté el mismo usuario...
 			except KeyError as e:
@@ -367,7 +370,7 @@ def option1_protocol_evaluation(data_path, solr, params):
 
 		book_recs = flatten_list(list_of_lists=book_recs, rows=params['rows'])
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
-		book_recs = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs)
+		book_recs = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:50])
 		try:
 			recs = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
 		except KeyError as e:
@@ -406,7 +409,7 @@ def option2_protocol_evaluation(data_path, solr, params):
 			continue
 		book_recs      = [ str(doc['goodreadsId'][0]) for doc in docs] 
 		book_recs      = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
-		book_recs      = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs)
+		book_recs      = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:50])
 		try:
 			recs         = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
 		except KeyError as e:
