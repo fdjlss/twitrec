@@ -5,12 +5,50 @@ import re, json
 from urllib import urlencode, quote_plus
 from urllib2 import urlopen
 from svd_evaluation import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, user_ranked_recs, opt_value
-from user_centered_evaluation import recs_cleaner
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 
 #-----"PRIVATE" METHODS----------#
+def recs_cleaner(solr, consumpt, recs):
+	# Ve los canonical hrefs de los items consumidos
+	consumpt_hrefs = []
+	for itemId in consumpt:
+		url      = solr + '/select?q=goodreadsId:' + itemId + '&wt=json' 
+		response = json.loads( urlopen(url).read().decode('utf8') )
+		doc      = response['response']['docs'][0]
+		consumpt_hrefs.append( doc['href'][0] )
+
+	# Saca todos los items cuyos hrefs ya los tenga el usuario
+	for item in reversed(recs):
+		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
+		response = json.loads( urlopen(url).read().decode('utf8') )
+		doc      = response['response']['docs'][0]
+		rec_href = doc['href'][0]
+		if rec_href in consumpt_hrefs: recs.remove(item)
+
+	# Saca todos los ítems con hrefs iguales
+	lista_dict = {}
+	for item in recs:
+		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
+		response = json.loads( urlopen(url).read().decode('utf8') )
+		doc      = response['response']['docs'][0]
+		rec_href = doc['href'][0]		
+		if rec_href not in lista_dict:
+			lista_dict[rec_href] = []
+			lista_dict[rec_href].append( item )
+		else:
+			lista_dict[rec_href].append( item )
+		
+	clean_recs = recs
+	rep_hrefs = []
+	for href in lista_dict: lista_dict[href] = lista_dict[href][:-1]
+	for href in lista_dict: rep_hrefs += lista_dict[href]
+
+	for rep_href in rep_hrefs: clean_recs.remove(rep_href)
+
+	return clean_recs
+
 def encoded_itemIds(item_list):
 	ids_string = '('
 	for itemId in item_list: ids_string += itemId + '%2520OR%2520'
