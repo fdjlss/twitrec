@@ -5,6 +5,7 @@ import re, json
 from urllib import urlencode, quote_plus
 from urllib2 import urlopen
 from svd_evaluation import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, user_ranked_recs, opt_value
+from user_centered_evaluation import recs_cleaner
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
@@ -53,6 +54,7 @@ def option1Job(data_path, solr, params, N):
 
 			book_recs = flatten_list(list_of_lists=book_recs, rows=params['rows'])
 			book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+			book_recs = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs)
 			try:
 				recs = user_ranked_recs(user_recs=book_recs, user_consumpt=val_c[userId]) #...puede que en val. no esté el mismo usuario...
 			except KeyError as e:
@@ -87,6 +89,7 @@ def option2Job(data_path, solr, params, N):
 				continue 
 			book_recs      = [ str(doc['goodreadsId'][0]) for doc in docs] 
 			book_recs      = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+			book_recs      = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs)
 			try:
 				recs         = user_ranked_recs(user_recs=book_recs, user_consumpt=val_c[userId]) #...puede que en val. no esté el mismo usuario...
 			except KeyError as e:
@@ -189,11 +192,11 @@ def option1_tuning(data_path, solr, N):
 				results['mlt.boost'][i] = option1Job(data_path=data_path, solr=solr, params=defaults, N=N)
 			defaults['mlt.boost']  = opt_value(results=results['mlt.boost'], metric='ndcg')
 
-	with open('TwitterRatings/CB/option1_opt_params.txt', 'w') as f:
+	with open('TwitterRatings/CB/clean/option1_opt_params.txt', 'w') as f:
 		for param in defaults:
 			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
 
-	with open('TwitterRatings/CB/option1_params_ndcgs.txt', 'w') as f:
+	with open('TwitterRatings/CB/clean/option1_params_ndcgs.txt', 'w') as f:
 		for param in param_names:
 			for value in results[param]:
 				f.write( "{param}={value}\t : {nDCG}\n".format(param=param, value=value, nDCG=results[param][value]) )
@@ -292,17 +295,16 @@ def option2_tuning(data_path, solr, N):
 				results['mlt.boost'][i] = option2Job(data_path=data_path, solr=solr, params=defaults, N=N)
 			defaults['mlt.boost']  = opt_value(results=results['mlt.boost'], metric='ndcg')
 
-	with open('TwitterRatings/CB/option2_opt_params.txt', 'w') as f:
+	with open('TwitterRatings/CB/clean/option2_opt_params.txt', 'w') as f:
 		for param in defaults:
 			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
 
-	with open('TwitterRatings/CB/option2_params_ndcgs.txt', 'w') as f:
+	with open('TwitterRatings/CB/clean/option2_params_ndcgs.txt', 'w') as f:
 		for param in param_names:
 			for value in results[param]:
 				f.write( "{param}={value}\t : {nDCG}\n".format(param=param, value=value, nDCG=results[param][value]) )
 
 	return defaults
-
 
 
 def option1_protocol_evaluation(data_path, solr, params):
@@ -327,6 +329,7 @@ def option1_protocol_evaluation(data_path, solr, params):
 
 		book_recs = flatten_list(list_of_lists=book_recs, rows=params['rows'])
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+		book_recs = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs)
 		try:
 			recs = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
 		except KeyError as e:
@@ -341,7 +344,7 @@ def option1_protocol_evaluation(data_path, solr, params):
 			Rprecs[N].append( R_precision(n_relevants=N, recs=mini_recs) )
 
 	for N in [5, 10, 15, 20]:
-		with open('TwitterRatings/CB/option1_protocol.txt', 'a') as file:
+		with open('TwitterRatings/CB/clean/option1_protocol.txt', 'a') as file:
 			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
 
@@ -365,6 +368,7 @@ def option2_protocol_evaluation(data_path, solr, params):
 			continue
 		book_recs      = [ str(doc['goodreadsId'][0]) for doc in docs] 
 		book_recs      = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+		book_recs      = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs)
 		try:
 			recs         = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
 		except KeyError as e:
@@ -380,17 +384,13 @@ def option2_protocol_evaluation(data_path, solr, params):
 
 
 	for N in [5, 10, 15, 20]:
-		with open('TwitterRatings/CB/option2_protocol.txt', 'a') as file:
+		with open('TwitterRatings/CB/clean/option2_protocol.txt', 'a') as file:
 			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = "http://localhost:8983/solr/grrecsys"
-	# q = 'goodreadsId:{goodreadsId}'
-	# rows = 100
-	# fl = 'id,goodreadsId,title.titleOfficial,rating.ratingAvg,genres.genreName,description'
-	# option1(solr=solr, q=q, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50])
 	params_o1 = option1_tuning(data_path=data_path, solr=solr, N=20)
 	params_o2 = option2_tuning(data_path=data_path, solr=solr, N=20)
 	# params_o1 = {'echoParams' : 'none',
