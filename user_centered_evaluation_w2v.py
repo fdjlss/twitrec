@@ -2,11 +2,11 @@
 
 # SOLO EN PYTHON 3.X
 from gensim.models import KeyedVectors
+from urllib.request import urlopen
 from word2vec_evaluation import doc2vec, docs2vecs
 from wmd_evaluation import flat_doc, flat_user, get_extremes, flatten_all_docs
-from svd_evaluation import remove_consumed
-from urllib.request import urlopen
-from svd_evaluation import consumption
+from svd_evaluation import remove_consumed, consumption
+from user_centered_evaluation import recs_cleaner
 import json
 import numpy as np
 from scipy import spatial
@@ -71,37 +71,6 @@ def w2v_recs(data_path, solr, which_model, items, userId, model):
 
 	return recs
 
-def recs_cleaner(solr, consumpt_hrefs, recs):
-	# Saca todos los items cuyos hrefs ya los tenga el usuario
-	for item in reversed(recs):
-		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
-		response = json.loads( urlopen(url).read().decode('utf8') )
-		doc      = response['response']['docs'][0]
-		rec_href = doc['href'][0]
-		if rec_href in consumpt_hrefs: recs.remove(item)
-
-	# Saca todos los ítems con hrefs iguales
-	lista_dict = {}
-	for item in recs:
-		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
-		response = json.loads( urlopen(url).read().decode('utf8') )
-		doc      = response['response']['docs'][0]
-		rec_href = doc['href'][0]		
-		if rec_href not in lista_dict:
-			lista_dict[rec_href] = []
-			lista_dict[rec_href].append( item )
-		else:
-			lista_dict[rec_href].append( item )
-		
-	clean_recs = recs
-	rep_hrefs = []
-	for href in lista_dict: lista_dict[href] = lista_dict[href][:-1]
-	for href in lista_dict: rep_hrefs += lista_dict[href]
-
-	for rep_href in rep_hrefs: clean_recs.remove(rep_href)
-
-	return clean_recs
-	
 
 def main():
 	data_path_context = 'TwitterRatings/funkSVD/data_with_authors/'
@@ -447,15 +416,70 @@ def main():
 							('41044147', 4, '3046613', '0', '0'),
 							('1845', 5, '1235', '0', '0')
 							]
-	
-	user = jonathan
+	davidramos = [('7686895', 0, '515936', '2883587', '0'),
+			('39305616', 5, '11139', '0', '0'),
+			('13596431', 2, '4086715', '6557957', '0'),
+			('39895022', 0, '17959533', '0', '0'),
+			('77197', 0, '25307', '0', '0'),
+			('68428', 0, '38550', '0', '0'),
+			('10790290', 0, '2063919', '0', '0'),
+			('2046416', 4, '854076', '0', '0'),
+			('199986', 0, '4841825', '0', '0'),
+			('38738686', 4, '9494', '17738753', '0'),
+			('34910695', 4, '16667', '0', '0'),
+			('8286272', 5, '38569', '0', '0'),
+			('28763485', 0, '7353006', '0', '0'),
+			('18692431', 4, '7353006', '14168236', '0'),
+			('6527736', 0, '130698', '3283470', '0'),
+			('25480342', 0, '370361', '0', '0'),
+			('23677341', 0, '3130410', '0', '0'),
+			('34267481', 0, '15188175', '5435313', '15036328'),
+			('23692271', 0, '395812', '0', '0'),
+			('24226473', 4, '552745', '11688539', '0'),
+			('28097465', 5, '1205863', '0', '0'),
+			('30317786', 5, '6423138', '3856312', '0'),
+			('2007710', 5, '8649', '0', '0'),
+			('12000020', 5, '4841310', '0', '0'),
+			('554397', 4, '16667', '5301196', '16978367'),
+			('39072389', 0, '18313', '0', '0'),
+			('4599920', 3, '21574', '0', '0'),
+			('35648196', 3, '1221698', '6232', '0'),
+			('29396738', 0, '35022', '377312', '6560735'),
+			('19547856', 4, '7579036', '0', '0'),
+			('735385', 3, '16667', '86135', '0'),
+			('11858915', 4, '16667', '3283470', '0'),
+			('13328412', 4, '346732', '0', '0'),
+			('37759583', 4, '18313', '93095', '0'),
+			('33827036', 5, '6423138', '3856312', '14437528'),
+			('9613140', 0, '1205863', '0', '0'),
+			('6943224', 0, '8649', '455319', '0'),
+			('6956434', 3, '874602', '35620', '0'),
+			('31944219', 0, '18327', '0', '0'),
+			('36647156', 5, '15556297', '0', '0'),
+			('25601005', 4, '874602', '0', '0'),
+			('13327818', 5, '346732', '0', '0'),
+			('147844', 0, '85545', '0', '0'),
+			('34351737', 5, '552745', '0', '0'),
+			('29776773', 4, '552745', '11688539', '0'),
+			('25555087', 4, '874602', '0', '0'),
+			('23310457', 5, '4053861', '827316', '0'),
+			('6942763', 4, '8649', '0', '0'),
+			('10199294', 5, '38569', '0', '0'),
+			('35006276', 5, '16792887', '0', '0'),
+			('18459983', 0, '569', '0', '0'),
+			('27223130', 5, '88506', '2751991', '0'),
+			('10180167', 4, '38569', '2055096', '0'),
+			('6345999', 5, '5502079', '2999618', '15577045'),
+			('22371586', 4, '37450', '61367', '3458263'),
+			('43739', 5, '12772', '24605', '0'),
+			('32042344', 5, '2688', '0', '0'),
+			('472331', 5, '3961', '13285', '106526'),
+			('8776687', 5, '38569', '0', '0'),
+			]
 
-	hrefs = []
-	for itemId, rating, author1, author, author3 in user:
-		url      = solr + '/select?q=goodreadsId:' + itemId + '&wt=json' 
-		response = json.loads( urlopen(url).read().decode('utf8') )
-		doc      = response['response']['docs'][0]
-		hrefs.append( doc['href'][0] )
+	user = davidramos
+	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in user ]
+
 
 	# # SOLO PYTHON 3.x y Alt. 2
 	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
@@ -469,8 +493,8 @@ def main():
 	# # 4. Guarda los embeddings
 	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', dict_docs)
 	# # 5. Genera las recomendaciones
-	lista_w2v = w2v_recs(data_path= data_path, solr= solr, which_model= which_model, items= user, userId="jonathan", model= model)
-	lista_w2v = recs_cleaner(solr= solr, consumpt_hrefs= hrefs, recs= lista_w2v)
+	lista_w2v = w2v_recs(data_path= data_path, solr= solr, which_model= which_model, items= user, userId="davidramos", model= model)
+	lista_w2v = recs_cleaner(solr= solr, consumpts= consumpt, recs= lista_w2v)
 
 
 	i = 0
@@ -490,7 +514,6 @@ def main():
 		logging.info("- NOVEDOSO / ALGO NOVEDOSO / NO NOVEDOSO")
 		logging.info(" ")
 		if i==10: break
-	logging.info("Con repsecto al recomendador C:")
 	logging.info("Respecto al recomendador C:")
 	logging.info("- SATISFECHO / NO SATISFECHO")	
 
