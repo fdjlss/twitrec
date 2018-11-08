@@ -2,6 +2,7 @@
 
 import os
 import json
+from urllib import urlencode, quote_plus
 from urllib2 import urlopen
 
 from sklearn.model_selection import train_test_split
@@ -220,7 +221,6 @@ def diversity_calculation(data_path, solr, params_cb, params_cf, params_hy):
 
 
 def main():
-	from urllib import urlencode, quote_plus
 	import sys  
 
 	reload(sys)  
