@@ -494,7 +494,7 @@ def main():
 	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', dict_docs)
 	# # 5. Genera las recomendaciones
 	lista_w2v = w2v_recs(data_path= data_path, solr= solr, which_model= which_model, items= user, userId="davidramos", model= model)
-	lista_w2v = recs_cleaner(solr= solr, consumpts= consumpt, recs= lista_w2v)
+	lista_w2v = recs_cleaner(solr= solr, consumpt= consumpt, recs= lista_w2v)
 
 
 	i = 0

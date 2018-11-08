@@ -668,9 +668,9 @@ def main():
 	lista_solr = solr_recs(solr= solr, params= params_solr, items= user)
 	lista_imp = implicit_recs(data_path= data_path, params= params_imp, items= user)
 	
-	# lista_hyb = recs_cleaner(solr= solr, consumpts= consumpt, recs= lista_hyb)
-	lista_solr = recs_cleaner(solr= solr, consumpts= consumpt, recs= lista_solr)
-	lista_imp = recs_cleaner(solr= solr, consumpts= consumpt, recs= lista_imp)
+	# lista_hyb = recs_cleaner(solr= solr, consumpt= consumpt, recs= lista_hyb)
+	lista_solr = recs_cleaner(solr= solr, consumpt= consumpt, recs= lista_solr)
+	lista_imp = recs_cleaner(solr= solr, consumpt= consumpt, recs= lista_imp)
 
 
 	i = 0
