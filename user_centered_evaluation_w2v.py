@@ -6,7 +6,7 @@ from urllib.request import urlopen
 from word2vec_evaluation import doc2vec, docs2vecs
 from wmd_evaluation import flat_doc, flat_user, get_extremes, flatten_all_docs
 from svd_evaluation import remove_consumed, consumption
-from user_centered_evaluation import recs_cleaner
+# from user_centered_evaluation import recs_cleaner
 import json
 import numpy as np
 from scipy import spatial
