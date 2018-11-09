@@ -1077,7 +1077,7 @@ def main():
 			('8921', 5, '2448', '6331', '0')
 			]
 
-	user = fpcattan
+	user = alainray
 	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in user ]
 
 
@@ -1093,7 +1093,7 @@ def main():
 	# # 4. Guarda los embeddings
 	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', dict_docs)
 	# # 5. Genera las recomendaciones
-	lista_w2v = w2v_recs(data_path= data_path, solr= solr, which_model= which_model, items= user, userId="fpcattan", model= model)
+	lista_w2v = w2v_recs(data_path= data_path, solr= solr, which_model= which_model, items= user, userId="alainray", model= model)
 	lista_w2v = recs_cleaner(solr= solr, consumpt= consumpt, recs= lista_w2v)
 
 

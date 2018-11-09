@@ -1214,7 +1214,7 @@ def main():
 			('8921', 5, '2448', '6331', '0')
 			]
 
-	user = fpcattan
+	user = alainray
 	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in user ]
 
 	# lista_hyb = hybrid_recommendation(data_path= data_path, solr= solr, params_cb= params_solr, params_cf= params_imp, params_hy= params_hy, items= user)
