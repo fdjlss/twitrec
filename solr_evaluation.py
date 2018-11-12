@@ -186,7 +186,7 @@ def option2_tuning(data_path, solr, N):
 
 	param_names = ['mlt.fl', 'mlt.boost', 'mlt.mintf', 'mlt.mindf', 'mlt.minwl', 'mlt.maxdf', 'mlt.maxwl', 'mlt.maxqt', 'mlt.maxntp']
 	solr_fields = ['goodreadsId', 'description', 'title.titleOfficial', 'genres.genreName', 'author.authors.authorName', 'quotes.quoteText', 'author.authorBio', 'title.titleGreytext']
-	mlt_fields  = {1:'description', 2:'title.titleOfficial', 3:'genres.genreName', 4:'author.authors.authorName', 5:'quotes.quoteText'}
+	mlt_fields  = {1:'description', 2:'title.titleOfficial', 3:'genres.genreName', 4:'author.authors.authorName', 5:'author.authors.authorName,description', 6:'author.authors.authorName,description,title.titleOfficial', 7:'quotes.quoteText', 8:'description,title.titleOfficial,genres.genreName,author.authors.authorName,quotes.quoteText'}
 	defaults = {'echoParams' : 'none',
 							'fl' : ','.join(solr_fields),#'goodreadsId,'+ mlt_fields[1],
 							'rows' : 100,
@@ -370,7 +370,7 @@ def option2_protocol_evaluation(data_path, solr, params):
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = "http://localhost:8983/solr/grrecsys"
-	params_o1 = option1_tuning(data_path=data_path, solr=solr, N=20)
+	# params_o1 = option1_tuning(data_path=data_path, solr=solr, N=20)
 	params_o2 = option2_tuning(data_path=data_path, solr=solr, N=20)
 	# params_o1 = {'echoParams' : 'none',
 	# 						'fl' : 'goodreadsId,description,title.titleOfficial,genres.genreName,author.authors.authorName,quotes.quoteText,author.authorBio,title.titleGreytext',
@@ -397,7 +397,7 @@ def main():
 	# 						'mlt.maxqt' : 40, #def: 25
 	# 						'mlt.maxntp' : 150000 }
 	# for N in [5, 10, 15, 20]:
-	option1_protocol_evaluation(data_path=data_path, solr=solr, params=params_o1)
+	# option1_protocol_evaluation(data_path=data_path, solr=solr, params=params_o1)
 	option2_protocol_evaluation(data_path=data_path, solr=solr, params=params_o2)
 	# option1_testing(data_path=data_path, solr=solr, topN=[5, 10, 15, 20, 50], params=params_o1)
 	# option2_testing(data_path=data_path, solr=solr, topN=[5, 10, 15, 20, 50], params=params_o2)
