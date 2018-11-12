@@ -275,6 +275,7 @@ def svd_tuning(data_path):
 	return defaults
 
 def svd_protocol_evaluation(data_path, params):
+	solr = "http://localhost:8983/solr/grrecsys"
 	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True) #debiera ser el test_c, pero como includeRated=False, da lo mismo
 	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
 	svd = pyreclab.SVD( dataset   = data_path+'eval_train_N20.data',
@@ -320,7 +321,6 @@ def svd_protocol_evaluation(data_path, params):
 
 
 def main():
-	solr = "http://localhost:8983/solr/grrecsys"
 	data_path = 'TwitterRatings/funkSVD/data/'
 	# opt_params = svd_tuning(data_path= data_path)
 	# RMSEMAE_distr(output_filename="results_8020.txt")
