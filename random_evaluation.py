@@ -4,8 +4,7 @@ import sqlite3
 import re, json
 import os
 from random import sample
-from svd_evaluation import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, user_ranked_recs, opt_value
-from solr_evaluation import remove_consumed
+from utils_py2 import *
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 

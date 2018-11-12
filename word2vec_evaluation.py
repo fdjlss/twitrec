@@ -8,8 +8,8 @@ import os
 import json
 from urllib.parse import urlencode, quote_plus
 from urllib.request import urlopen
-from svd_evaluation import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, remove_consumed, user_ranked_recs, opt_value
-from wmd_evaluation import flat_doc, flat_user
+from utils_py2 import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, remove_consumed, user_ranked_recs, opt_value
+from utils_py3 import flat_doc, flat_user, doc2vec, docs2vecs, remove_consumed, flatten_list, encoded_itemIds
 import numpy as np
 from scipy import spatial
 import operator
@@ -24,60 +24,12 @@ stop_words = set(stopwords.words('spanish') + stopwords.words('english') + stopw
 CUSTOM_FILTERS = [lambda x: x.lower(), strip_tags, strip_punctuation, strip_multiple_whitespaces, strip_numeric]
 
 #-----"PRIVATE" METHODS----------#
-# Los mismos que solr_evaluation
-# ya que gensim no está para 2.x 
-def encoded_itemIds(item_list):
-	ids_string = '('
-	for itemId in item_list: ids_string += itemId + '%20OR%20'
-	ids_string = ids_string[:-8] # para borrar el último "%20OR%20"
-	ids_string += ')'
-	return ids_string
-
-def flatten_list(list_of_lists, rows):
-	"""Eliminamos duplicados manteniendo orden"""
-	flattened = []
-	for i in range(0, rows): #asumimos que todas las listas tienen largo "rows"
-		for j in range(0, len(list_of_lists)):
-			try:
-				flattened.append( list_of_lists[j][i] )
-			except IndexError as e:
-				continue
-	return sorted(set(flattened), key=lambda x: flattened.index(x))
-
-def remove_consumed(user_consumption, rec_list):
-	l = rec_list
-	for itemId in rec_list:
-		if itemId in user_consumption: l.remove(itemId)
-	return l
 def max_pool(np_matrix):
 	rows, cols = np_matrix.shape
 	max_pooled = []
 	for j in range(cols):
 		max_pooled.append( max(np_matrix[:,j]) )
 	return np.array(max_pooled)
-
-def doc2vec(list_document, model):
-	# MAX POOLING
-	matrix_doc = np.zeros((model.vector_size,), dtype=float)
-	for token in list_document:
-		# Debiera estar manejado en las funciones de wmd_evaluation,
-		# pero habría que hacer este manejo si considero el vocab de Twitter
-		# y convierto en vector con modelo Wiki, por ej..
-		if token not in model.vocab: continue 
-		matrix_doc = np.vstack((matrix_doc, model[token]))
-	matrix_doc = np.delete(matrix_doc, 0, 0) #Elimina la primera fila de sólo ceros
-	vec_doc = max_pool(np_matrix= matrix_doc)
-	return vec_doc
-
-def docs2vecs(model):
-	ids2vec = {}
-	flat_docs = np.load('./w2v-tmp/flattened_docs_fea075b1.npy').item()
-	i = 0
-	for bookId, flat_doc in flat_docs.items():
-		i+=1
-		logging.info("{0} de {1}. Doc: {2}".format(i, len(flat_docs), bookId))
-		ids2vec[bookId] = doc2vec(list_document= flat_doc, model= model)
-	return ids2vec
 
 def users2vecs(model, representation):
 	ids2vec = {}

@@ -1,11 +1,9 @@
 # coding=utf-8
 
+from utils_py2 import *
 from fastFM.datasets import make_user_item_regression
 from fastFM import als, sgd, bpr, mcmc
 from sklearn.model_selection import train_test_split
-from svd_evaluation import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, user_ranked_recs, opt_value
-from solr_evaluation import remove_consumed
-from pyFM_evaluation import loadData
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 import numpy as np

@@ -1,8 +1,6 @@
 # coding=utf-8
 
-from svd_evaluation import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, user_ranked_recs, opt_value
-from solr_evaluation import remove_consumed
-from pyFM_evaluation import loadData
+from utils_py2 import *
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 import numpy as np
@@ -12,58 +10,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from math import sqrt
 import implicit
 
-
-
-
 #-----"PRIVATE" METHODS----------#
-class IdCoder(object):
-	def __init__(self, items_ids, users_ids):
-		self.item_table = { str(i): items_ids[i] for i in range(0, len(items_ids)) }
-		self.user_table = { str(i): users_ids[i] for i in range(0, len(users_ids)) }
-		self.item_inverted = { v: k for k, v in self.item_table.iteritems() }
-		self.user_inverted = { v: k for k, v in self.user_table.iteritems() }
-	def coder(self, category, ID):
-		if category=="item":
-			return self.item_inverted[str(ID)]
-		elif category=="user":
-			return self.user_inverted[str(ID)]
-	def decoder(self, category, ID):
-		if category=="item":
-			return self.item_table[str(ID)]
-		elif category=="user":
-			return self.user_table[str(ID)]
-
-def get_data(data_path, all_c, idcoder, fold, N, mode):
-	if mode=="tuning":
-		train_c = consumption(ratings_path= data_path+'train/train_N'+str(N)+'.'+str(fold), rel_thresh=0, with_ratings=True)
-	elif mode=="testing":
-		train_c = consumption(ratings_path= data_path+'eval_train_N'+str(N)+'.data', rel_thresh= 0, with_ratings= True)
-	arrays  = {'items':[], 'users':[], 'data':[]}
-	for userId in train_c:
-		r_u = mean( map( int, train_c[userId].values() ) )
-		for itemId in train_c[userId]:
-			if int(train_c[userId][itemId]) >= r_u:
-				arrays['items'].append(int( idcoder.coder('item', itemId) ))
-				arrays['users'].append(int( idcoder.coder('user', userId) ))
-				arrays['data'].append(1)
-			else:
-				arrays['items'].append(int( idcoder.coder('item', itemId) ))
-				arrays['users'].append(int( idcoder.coder('user', userId) ))
-				arrays['data'].append(0)
-	ones = np.array( arrays['data'] )
-	return ones, arrays['items'], arrays['users'] # value, rows, cols
-
-def get_ndcg(data_path, idcoder, fold, N, model, matrix_T):
-	users_nDCGs = []
-	val_c = consumption(ratings_path=data_path+'val/val_N'+str(N)+'.'+str(fold), rel_thresh=0, with_ratings=True)
-	for userId in val_c:
-		recommends = model.recommend(userid= int(idcoder.coder('user', userId)), user_items= matrix_T, N= N)
-
-		book_recs  = [ idcoder.decoder('item', tupl[0]) for tupl in recommends ]
-		recs       = user_ranked_recs(user_recs= book_recs, user_consumpt= val_c[userId])
-		users_nDCGs.append( nDCG(recs=recs, alt_form=False, rel_thresh=False) )
-	return mean(users_nDCGs)
-
 def implicitJob(data_path, all_c, idcoder, params, N):
 	nDCGs = []
 	logging.info("Evaluando con params: {0}".format(params))

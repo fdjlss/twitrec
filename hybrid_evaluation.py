@@ -9,21 +9,16 @@ from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction import DictVectorizer
 from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
 import numpy as np
-import pandas as pd
-from math import sqrt
 import random
 from pyfm import pylibfm
 
-from svd_evaluation import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, user_ranked_recs, opt_value
-from solr_evaluation import remove_consumed, flatten_list
-from pyFM_evaluation import loadData
-from implicit_evaluation import IdCoder, get_data
+from utils_py2 import *
 import implicit
 
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
-###################################
+#--------------------------------#
 def hybrid_recs_naive(ALPHA, book_recs_cb, book_recs_cf):
 	methods = {'CB': int(ALPHA*100), 'CF': int((1-ALPHA)*100)}
 	book_recs_mix = dict((i, '') for i in range(40))
@@ -73,20 +68,6 @@ def hybrid_recs_naive(ALPHA, book_recs_cb, book_recs_cf):
 			break
 
 	return book_recs_mix
-
-def hybridize_recs(recs_cb, recs_cf, weight_cb, weight_cf):
-	concat = recs_cb + recs_cf
-	all_items = list( set(recs_cb + recs_cf) )
-	scores = dict((itemId, 0) for itemId in all_items )
-	for itemId in scores:
-		score_cb = 0
-		score_cf = 0
-		if itemId in recs_cb: score_cb = weight_cb / float(recs_cb.index(itemId) + 1) #pq index parten desde 0
-		if itemId in recs_cf: score_cf = weight_cf / float(recs_cf.index(itemId) + 1)
-		occurs = concat.count(itemId)
-		item_score = (score_cb + score_cf) * occurs
-		scores[itemId] = item_score
-	return sorted(scores, key=scores.get, reverse=True)
 
 def cf_models(cf_lib, N, data_path, params):
 	#caching, ya que son siempre los mismos params del CF
@@ -178,7 +159,7 @@ def hybridJob(data_path, solr, cf_models, cf_lib, transformer, items, params_cb,
 		
 		nDCGs.append( mean(users_nDCGs) )
 	return mean(nDCGs)
-###################################
+#--------------------------------#
 
 def hybrid_tuning(data_path, cf_lib, solr, params_cb, params_cf, N):
 

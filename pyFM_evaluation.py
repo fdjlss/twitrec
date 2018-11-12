@@ -1,10 +1,7 @@
 # coding=utf-8
 
 from sklearn.model_selection import train_test_split
-from svd_evaluation import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, user_ranked_recs, opt_value
-from solr_evaluation import remove_consumed
-import logging
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+from utils_py2 import *
 import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix, csc_matrix
 import pandas as pd
@@ -12,27 +9,10 @@ from pyfm import pylibfm
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 from math import sqrt
+import logging
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 #-----"PRIVATE" METHODS----------#
-def loadData(filename, data_path='TwitterRatings/funkSVD/data/', with_timestamps=False, with_authors=False):
-	data = []
-	y = []
-	items=set()
-	with open(data_path+filename, 'r') as f:
-		for line in f:
-			(userId,itemId,rating,timestamp,authorId1,authorId2,authorId3)=line.split(',')
-			if with_timestamps and with_authors:
-				data.append({ "user_id": str(userId), "item_id": str(itemId), "timestamp": str(timestamp), "author1_id": str(authorId1), "author2_id": str(authorId2), "author3_id": str(authorId3) })
-			if with_timestamps and not with_authors:
-				data.append({ "user_id": str(userId), "item_id": str(itemId), "timestamp": str(timestamp) })
-			if not with_timestamps and with_authors:
-				data.append({ "user_id": str(userId), "item_id": str(itemId), "author1_id": str(authorId1), "author2_id": str(authorId2), "author3_id": str(authorId3) })
-			if not with_timestamps and not with_authors:
-				data.append({ "user_id": str(userId), "item_id": str(itemId) })
-			y.append(float(rating))
-			items.add(itemId)
-	return data, np.array(y), items
-
 def pyFMJob(data_path, params, N, vectorizer, with_timestamps=False, with_authors=False):
 	rmses = []
 	logging.info("Evaluando con params: {0}".format(params))
@@ -195,7 +175,7 @@ def pyFM_protocol_evaluation(data_path, params, with_timestamps=False, with_auth
 	p=0
 	for userId in test_c:
 		logging.info("#u: {0}/{1}".format(p, len(test_c)))
-		p=+1
+		p+=1
 		user_rows = [ {'user_id': str(userId), 'item_id': str(itemId)} for itemId in items ]
 		X_te      = v.transform(user_rows)
 		preds     = fm.predict(X_te)

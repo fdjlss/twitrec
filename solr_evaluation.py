@@ -4,72 +4,12 @@ import os
 import re, json
 from urllib import urlencode, quote_plus
 from urllib2 import urlopen
-from svd_evaluation import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, user_ranked_recs, opt_value
+from utils_py2 import *
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 
 #-----"PRIVATE" METHODS----------#
-def recs_cleaner(solr, consumpt, recs):
-	# Ve los canonical hrefs de los items consumidos
-	consumpt_hrefs = []
-	for itemId in consumpt:
-		url      = solr + '/select?q=goodreadsId:' + itemId + '&wt=json' 
-		response = json.loads( urlopen(url).read().decode('utf8') )
-		doc      = response['response']['docs'][0]
-		consumpt_hrefs.append( doc['href'][0] )
-
-	# Saca todos los items cuyos hrefs ya los tenga el usuario
-	for item in reversed(recs):
-		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
-		response = json.loads( urlopen(url).read().decode('utf8') )
-		doc      = response['response']['docs'][0]
-		rec_href = doc['href'][0]
-		if rec_href in consumpt_hrefs: recs.remove(item)
-
-	# Saca todos los ítems con hrefs iguales
-	lista_dict = {}
-	for item in recs:
-		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
-		response = json.loads( urlopen(url).read().decode('utf8') )
-		doc      = response['response']['docs'][0]
-		rec_href = doc['href'][0]		
-		if rec_href not in lista_dict:
-			lista_dict[rec_href] = []
-			lista_dict[rec_href].append( item )
-		else:
-			lista_dict[rec_href].append( item )
-		
-	clean_recs = recs
-	rep_hrefs = []
-	for href in lista_dict: lista_dict[href] = lista_dict[href][:-1]
-	for href in lista_dict: rep_hrefs += lista_dict[href]
-
-	for rep_href in rep_hrefs: clean_recs.remove(rep_href)
-
-	return clean_recs
-
-def encoded_itemIds(item_list):
-	ids_string = '('
-	for itemId in item_list: ids_string += itemId + '%2520OR%2520'
-	ids_string = ids_string[:-12] # para borrar el último "%2520OR%2520"
-	ids_string += ')'
-	return ids_string
-def flatten_list(list_of_lists, rows):
-	"""Eliminamos duplicados manteniendo orden"""
-	flattened = []
-	for i in range(0, rows): #asumimos que todas las listas tienen largo "rows"
-		for j in range(0, len(list_of_lists)):
-			try:
-				flattened.append( list_of_lists[j][i] )
-			except IndexError as e:
-				continue
-	return sorted(set(flattened), key=lambda x: flattened.index(x))
-def remove_consumed(user_consumption, rec_list):
-	l = rec_list
-	for itemId in rec_list:
-		if itemId in user_consumption: l.remove(itemId)
-	return l
 def option1Job(data_path, solr, params, N):
 	val_folds = os.listdir(data_path+'val/')
 	nDCGs = []

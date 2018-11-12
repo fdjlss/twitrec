@@ -28,7 +28,7 @@ import sqlite3
 from bs4 import BeautifulSoup
 # Random numbers para fechas desconocidas. Sample para selección random de ítems candidatos en caso que sobren
 from random import randint, sample
-from svd_evaluation import consumption, mean, stdev
+from utils_py2 import consumption, mean, stdev
 # Solo en python 3.x
 # from statistics import mean, stdev 
 import collections
@@ -933,3 +933,15 @@ def main():
 
 if __name__ == '__main__':
 	main()
+
+## cuenta cuántos libros hay con al menos <an> autores
+# SELECT COUNT(an)
+# FROM (
+
+# SELECT bookId, COUNT(id) as an
+# FROM ( SELECT DISTINCT user_reviews.bookId, authors.id, authors.name FROM user_reviews INNER JOIN authors ON user_reviews.bookId=authors.bookId )
+# GROUP BY bookId 
+
+# )
+# WHERE an>=1
+# ;

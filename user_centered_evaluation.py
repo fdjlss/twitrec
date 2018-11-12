@@ -12,11 +12,7 @@ import numpy as np
 import pandas as pd
 from pyfm import pylibfm
 
-from svd_evaluation import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, user_ranked_recs, opt_value
-from solr_evaluation import remove_consumed, flatten_list
-from pyFM_evaluation import loadData
-from implicit_evaluation import IdCoder, get_data
-from hybrid_evaluation import hybridize_recs
+from utils_py2 import *
 import implicit
 
 import logging
