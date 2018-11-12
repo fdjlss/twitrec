@@ -152,6 +152,7 @@ def pyFM_tuning(data_path, N, with_timestamps=False, with_authors=False):
 	return defaults
 
 def pyFM_protocol_evaluation(data_path, params, with_timestamps=False, with_authors=False):
+	solr = "http://localhost:8983/solr/grrecsys"
 	# userId = '33120270'
 	all_data, y_all, items = loadData("eval_all_N20.data", data_path=data_path, with_timestamps=with_timestamps, with_authors=with_authors)
 	v = DictVectorizer()
@@ -181,6 +182,7 @@ def pyFM_protocol_evaluation(data_path, params, with_timestamps=False, with_auth
 		preds     = fm.predict(X_te)
 		book_recs = [itemId for _, itemId in sorted(zip(preds, items), reverse=True)]
 		book_recs = remove_consumed(user_consumption= train_c[userId], rec_list= book_recs)
+		book_recs = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:100])
 		recs      = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
 
 		for N in [5, 10, 15, 20]:
@@ -192,7 +194,7 @@ def pyFM_protocol_evaluation(data_path, params, with_timestamps=False, with_auth
 
 
 	for N in [5, 10, 15, 20]:
-		with open('TwitterRatings/pyFM/protocol_tmstmp'+str(with_timestamps)+'_auth'+str(with_authors)+'.txt', 'a') as file:
+		with open('TwitterRatings/pyFM/clean/protocol_tmstmp'+str(with_timestamps)+'_auth'+str(with_authors)+'.txt', 'a') as file:
 			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
 
@@ -200,22 +202,61 @@ def pyFM_protocol_evaluation(data_path, params, with_timestamps=False, with_auth
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data_with_authors/'
-	opt_params = pyFM_tuning(data_path=data_path, N=20, with_timestamps=False, with_authors=True)
-	# opt_params = {'lr_s':'invscaling',
-	# 							'val_size':0.01,
-	# 							'shuffle':True,
-	# 							'bias':True,
-	# 							'invscale_pow':0.05,
-	# 							'f':40,
-	# 							'mi':10,
-	# 							'seed':28,
-	# 							'lr':0.001,
-	# 							'oneway':True,
-	# 							'optimal_denom':0.01,
-	# 							'init_stdev':0.01}
+	# opt_params = pyFM_tuning(data_path=data_path, N=20, with_timestamps=False, with_authors=True)
+	params_tF_aF = {'lr_s':'invscaling',
+		'val_size':0.001,
+		'shuffle':False,
+		'bias':True,
+		'invscale_pow':0.05,
+		'f':20,
+		'mi':5,
+		'seed':20,
+		'lr':0.01,
+		'oneway':True,
+		'optimal_denom':0.01,
+		'init_stdev':0.01}
+	params_tT_aF = {'lr_s':'invscaling',
+		'val_size':0.01,
+		'shuffle':True,
+		'bias':True,
+		'invscale_pow':0.05,
+		'f':20,
+		'mi':5,
+		'seed':10,
+		'lr':0.01,
+		'oneway':True,
+		'optimal_denom':0.01,
+		'init_stdev':0.05}
+	params_tF_aT = {'lr_s':'invscaling',
+		'val_size':0.001,
+		'shuffle':True,
+		'bias':True,
+		'invscale_pow':0.05,
+		'f':20,
+		'mi':10,
+		'seed':20,
+		'lr':0.001,
+		'oneway':True,
+		'optimal_denom':0.01,
+		'init_stdev':0.0001}
+	params_tT_aT = {'lr_s':'invscaling',
+		'val_size':0.01,
+		'shuffle':True,
+		'bias':True,
+		'invscale_pow':0.05,
+		'f':40,
+		'mi':10,
+		'seed':28,
+		'lr':0.001,
+		'oneway':True,
+		'optimal_denom':0.01,
+		'init_stdev':0.01}
 
 	# for N in [5, 10, 15, 20]:
-	pyFM_protocol_evaluation(data_path=data_path, params=opt_params, with_timestamps=False, with_authors=True)
+	pyFM_protocol_evaluation(data_path=data_path, params=params_tF_aF, with_timestamps=False, with_authors=False)
+	pyFM_protocol_evaluation(data_path=data_path, params=params_tT_aF, with_timestamps=True, with_authors=False)
+	pyFM_protocol_evaluation(data_path=data_path, params=params_tF_aT, with_timestamps=False, with_authors=True)
+	pyFM_protocol_evaluation(data_path=data_path, params=params_tT_aT, with_timestamps=True, with_authors=True)
 
 if __name__ == '__main__':
 	main()
