@@ -8,7 +8,8 @@ from time import sleep
 import os
 from os.path import isfile, join
 from math import sqrt, log
-from utils_py2 import *
+from utils_py2 import remove_consumed, mean, stdev, opt_value, ratingsSampler, MRR, nDCG, AP_at_N, R_precision, consumption, user_ranked_recs, relevance
+from utils_py3 import recs_cleaner
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
