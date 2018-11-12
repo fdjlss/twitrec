@@ -3,7 +3,7 @@
 # SOLO EN PYTHON 3.X
 from gensim.models import KeyedVectors
 from urllib.request import urlopen
-from utils_py2 import remove_consumed, consumption, recs_cleaner
+from utils_py2 import remove_consumed, consumption
 from utils_py3 import flat_doc, flat_user, get_extremes, flatten_all_docs, doc2vec, docs2vecs, recs_cleaner
 import json
 import numpy as np
@@ -11,8 +11,6 @@ from scipy import spatial
 import operator
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-
-
 
 
 def w2v_recs(data_path, solr, which_model, items, userId, model):

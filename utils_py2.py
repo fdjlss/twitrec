@@ -243,7 +243,6 @@ def get_ndcg(data_path, idcoder, fold, N, model, matrix_T):
 		users_nDCGs.append( nDCG(recs=recs, alt_form=False, rel_thresh=False) )
 	return mean(users_nDCGs)
 
-
 # -- from Hybrid eval:
 def hybridize_recs(recs_cb, recs_cf, weight_cb, weight_cf):
 	concat = recs_cb + recs_cf

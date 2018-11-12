@@ -15,34 +15,7 @@ import operator
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
-
 # -- from WMD eval:
-# Los mismos que solr_evaluation
-# ya que gensim no está para 2.x 
-def encoded_itemIds(item_list):
-	ids_string = '('
-	for itemId in item_list: ids_string += itemId + '%20OR%20'
-	ids_string = ids_string[:-8] # para borrar el último "%20OR%20"
-	ids_string += ')'
-	return ids_string
-
-def flatten_list(list_of_lists, rows):
-	"""Eliminamos duplicados manteniendo orden"""
-	flattened = []
-	for i in range(0, rows): #asumimos que todas las listas tienen largo "rows"
-		for j in range(0, len(list_of_lists)):
-			try:
-				flattened.append( list_of_lists[j][i] )
-			except IndexError as e:
-				continue
-	return sorted(set(flattened), key=lambda x: flattened.index(x))
-
-def remove_consumed(user_consumption, rec_list):
-	l = rec_list
-	for itemId in rec_list:
-		if itemId in user_consumption: l.remove(itemId)
-	return l
-
 def get_extremes(flat_docs, n_below, n_above):
 	texts    = [flat_doc for id, flat_doc in flat_docs.items() ]
 	dct      = Dictionary(texts)
@@ -192,6 +165,7 @@ def mix_user_flattening(data_path):
 
 	return dict_users
 
+# -- from w2v eval:
 def doc2vec(list_document, model):
 	# MAX POOLING
 	matrix_doc = np.zeros((model.vector_size,), dtype=float)
@@ -215,6 +189,7 @@ def docs2vecs(model):
 		ids2vec[bookId] = doc2vec(list_document= flat_doc, model= model)
 	return ids2vec
 
+# -- from UCE w2v:
 def recs_cleaner(solr, consumpt, recs):
 	# Ve los canonical hrefs de los items consumidos
 	consumpt_hrefs = []

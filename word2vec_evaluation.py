@@ -8,8 +8,8 @@ import os
 import json
 from urllib.parse import urlencode, quote_plus
 from urllib.request import urlopen
-from utils_py2 import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, remove_consumed, user_ranked_recs, opt_value
-from utils_py3 import flat_doc, flat_user, doc2vec, docs2vecs, flatten_list, encoded_itemIds
+from utils_py2 import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, remove_consumed, user_ranked_recs, opt_value, encoded_itemIds, flatten_list 
+from utils_py3 import flat_doc, flat_user, doc2vec, docs2vecs
 import numpy as np
 from scipy import spatial
 import operator
