@@ -215,6 +215,46 @@ def docs2vecs(model):
 		ids2vec[bookId] = doc2vec(list_document= flat_doc, model= model)
 	return ids2vec
 
+def recs_cleaner(solr, consumpt, recs):
+	# Ve los canonical hrefs de los items consumidos
+	consumpt_hrefs = []
+	for itemId in consumpt:
+		url      = solr + '/select?q=goodreadsId:' + itemId + '&wt=json' 
+		response = json.loads( urlopen(url).read().decode('utf8') )
+		doc      = response['response']['docs'][0]
+		consumpt_hrefs.append( doc['href'][0] )
+
+	# Saca todos los items cuyos hrefs ya los tenga el usuario
+	for item in reversed(recs):
+		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
+		response = json.loads( urlopen(url).read().decode('utf8') )
+		doc      = response['response']['docs'][0]
+		rec_href = doc['href'][0]
+		if rec_href in consumpt_hrefs: recs.remove(item)
+
+	# Saca todos los ítems con hrefs iguales
+	lista_dict = {}
+	for item in recs:
+		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
+		response = json.loads( urlopen(url).read().decode('utf8') )
+		doc      = response['response']['docs'][0]
+		rec_href = doc['href'][0]		
+		if rec_href not in lista_dict:
+			lista_dict[rec_href] = []
+			lista_dict[rec_href].append( item )
+		else:
+			lista_dict[rec_href].append( item )
+		
+	clean_recs = recs
+	rep_hrefs = []
+	for href in lista_dict: lista_dict[href] = lista_dict[href][:-1]
+	for href in lista_dict: rep_hrefs += lista_dict[href]
+
+	for rep_href in rep_hrefs: clean_recs.remove(rep_href)
+
+	return clean_recs
+	
+
 def main():
 	pass
 

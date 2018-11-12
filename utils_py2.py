@@ -2,7 +2,6 @@
 
 from random import sample
 from os.path import isfile, join
-from urllib2 import urlopen
 import numpy as np
 from math import sqrt, log
 import json
@@ -262,6 +261,7 @@ def hybridize_recs(recs_cb, recs_cf, weight_cb, weight_cf):
 
 # -- from UCE:
 def recs_cleaner(solr, consumpt, recs):
+	from urllib2 import urlopen
 	# Ve los canonical hrefs de los items consumidos
 	consumpt_hrefs = []
 	for itemId in consumpt:

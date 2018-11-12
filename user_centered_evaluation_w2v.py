@@ -4,7 +4,7 @@
 from gensim.models import KeyedVectors
 from urllib.request import urlopen
 from utils_py2 import remove_consumed, consumption, recs_cleaner
-from utils_py3 import flat_doc, flat_user, get_extremes, flatten_all_docs, doc2vec, docs2vecs
+from utils_py3 import flat_doc, flat_user, get_extremes, flatten_all_docs, doc2vec, docs2vecs, recs_cleaner
 import json
 import numpy as np
 from scipy import spatial
@@ -13,45 +13,7 @@ import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 
-# def recs_cleaner(solr, consumpt, recs):
-# 	# Ve los canonical hrefs de los items consumidos
-# 	consumpt_hrefs = []
-# 	for itemId in consumpt:
-# 		url      = solr + '/select?q=goodreadsId:' + itemId + '&wt=json' 
-# 		response = json.loads( urlopen(url).read().decode('utf8') )
-# 		doc      = response['response']['docs'][0]
-# 		consumpt_hrefs.append( doc['href'][0] )
 
-# 	# Saca todos los items cuyos hrefs ya los tenga el usuario
-# 	for item in reversed(recs):
-# 		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
-# 		response = json.loads( urlopen(url).read().decode('utf8') )
-# 		doc      = response['response']['docs'][0]
-# 		rec_href = doc['href'][0]
-# 		if rec_href in consumpt_hrefs: recs.remove(item)
-
-# 	# Saca todos los ítems con hrefs iguales
-# 	lista_dict = {}
-# 	for item in recs:
-# 		url      = solr + '/select?q=goodreadsId:' + item + '&wt=json' 
-# 		response = json.loads( urlopen(url).read().decode('utf8') )
-# 		doc      = response['response']['docs'][0]
-# 		rec_href = doc['href'][0]		
-# 		if rec_href not in lista_dict:
-# 			lista_dict[rec_href] = []
-# 			lista_dict[rec_href].append( item )
-# 		else:
-# 			lista_dict[rec_href].append( item )
-		
-# 	clean_recs = recs
-# 	rep_hrefs = []
-# 	for href in lista_dict: lista_dict[href] = lista_dict[href][:-1]
-# 	for href in lista_dict: rep_hrefs += lista_dict[href]
-
-# 	for rep_href in rep_hrefs: clean_recs.remove(rep_href)
-
-# 	return clean_recs
-	
 
 def w2v_recs(data_path, solr, which_model, items, userId, model):
 	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
