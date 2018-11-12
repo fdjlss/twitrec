@@ -1076,8 +1076,28 @@ def main():
 			('3590', 5, '2448', '0', '0'),
 			('8921', 5, '2448', '6331', '0')
 			]
+	tdiaz = [('42054761', 0, '38569', '0', '0'),
+			('2287468', 4, '38569', '591108', '0'),
+			('7315573', 4, '3447', '0', '0'),
+			('7613', 3, '3706', '0', '0'),
+			('7624', 3, '306', '0', '0'),
+			('29581', 4, '16667', '0', '0'),
+			('29580', 3, '16667', '0', '0'),
+			('29579', 4, '16667', '0', '0'),
+			('30013', 3, '16667', '0', '0'),
+			('234225', 4, '58', '0', '0'),
+			('13812', 4, '8588', '0', '0'),
+			('233667', 5, '3389', '0', '0'),
+			('34506', 5, '1654', '0', '0'),
+			('64216', 5, '1654', '0', '0'),
+			('34497', 5, '1654', '0', '0'),
+			('13413455', 5, '64948', '0', '0'),
+			('112252', 5, '64948', '0', '0'),
+			('208290', 0, '107579', '0', '0')
+			]
 
-	user = alainray
+
+	user = tdiaz
 	consumpt = [ str(itemId) for itemId, rating, auth1, auth2, auth3 in user ]
 
 
@@ -1093,7 +1113,7 @@ def main():
 	# # 4. Guarda los embeddings
 	# np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', dict_docs)
 	# # 5. Genera las recomendaciones
-	lista_w2v = w2v_recs(data_path= data_path, solr= solr, which_model= which_model, items= user, userId="alainray", model= model)
+	lista_w2v = w2v_recs(data_path= data_path, solr= solr, which_model= which_model, items= user, userId="tdiaz", model= model)
 	lista_w2v = recs_cleaner(solr= solr, consumpt= consumpt, recs= lista_w2v)
 
 
