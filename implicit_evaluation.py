@@ -11,6 +11,19 @@ from math import sqrt
 import implicit
 
 #-----"PRIVATE" METHODS----------#
+def get_ndcg(data_path, idcoder, fold, N, model, matrix_T):
+	solr = "http://localhost:8983/solr/grrecsys"
+	users_nDCGs = []
+	val_c = consumption(ratings_path=data_path+'val/val_N'+str(N)+'.'+str(fold), rel_thresh=0, with_ratings=True)
+	train_c = consumption(ratings_path=data_path+'train/train_N'+str(N)+'.'+str(fold), rel_thresh=0, with_ratings=False)
+	for userId in val_c:
+		recommends = model.recommend(userid= int(idcoder.coder('user', userId)), user_items= matrix_T, N= N)
+		book_recs  = [ idcoder.decoder('item', tupl[0]) for tupl in recommends ]
+		book_recs  = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:100])
+		recs       = user_ranked_recs(user_recs= book_recs, user_consumpt= val_c[userId])
+		users_nDCGs.append( nDCG(recs=recs, alt_form=False, rel_thresh=False) )
+	return mean(users_nDCGs)
+
 def implicitJob(data_path, all_c, idcoder, params, N):
 	nDCGs = []
 	logging.info("Evaluando con params: {0}".format(params))
@@ -27,15 +40,6 @@ def implicitJob(data_path, all_c, idcoder, params, N):
 		ndcg           = get_ndcg(data_path= data_path, idcoder= idcoder, fold= i, N= N, model= model, matrix_T= user_items)
 		nDCGs.append( ndcg )
 	return mean(nDCGs)
-
-
-	for i in range(1, 4+1):
-
-		preds = fm.predict(X_va)
-		rmse  = sqrt( mean_squared_error(y_va, preds) )
-		print("FM RMSE: %.4f" % rmse)
-		rmses.append(rmse)
-	return mean(rmses)
 #--------------------------------#
 
 
@@ -71,12 +75,12 @@ def ALS_tuning(data_path, N):
 				results['lamb'][i] = implicitJob(data_path= data_path, all_c= all_c, idcoder= idcoder, params= defaults, N= N)
 			defaults['lamb'] = opt_value(results= results['lamb'], metric= 'ndcg')
 
-	with open('TwitterRatings/implicit/opt_params.txt', 'w') as f:
+	with open('TwitterRatings/implicit/clean/opt_params.txt', 'w') as f:
 		for param in defaults:
 			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
 		f.write( "nDCG:{nDCG}".format(nDCG=results['lamb'][ defaults['lamb'] ]) )
 
-	with open('TwitterRatings/implicit/params_ndcgs.txt', 'w') as f:
+	with open('TwitterRatings/implicit/clean/params_ndcgs.txt', 'w') as f:
 		for param in results:
 			for value in results[param]:
 				f.write( "{param}={value}\t : {nDCG}\n".format(param=param, value=value, nDCG=results[param][value]) )
@@ -88,6 +92,7 @@ def ALS_protocol_evaluation(data_path, params):
 	# all_data, y_all, items = loadData("eval_all_N"+str(N)+".data")
 	# v = DictVectorizer()
 	# X_all = v.fit_transform(all_data)
+	solr = "http://localhost:8983/solr/grrecsys"
 
 	test_c  = consumption(ratings_path= data_path+'test/test_N20.data', rel_thresh= 0, with_ratings= True)
 	train_c = consumption(ratings_path= data_path+'eval_train_N20.data', rel_thresh= 0, with_ratings= False)
@@ -112,6 +117,7 @@ def ALS_protocol_evaluation(data_path, params):
 		recommends = model.recommend(userid= int(idcoder.coder('user', userId)), user_items= user_items, N= 200)
 		book_recs  = [ idcoder.decoder('item', tupl[0]) for tupl in recommends ]
 		book_recs  = remove_consumed(user_consumption= train_c[userId], rec_list= book_recs)
+		book_recs  = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:100])		
 		recs       = user_ranked_recs(user_recs= book_recs, user_consumpt= test_c[userId])	
 
 		for N in [5, 10, 15, 20]:
@@ -123,7 +129,7 @@ def ALS_protocol_evaluation(data_path, params):
 
 
 	for N in [5, 10, 15, 20]:
-		with open('TwitterRatings/implicit/protocol.txt', 'a') as file:
+		with open('TwitterRatings/implicit/clean/protocol.txt', 'a') as file:
 			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
 
@@ -131,9 +137,8 @@ def ALS_protocol_evaluation(data_path, params):
 	
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	# opt_params = ALS_tuning(data_path= data_path, N= 20)
-	# opt_params = {'f': 1180, 'lamb': 0.04, 'mi': 10} OLD
-	opt_params = {'f': 20, 'lamb': 0.3, 'mi': 15}
+	opt_params = ALS_tuning(data_path= data_path, N= 20)
+	# opt_params = {'f': 20, 'lamb': 0.3, 'mi': 15}
 	# for N in [5, 10, 15, 20]:
 	ALS_protocol_evaluation(data_path= data_path, params= opt_params)
 
