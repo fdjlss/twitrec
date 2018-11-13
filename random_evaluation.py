@@ -33,7 +33,7 @@ def book_list(db_conn):
 	return book_list
 #--------------------------------#
 
-def random_eval(data_path, db_conn):
+def random_eval(data_path, db_conn, solr):
 	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
 	books   = book_list(db_conn=db_conn)
@@ -46,6 +46,7 @@ def random_eval(data_path, db_conn):
 	for userId in test_c:
 		book_recs = sample(books, k=200)
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+		book_recs = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:100])		
 		recs      = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
 
 		for N in [5, 10, 15, 20]:
@@ -57,19 +58,17 @@ def random_eval(data_path, db_conn):
 
 
 	for N in [5, 10, 15, 20]:
-		with open('TwitterRatings/random/results.txt', 'a') as file:
+		with open('TwitterRatings/random/clean/results.txt', 'a') as file:
 			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
-
-
-
 
 def main():
 	sqlite_file = 'db/goodreads.sqlite'
 	data_path = 'TwitterRatings/funkSVD/data/'
+	solr = "http://localhost:8983/solr/grrecsys"
 	conn = sqlite3.connect(sqlite_file)
 	# for N in [5, 10, 15, 20]:
-	random_eval(data_path=data_path, db_conn=conn)
+	random_eval(data_path=data_path, db_conn=conn, solr=solr)
 	conn.close()
 
 if __name__ == '__main__':
