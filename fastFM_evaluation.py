@@ -109,7 +109,7 @@ def fastFMJob_bpr(data_path, params, N, vectorizer, train_sets, pairs, items):
 		train_c = consumption(ratings_path= data_path+'train/train_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= True)
 		users_ndcgs = []
 		for userId in val_c:
-			val_data, y_va, _  = loadData_bpr('val/val_N'+str(N)+'.'+str(i), , data_path=data_path, test=True, userId_va=userId)
+			val_data, y_va, _  = loadData_bpr('val/val_N'+str(N)+'.'+str(i), data_path=data_path, test=True, userId_va=userId)
 			X_va = vectorizer.transform(val_data)
 			preds = fm.predict(X_va)
 			preds = np.argsort(-preds)
