@@ -9,6 +9,7 @@ from nltk.corpus import stopwords
 from textblob.blob import TextBlob
 import os
 import json
+import numpy as np
 from urllib.parse import urlencode, quote_plus
 from urllib.request import urlopen
 import operator
