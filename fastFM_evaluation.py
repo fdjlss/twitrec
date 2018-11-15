@@ -23,19 +23,19 @@ def loadData_bpr(filename, data_path='TwitterRatings/funkSVD/data/', test=False,
 	users=set()
 	with open(data_path+'eval_train_N5.data', 'r') as f: #antes +filename
 		for line in f:
-			(userId,itemId,rating)=line.split(',')
+			(userId,itemId,rating,timestamp,authorId1,authorId2,authorId3)=line.split(',')
 			items.add(itemId)
 			users.add(userId)
 	if not test:
 		with open(data_path+filename, 'r') as f:
 			#Agregamos users con items consumidos
 			for line in f:
-				(userId,itemId,rating)=line.split(',')
+				(userId,itemId,rating,timestamp,authorId1,authorId2,authorId3)=line.split(',')
 				data.append({ "user_id": str(userId), "item_id": str(itemId) })
 				y.append(float(rating))
 			#Agregamos users con items no consumidos (random sampling)
 			for line in f:
-				(userId,itemId,rating)=line.split(',')
+				(userId,itemId,rating,timestamp,authorId1,authorId2,authorId3)=line.split(',')
 				random_itemId = sample(items, 1)[0]
 				while { "user_id": str(userId), "item_id": str(random_itemId) } in data:
 					random_itemId = sample(items, 1)[0]
@@ -123,8 +123,8 @@ def fastFMJob(data_path, params, N, vectorizer, solver):
 	rmses = []
 	logging.info("Evaluando con params: {0}".format(params))
 	for i in range(1, 4+1):
-		train_data, y_tr, _ = loadData('train/train_N'+str(N)+'.'+str(i))
-		val_data, y_va, _   = loadData('val/val_N'+str(N)+'.'+str(i))
+		train_data, y_tr, _ = loadData('train/train_N'+str(N)+'.'+str(i), data_path=data_path, with_timestamps=False, with_authors=False)
+		val_data, y_va, _   = loadData('val/val_N'+str(N)+'.'+str(i), data_path=data_path, with_timestamps=False, with_authors=False)
 		X_tr = vectorizer.transform(train_data)
 		X_va = vectorizer.transform(val_data)
 		if solver=="mcmc":
@@ -154,7 +154,7 @@ def fastFMJob(data_path, params, N, vectorizer, solver):
 
 
 def fastFM_tuning_bpr(data_path, N):
-	all_data, y_all, _ = loadData("eval_all_N"+str(N)+".data")
+	all_data, y_all, _ = loadData("eval_all_N"+str(N)+".data", data_path=data_path, with_timestamps=False, with_authors=False)
 	v = DictVectorizer()
 	X_all = v.fit_transform(all_data)
 
@@ -228,7 +228,7 @@ def fastFM_tuning_bpr(data_path, N):
 	return defaults
 
 def fastFM_tuning(data_path, N, solver):
-	all_data, y_all, _ = loadData("eval_all_N"+str(N)+".data")
+	all_data, y_all, _ = loadData("eval_all_N"+str(N)+".data", data_path=data_path, with_timestamps=False, with_authors=False)
 	v = DictVectorizer()
 	X_all = v.fit_transform(all_data)
 
@@ -290,8 +290,8 @@ def fastFM_tuning(data_path, N, solver):
 
 
 	# Real testing
-	train_data, y_tr, _ = loadData('eval_train_N'+str(N)+'.data')
-	test_data, y_te, _  = loadData('test/test_N'+str(N)+'.data')
+	train_data, y_tr, _ = loadData('eval_train_N'+str(N)+'.data', data_path=data_path, with_timestamps=False, with_authors=False)
+	test_data, y_te, _  = loadData('test/test_N'+str(N)+'.data', data_path=data_path, with_timestamps=False, with_authors=False)
 	X_tr = v.transform(train_data)
 	X_te = v.transform(test_data)
 
@@ -345,7 +345,7 @@ def fastFM_tuning(data_path, N, solver):
 
 def fastFM_protocol_evaluation(data_path, params):
 	solr = "http://localhost:8983/solr/grrecsys"
-	all_data, y_all, items = loadData("eval_all_N20.data")
+	all_data, y_all, items = loadData("eval_all_N20.data", data_path=data_path, with_timestamps=False, with_authors=False)
 	v = DictVectorizer()
 	X_all = v.fit_transform(all_data)
 
@@ -357,7 +357,7 @@ def fastFM_protocol_evaluation(data_path, params):
 	APs    = dict((N, []) for N in [5, 10, 15, 20])
 	Rprecs = dict((N, []) for N in [5, 10, 15, 20])
 
-	train_data, y_tr, _ = loadData('eval_train_N20.data')
+	train_data, y_tr, _ = loadData('eval_train_N20.data', data_path=data_path, with_timestamps=False, with_authors=False)
 	X_tr = v.transform(train_data)
 	fm = sgd.FMRegression(n_iter=params['mi'], init_stdev=params['init_stdev'], rank=params['f'], random_state=123, \
 												l2_reg_w=params['l2_reg_w'], l2_reg_V=params['l2_reg_V'], l2_reg=params['l2_reg'], step_size=params['step_size'])
@@ -464,7 +464,7 @@ def fastFM_protocol_evaluation_bpr(data_path, params):
 
 
 def main():
-	data_path = 'TwitterRatings/funkSVD/data/'
+	data_path = 'TwitterRatings/funkSVD/data_with_authors/'
 	opt_params_sgd = fastFM_tuning(data_path=data_path, N=20, solver="sgd")
 	opt_params_bpr = fastFM_tuning_bpr(data_path=data_path, N=20)
 	# opt_params_sgd = {'mi':150, 'init_stdev':0.01, 'f':1, 'l2_reg_w':0.05, 'l2_reg_V':0.0001, 'l2_reg':0.04, 'step_size':0.07}
