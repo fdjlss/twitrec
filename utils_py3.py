@@ -170,6 +170,13 @@ def mix_user_flattening(data_path):
 	return dict_users
 
 # -- from w2v eval:
+def max_pool(np_matrix):
+	rows, cols = np_matrix.shape
+	max_pooled = []
+	for j in range(cols):
+		max_pooled.append( max(np_matrix[:,j]) )
+	return np.array(max_pooled)
+
 def doc2vec(list_document, model):
 	# MAX POOLING
 	matrix_doc = np.zeros((model.vector_size,), dtype=float)
