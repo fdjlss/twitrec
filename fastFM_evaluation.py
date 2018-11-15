@@ -21,7 +21,7 @@ def loadData_bpr(filename, data_path='TwitterRatings/funkSVD/data/', test=False,
 	y = []
 	items=set()
 	users=set()
-	with open(data_path+'eval_train_N5.data', 'r') as f: #antes +filename
+	with open(data_path+'eval_train_N20.data', 'r') as f: #antes +filename
 		for line in f:
 			(userId,itemId,rating,timestamp,authorId1,authorId2,authorId3)=line.split(',')
 			items.add(itemId)
