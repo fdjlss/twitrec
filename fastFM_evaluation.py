@@ -109,7 +109,7 @@ def fastFMJob_bpr(data_path, params, N, vectorizer, train_sets, pairs, items):
 		train_c = consumption(ratings_path= data_path+'train/train_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= True)
 		users_ndcgs = []
 		for userId in val_c:
-			val_data, y_va, _  = loadData_bpr('val/val_N'+str(N)+'.'+str(i), test=True, userId_va=userId)
+			val_data, y_va, _  = loadData_bpr('val/val_N'+str(N)+'.'+str(i), , data_path=data_path, test=True, userId_va=userId)
 			X_va = vectorizer.transform(val_data)
 			preds = fm.predict(X_va)
 			preds = np.argsort(-preds)
@@ -163,7 +163,7 @@ def fastFM_tuning_bpr(data_path, N):
 	pairs = dict((k, []) for k in range(1,5))
 	for j in range(1, 5):
 		print(j)
-		train_sets[j], y_tr, items = loadData_bpr('train/train_N'+str(N)+'.'+str(j))
+		train_sets[j], y_tr, items = loadData_bpr('train/train_N'+str(N)+'.'+str(j), data_path=data_path)
 		X_tr = v.transform(train_sets[j])
 		pairs[j] = make_pairs(X_tr, y_tr)
 	########################
@@ -408,7 +408,7 @@ def fastFM_protocol_evaluation(data_path, params):
 def fastFM_protocol_evaluation_bpr(data_path, params):
 	# userId = '33120270'
 	solr = "http://localhost:8983/solr/grrecsys"
-	all_data, y_all, items = loadData_bpr("eval_all_N20.data")
+	all_data, y_all, items = loadData_bpr("eval_all_N20.data", data_path=data_path)
 	v = DictVectorizer()
 	X_all = v.fit_transform(all_data)
 
@@ -420,7 +420,7 @@ def fastFM_protocol_evaluation_bpr(data_path, params):
 	APs    = dict((N, []) for N in [5, 10, 15, 20])
 	Rprecs = dict((N, []) for N in [5, 10, 15, 20])
 
-	train_data, y_tr, _ = loadData_bpr('eval_train_N20.data')
+	train_data, y_tr, _ = loadData_bpr('eval_train_N20.data', data_path=data_path)
 	X_tr = v.transform(train_data)
 	fm = bpr.FMRecommender(n_iter=params['mi'], init_stdev=params['init_stdev'], rank=params['f'], random_state=123, \
 												 l2_reg_w=params['l2_reg_w'], l2_reg_V=params['l2_reg_V'], l2_reg=params['l2_reg'], step_size=params['step_size'])
@@ -465,9 +465,9 @@ def fastFM_protocol_evaluation_bpr(data_path, params):
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data_with_authors/'
-	opt_params_sgd = fastFM_tuning(data_path=data_path, N=20, solver="sgd")
+	# opt_params_sgd = fastFM_tuning(data_path=data_path, N=20, solver="sgd")
 	opt_params_bpr = fastFM_tuning_bpr(data_path=data_path, N=20)
-	# opt_params_sgd = {'mi':150, 'init_stdev':0.01, 'f':1, 'l2_reg_w':0.05, 'l2_reg_V':0.0001, 'l2_reg':0.04, 'step_size':0.07}
+	opt_params_sgd = {'mi':150, 'init_stdev':0.1, 'f':20, 'l2_reg_w':0.5, 'l2_reg_V':0.0001, 'l2_reg':0.5, 'step_size':0.1}
 	# opt_params_bpr = {'mi':10, 'init_stdev':0.1, 'f':880, 'l2_reg_w':0.01, 'l2_reg_V':0.01, 'l2_reg':0.02, 'step_size':0.005}
 	# for N in [5, 10, 15, 20]:
 	fastFM_protocol_evaluation(data_path=data_path, params=opt_params_sgd)
