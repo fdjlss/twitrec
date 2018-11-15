@@ -43,7 +43,7 @@ def loadData_bpr(filename, data_path='TwitterRatings/funkSVD/data/', test=False,
 					data.append({ "user_id": str(userId), "item_id": str(random_itemId) })
 					y.append(float(1)) #Si user no consumió item, rating=1
 	else:
-		all_train_c = consumption(ratings_path= data_path+'eval_train_N5.data', rel_thresh= 0, with_ratings= True)
+		all_train_c = consumption(ratings_path= 'TwitterRatings/funkSVD/data/eval_train_N5.data', rel_thresh= 0, with_ratings= True)
 		for itemId in items:
 			data.append({ "user_id": str(userId_va), "item_id": str(itemId)})
 			if itemId in all_train_c[userId_va]:
@@ -105,8 +105,8 @@ def fastFMJob_bpr(data_path, params, N, vectorizer, train_sets, pairs, items):
 													 l2_reg_w=params['l2_reg_w'], l2_reg_V=params['l2_reg_V'], l2_reg=params['l2_reg'], step_size=params['step_size'])
 		X_tr = vectorizer.transform(train_sets[i])
 		fm.fit(X_tr, pairs[i])
-		val_c = consumption(ratings_path= data_path+'val/val_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= True)
-		train_c = consumption(ratings_path= data_path+'train/train_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= True)
+		val_c = consumption(ratings_path= 'TwitterRatings/funkSVD/data/val/val_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= True)
+		train_c = consumption(ratings_path= 'TwitterRatings/funkSVD/data/train/train_N'+str(N)+'.'+str(i), rel_thresh= 0, with_ratings= True)
 		users_ndcgs = []
 		for userId in val_c:
 			val_data, y_va, _  = loadData_bpr('val/val_N'+str(N)+'.'+str(i), data_path=data_path, test=True, userId_va=userId)
@@ -349,9 +349,9 @@ def fastFM_protocol_evaluation(data_path, params):
 	v = DictVectorizer()
 	X_all = v.fit_transform(all_data)
 
-	test_c  = consumption(ratings_path= data_path+'test/test_N20.data', rel_thresh= 0, with_ratings= True)
-	train_c = consumption(ratings_path= data_path+'eval_train_N20.data', rel_thresh= 0, with_ratings= False)
-	all_c   = consumption(ratings_path= data_path+'eval_all_N20.data', rel_thresh= 0, with_ratings= True)
+	test_c  = consumption(ratings_path= 'TwitterRatings/funkSVD/data/test/test_N20.data', rel_thresh= 0, with_ratings= True)
+	train_c = consumption(ratings_path= 'TwitterRatings/funkSVD/data/eval_train_N20.data', rel_thresh= 0, with_ratings= False)
+	all_c   = consumption(ratings_path= 'TwitterRatings/funkSVD/data/eval_all_N20.data', rel_thresh= 0, with_ratings= True)
 	MRRs   = dict((N, []) for N in [5, 10, 15, 20])
 	nDCGs  = dict((N, []) for N in [5, 10, 15, 20])
 	APs    = dict((N, []) for N in [5, 10, 15, 20])
@@ -412,9 +412,9 @@ def fastFM_protocol_evaluation_bpr(data_path, params):
 	v = DictVectorizer()
 	X_all = v.fit_transform(all_data)
 
-	test_c  = consumption(ratings_path= data_path+'test/test_N20.data', rel_thresh= 0, with_ratings= True)
-	train_c = consumption(ratings_path= data_path+'eval_train_N20.data', rel_thresh= 0, with_ratings= False)
-	all_c   = consumption(ratings_path= data_path+'eval_all_N20.data', rel_thresh= 0, with_ratings= True)
+	test_c  = consumption(ratings_path= 'TwitterRatings/funkSVD/data/test/test_N20.data', rel_thresh= 0, with_ratings= True)
+	train_c = consumption(ratings_path= 'TwitterRatings/funkSVD/data/eval_train_N20.data', rel_thresh= 0, with_ratings= False)
+	all_c   = consumption(ratings_path= 'TwitterRatings/funkSVD/data/eval_all_N20.data', rel_thresh= 0, with_ratings= True)
 	MRRs   = dict((N, []) for N in [5, 10, 15, 20])
 	nDCGs  = dict((N, []) for N in [5, 10, 15, 20])
 	APs    = dict((N, []) for N in [5, 10, 15, 20])
@@ -465,6 +465,7 @@ def fastFM_protocol_evaluation_bpr(data_path, params):
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data_with_authors/'
+
 	# opt_params_sgd = fastFM_tuning(data_path=data_path, N=20, solver="sgd")
 	opt_params_bpr = fastFM_tuning_bpr(data_path=data_path, N=20)
 	opt_params_sgd = {'mi':150, 'init_stdev':0.1, 'f':20, 'l2_reg_w':0.5, 'l2_reg_V':0.0001, 'l2_reg':0.5, 'step_size':0.1}
