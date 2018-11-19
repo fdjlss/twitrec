@@ -153,7 +153,7 @@ def hybridJob(data_path, solr, cf_models, cf_lib, transformer, items, params_cb,
 			# HYBRID
 			recs_hy = hybridize_recs(recs_cb=recs_cb, recs_cf=recs_cf, weight_cb=params_hy['weight_cb'], weight_cf=params_hy['weight_cf'])
 			recs_hy = remove_consumed(user_consumption= train_c[userId], rec_list= recs_hy)
-			recs_hy = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:100])
+			recs_hy = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= recs_hy[:100])
 			recs_hy = user_ranked_recs(user_recs= recs_hy, user_consumpt= val_c[userId])	
 			mini_recs = dict((k, recs_hy[k]) for k in recs_hy.keys()[:N])
 			users_nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
@@ -293,7 +293,7 @@ def hybrid_protocol_evaluation(data_path, data_path_context, cf_lib, solr, param
 
 		recs_hy = hybridize_recs(recs_cb=recs_cb, recs_cf=recs_cf, weight_cb=params_hy['weight_cb'], weight_cf=params_hy['weight_cf'])
 		recs_hy = remove_consumed(user_consumption= train_c[userId], rec_list= recs_hy)
-		recs_hy = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:100])
+		recs_hy = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= recs_hy[:100])
 		recs_hy = user_ranked_recs(user_recs= recs_hy, user_consumpt= test_c[userId])	
 
 		for N in [5, 10, 15, 20]:
