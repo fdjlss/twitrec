@@ -347,12 +347,10 @@ def main():
 		
 		if lib == 'pyFM':
 			params_cf = params_pyfm
-			data = data_path_context
 		elif lib == 'implicit':
 			params_cf = params_imp
-			data = data_path
 
-		opt_params_cbcf, opt_params_cfcb = hybrid_tuning(data_path=data, cf_lib=lib, solr=solr, params_cb=params_cb, params_cf=params_cf, N=20) #"pyFM"->data_path_context, "implicit"->data_path
+		opt_params_cbcf, opt_params_cfcb = hybrid_tuning(data_path=data_path, cf_lib=lib, solr=solr, params_cb=params_cb, params_cf=params_cf, N=20) #"pyFM"->data_path_context, "implicit"->data_path
 		
 		if opt_params_cbcf == opt_params_cfcb:
 			hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, cf_lib=lib, solr=solr, params_cb=params_cb, params_cf=params_cf, params_hy=opt_params_cbcf, N=20)
