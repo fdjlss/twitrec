@@ -348,7 +348,7 @@ def main():
 		if lib == 'pyFM':
 			params_cf = params_pyfm
 			data = data_path_context
-		elif lib == 'implicit'
+		elif lib == 'implicit':
 			params_cf = params_imp
 			data = data_path
 
