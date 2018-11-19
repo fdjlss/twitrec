@@ -343,15 +343,17 @@ def main():
 	params_imp = {'f': 20, 'lamb': 0.8, 'mi': 5}
 	# params de cleaned: cambiado params de solr e implicit (no pyFM: tuning con metrica de rating)
 
-	opt_params_cbcf, opt_params_cfcb = hybrid_tuning(data_path=data_path_context, cf_lib='pyFM', solr=solr, params_cb=params_cb, params_cf=params_imp, N=20) #"pyFM"->data_path_context, "implicit"->data_path
+	for lib in ['pyFM', 'implicit']:
+		opt_params_cbcf, opt_params_cfcb = hybrid_tuning(data_path=data_path_context, cf_lib=lib, solr=solr, params_cb=params_cb, params_cf=params_imp, N=20) #"pyFM"->data_path_context, "implicit"->data_path
+		
+		if opt_params_cbcf == opt_params_cfcb:
+			hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, cf_lib=lib, solr=solr, params_cb=params_cb, params_cf=params_imp, params_hy=opt_params_cbcf, N=20)
+		else:
+			hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, cf_lib=lib, solr=solr, params_cb=params_cb, params_cf=params_imp, params_hy=opt_params_cbcf, N=20)
+			hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, cf_lib=lib, solr=solr, params_cb=params_cb, params_cf=params_imp, params_hy=opt_params_cfcb, N=20)
 
-	hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, cf_lib='pyFM', solr=solr, params_cb=params_cb, params_cf=params_imp, params_hy=opt_params_cbcf, N=20)
-	hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, cf_lib='pyFM', solr=solr, params_cb=params_cb, params_cf=params_imp, params_hy=opt_params_cfcb, N=20)
 
-	opt_params_cbcf, opt_params_cfcb = hybrid_tuning(data_path=data_path, cf_lib='implicit', solr=solr, params_cb=params_cb, params_cf=params_imp, N=20) #"pyFM"->data_path_context, "implicit"->data_path
 
-	hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, cf_lib='implicit', solr=solr, params_cb=params_cb, params_cf=params_imp, params_hy=opt_params_cbcf, N=20)
-	hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, cf_lib='implicit', solr=solr, params_cb=params_cb, params_cf=params_imp, params_hy=opt_params_cfcb, N=20)
 
 if __name__ == '__main__':
 	main()
