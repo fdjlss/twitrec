@@ -78,7 +78,7 @@ def cf_models(cf_lib, N, data_path, params):
 		v = DictVectorizer()
 		X_all = v.fit_transform(all_data)
 		for i in range(1, 4+1):
-			train_data, y_tr, _ = loadData('train/train_N'+str(N)+'.'+str(i), data_path=data_path, with_timestamps=False, with_authors=True)
+			train_data, y_tr, _ = loadData('train/train_N'+str(N)+'.'+str(i), data_path='TwitterRatings/funkSVD/data_with_authors/', with_timestamps=False, with_authors=True)
 			X_tr = v.transform(train_data)
 			fm = pylibfm.FM(num_factors=params['f'], num_iter=params['mi'], k0=params['bias'], k1=params['oneway'], init_stdev=params['init_stdev'], \
 											validation_size=params['val_size'], learning_rate_schedule=params['lr_s'], initial_learning_rate=params['lr'], \
