@@ -153,6 +153,7 @@ def hybridJob(data_path, solr, cf_models, cf_lib, transformer, items, params_cb,
 			# HYBRID
 			recs_hy = hybridize_recs(recs_cb=recs_cb, recs_cf=recs_cf, weight_cb=params_hy['weight_cb'], weight_cf=params_hy['weight_cf'])
 			recs_hy = remove_consumed(user_consumption= train_c[userId], rec_list= recs_hy)
+			recs_hy = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:100])
 			recs_hy = user_ranked_recs(user_recs= recs_hy, user_consumpt= val_c[userId])	
 			mini_recs = dict((k, recs_hy[k]) for k in recs_hy.keys()[:N])
 			users_nDCGs.append( nDCG(recs=mini_recs, alt_form=False, rel_thresh=False) )
@@ -183,11 +184,11 @@ def hybrid_tuning(data_path, cf_lib, solr, params_cb, params_cf, N):
 				results[param][i] = hybridJob(data_path= data_path, solr=solr, cf_models=cf_mods, cf_lib=cf_lib, transformer=transformer, items=items, params_cb=params_cb, params_hy=defaults, N=N)
 			defaults[param] = opt_value(results= results[param], metric= 'ndcg')
 
-	with open('TwitterRatings/hybrid/opt_params_CB-CF'+str(cf_lib)+'.txt', 'w') as f:
+	with open('TwitterRatings/hybrid/clean/opt_params_CB-CF'+str(cf_lib)+'.txt', 'w') as f:
 		for param in defaults:
 			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
 
-	with open('TwitterRatings/hybrid/params_ndcgs_CB-CF'+str(cf_lib)+'.txt', 'w') as f:
+	with open('TwitterRatings/hybrid/clean/params_ndcgs_CB-CF'+str(cf_lib)+'.txt', 'w') as f:
 		for param in defaults:
 			for value in results[param]:
 				f.write( "{param}={value}\t : {nDCG}\n".format(param=param, value=value, nDCG=results[param][value]) )
@@ -213,11 +214,11 @@ def hybrid_tuning(data_path, cf_lib, solr, params_cb, params_cf, N):
 				results[param][i] = hybridJob(data_path= data_path, solr=solr, cf_models=cf_mods, cf_lib=cf_lib, transformer=transformer, items=items, params_cb=params_cb, params_hy=defaults, N=N)
 			defaults[param] = opt_value(results= results[param], metric= 'ndcg')
 
-	with open('TwitterRatings/hybrid/opt_params_CF'+str(cf_lib)+'-CB.txt', 'w') as f:
+	with open('TwitterRatings/hybrid/clean/opt_params_CF'+str(cf_lib)+'-CB.txt', 'w') as f:
 		for param in defaults:
 			f.write( "{param}:{value}\n".format(param=param, value=defaults[param]) )
 
-	with open('TwitterRatings/hybrid/params_ndcgs_CF'+str(cf_lib)+'-CB.txt', 'w') as f:
+	with open('TwitterRatings/hybrid/clean/params_ndcgs_CF'+str(cf_lib)+'-CB.txt', 'w') as f:
 		for param in defaults:
 			for value in results[param]:
 				f.write( "{param}={value}\t : {nDCG}\n".format(param=param, value=value, nDCG=results[param][value]) )
@@ -292,6 +293,7 @@ def hybrid_protocol_evaluation(data_path, data_path_context, cf_lib, solr, param
 
 		recs_hy = hybridize_recs(recs_cb=recs_cb, recs_cf=recs_cf, weight_cb=params_hy['weight_cb'], weight_cf=params_hy['weight_cf'])
 		recs_hy = remove_consumed(user_consumption= train_c[userId], rec_list= recs_hy)
+		recs_hy = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:100])
 		recs_hy = user_ranked_recs(user_recs= recs_hy, user_consumpt= test_c[userId])	
 
 		for N in [5, 10, 15, 20]:
@@ -302,7 +304,7 @@ def hybrid_protocol_evaluation(data_path, data_path_context, cf_lib, solr, param
 			Rprecs[N].append( R_precision(n_relevants=N, recs=mini_recs) )
 
 	for N in [5, 10, 15, 20]:
-		with open('TwitterRatings/hybrid/protocol.txt', 'a') as file:
+		with open('TwitterRatings/hybrid/clean/protocol.txt', 'a') as file:
 			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
 
@@ -320,10 +322,10 @@ def main():
 							'mlt.boost' : 'false', #def: false
 							'mlt.mintf' : 1, #def: 2
 							'mlt.mindf' : 2, #def: 5
-							'mlt.minwl' : 1, #def: 0
-							'mlt.maxdf' : 25431, #docs*0.5, # en realidad no especificado
-							'mlt.maxwl' : 8, #def: 0
-							'mlt.maxqt' : 90, #def: 25
+							'mlt.minwl' : 4, #def: 0
+							'mlt.maxdf' : 33095, #docs*0.5, # en realidad no especificado
+							'mlt.maxwl' : 12, #def: 0
+							'mlt.maxqt' : 70, #def: 25
 							'mlt.maxntp' : 150000} #def: 5000}
 	#pyFM w/ authors
 	params_pyfm = {  'lr_s':'invscaling',
@@ -338,8 +340,13 @@ def main():
 							'oneway':True,
 							'optimal_denom':0.01,
 							'init_stdev':0.0001}
-	params_imp = {'f': 20, 'lamb': 0.3, 'mi': 15}
+	params_imp = {'f': 20, 'lamb': 0.8, 'mi': 5}
+	# params de cleaned: cambiado params de solr e implicit (no pyFM: tuning con metrica de rating)
 
+	opt_params_cbcf, opt_params_cfcb = hybrid_tuning(data_path=data_path_context, cf_lib='pyFM', solr=solr, params_cb=params_cb, params_cf=params_imp, N=20) #"pyFM"->data_path_context, "implicit"->data_path
+
+	hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, cf_lib='pyFM', solr=solr, params_cb=params_cb, params_cf=params_imp, params_hy=opt_params_cbcf, N=20)
+	hybrid_protocol_evaluation(data_path=data_path, data_path_context=data_path_context, cf_lib='pyFM', solr=solr, params_cb=params_cb, params_cf=params_imp, params_hy=opt_params_cfcb, N=20)
 
 	opt_params_cbcf, opt_params_cfcb = hybrid_tuning(data_path=data_path, cf_lib='implicit', solr=solr, params_cb=params_cb, params_cf=params_imp, N=20) #"pyFM"->data_path_context, "implicit"->data_path
 
