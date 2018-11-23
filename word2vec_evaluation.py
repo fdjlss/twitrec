@@ -9,7 +9,7 @@ import json
 from urllib.parse import urlencode, quote_plus
 from urllib.request import urlopen
 from utils_py2 import mean, stdev, MRR, rel_div, DCG, iDCG, nDCG, P_at_N, AP_at_N, R_precision, consumption, remove_consumed, user_ranked_recs, opt_value, encoded_itemIds, flatten_list 
-from utils_py3 import flat_doc, flat_user, doc2vec, docs2vecs
+from utils_py3 import flat_doc, flat_user, doc2vec, docs2vecs, recs_cleaner, max_pool
 import numpy as np
 from scipy import spatial
 import operator
@@ -24,13 +24,6 @@ stop_words = set(stopwords.words('spanish') + stopwords.words('english') + stopw
 CUSTOM_FILTERS = [lambda x: x.lower(), strip_tags, strip_punctuation, strip_multiple_whitespaces, strip_numeric]
 
 #-----"PRIVATE" METHODS----------#
-def max_pool(np_matrix):
-	rows, cols = np_matrix.shape
-	max_pooled = []
-	for j in range(cols):
-		max_pooled.append( max(np_matrix[:,j]) )
-	return np.array(max_pooled)
-
 def users2vecs(model, representation):
 	ids2vec = {}
 	flat_users = np.load('./w2v-tmp/flattened_users_'+str(representation)+'.npy').item()
@@ -44,6 +37,7 @@ def users2vecs(model, representation):
 
 
 def option1_protocol_evaluation(data_path, which_model, metric):
+	solr = 'http://localhost:8983/solr/grrecsys'
 	# userId='113447232' 285597345
 	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
@@ -79,6 +73,7 @@ def option1_protocol_evaluation(data_path, which_model, metric):
 
 		book_recs = flatten_list(list_of_lists=book_recs, rows=len(book_recs[0])) #rows=len(sorted_sims))
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+		book_recs = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:50])
 		try:
 			recs    = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
 		except KeyError as e:
@@ -92,17 +87,18 @@ def option1_protocol_evaluation(data_path, which_model, metric):
 			APs[N].append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
 			Rprecs[N].append( R_precision(n_relevants=N, recs=mini_recs) )
 
-	with open('TwitterRatings/word2vec/option1_protocol_'+which_model+'.txt', 'a') as file:
+	with open('TwitterRatings/word2vec/clean/option1_protocol_'+which_model+'.txt', 'a') as file:
 		file.write( "METRIC: %s\n" % (metric) )	
 
 	for N in [5, 10, 15, 20]:
-		with open('TwitterRatings/word2vec/option1_protocol_'+which_model+'.txt', 'a') as file:
+		with open('TwitterRatings/word2vec/clean/option1_protocol_'+which_model+'.txt', 'a') as file:
 			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
 
 
 
 def option2_protocol_evaluation(data_path, which_model, metric, representation):
+	solr = 'http://localhost:8983/solr/grrecsys'
 	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
 	MRRs   = dict((N, []) for N in [5, 10, 15, 20])
@@ -127,6 +123,7 @@ def option2_protocol_evaluation(data_path, which_model, metric, representation):
 		sorted_sims = sorted(distances.items(), key=operator.itemgetter(1), reverse=False) #[(<grId>, MENOR dist), ..., (<grId>, MAYOR dist)]
 		book_recs   = [ bookId for bookId, sim in sorted_sims ]
 		book_recs   = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+		book_recs   = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:50])
 		try:
 			recs      = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
 		except KeyError as e:
@@ -140,11 +137,11 @@ def option2_protocol_evaluation(data_path, which_model, metric, representation):
 			APs[N].append( AP_at_N(n=N, recs=recs, rel_thresh=1) )
 			Rprecs[N].append( R_precision(n_relevants=N, recs=mini_recs) )
 
-	with open('TwitterRatings/word2vec/option2_protocol_'+which_model+'.txt', 'a') as file:
+	with open('TwitterRatings/word2vec/clean/option2_protocol_'+which_model+'.txt', 'a') as file:
 		file.write( "METRIC: %s \t REPR: %s\n" % (metric, representation) )	
 
 	for N in [5, 10, 15, 20]:
-		with open('TwitterRatings/word2vec/option2_protocol_'+which_model+'.txt', 'a') as file:
+		with open('TwitterRatings/word2vec/clean/option2_protocol_'+which_model+'.txt', 'a') as file:
 			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
 
@@ -180,12 +177,7 @@ def main():
 	# CONVERTIR FLATTENED USERS AS TWEETS A USERS2VEC_TWEET PARA CADA GOOGLE Y WIKI
 	# .. PARA TWEET CONVERTIR FLAT USERS AS BOOKS A USERS2VEC_BOOKS
 
-	for metric in ['angular']:
-		for which_model in ['twit']:
-			for representation in ['mix']:#['books', 'tweets', 'mix']:
-				option2_protocol_evaluation(data_path= data_path, which_model=which_model, metric=metric, representation=representation)			
-
-	for metric in ['euclidean']:
+	for metric in ['angular', 'euclidean']:
 		for which_model in ['google', 'wiki', 'twit']:
 			# CORRER annoy_indexer ANTES DE..
 			# for N in [5, 10, 15, 20]:
