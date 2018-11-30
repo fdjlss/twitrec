@@ -380,7 +380,7 @@ def main():
 							'mlt.mintf' : 1, #def: 2
 							'mlt.mindf' : 2, #def: 5
 							'mlt.minwl' : 1, #def: 0
-							'mlt.maxdf' : 25431 #docs*0.5, # en realidad no especificado
+							'mlt.maxdf' : 25431, #docs*0.5, # en realidad no especificado
 							'mlt.maxwl' : 8, #def: 0
 							'mlt.maxqt' : 90, #def: 25
 							'mlt.maxntp' : 150000} #def: 5000}
