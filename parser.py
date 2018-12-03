@@ -401,30 +401,30 @@ def main():
 	# Genera lista de bookIds desde busqueda en GR
 	# ids_list = get_books_from_gr_api(query="hola", api_key= api_key, api_secret= api_secret)
 	# Lista desde consumo de los usuarios del estudio
-	ids_list = [
-						'42432'							 ,
-						'61619'               ,
-						'2165509'								 ,
-						'18586942'                  ,
-						'12173760'                  ,
-						'53687'                  ,
-						'8049342'                  ,
-						'42338613'                  ,
-						'17181343'                  ,
-						'788356'                  ,
-						'790515'                  ,
-						'40937145'                  ,
-						'20325243'                  ,
-						'38118458'                  ,
-						'17245'          
-							]
+	# ids_list = [
+	# 					'42432'							 ,
+	# 					# '61619'               , problemas..
+	# 					'2165509'								 ,
+	# 					'18586942'                  ,
+	# 					'12173760'                  ,
+	# 					'53687'                  ,
+	# 					'8049342'                  ,
+	# 					'42338613'                  ,
+	# 					'17181343'                  ,
+	# 					'788356'                  ,
+	# 					'790515'                  ,
+	# 					'40937145'                  ,
+	# 					'20325243'                  ,
+	# 					'38118458'                  ,
+	# 					'17245'          
+	# 						]
 	# # Lo hacemos gradual en caso que hayan problemas
 	# for i in range(10):
 	# 	# Genera lista de bookIds con RNG (no todos seran goodreadsId validos)
 	# 	ids_list = get_books_from_rng(list_len= 1000)
 
 	# 	# Descarga HTMLs y ponlos en BOOKS_PATH y en NEW_SAVES
-	new_booker(new_ids_list= ids_list, DATA_PATH=DATA_PATH, BOOKS_PATH=BOOKS_PATH, NEW_SAVES=NEW_SAVES)
+	# new_booker(new_ids_list= ids_list, DATA_PATH=DATA_PATH, BOOKS_PATH=BOOKS_PATH, NEW_SAVES=NEW_SAVES)
 
 	
 	# Parsea lo del arg BOOKS_PATH y lo mete en un JSON en arg save_path 
