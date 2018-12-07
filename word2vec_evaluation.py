@@ -171,7 +171,7 @@ def save_testing_recommendations(data_path, which_model, metric, representation)
 		book_recs   = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:50])
 		recommendations[userId] = book_recs
 	
-	np.save('TwitterRatings/recommended_items/w2v_op2gb.npy', recommendations)
+	np.save('TwitterRatings/recommended_items/w2v_op2gbangular.npy', recommendations)
 
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
@@ -205,16 +205,17 @@ def main():
 	# CONVERTIR FLATTENED USERS AS TWEETS A USERS2VEC_TWEET PARA CADA GOOGLE Y WIKI
 	# .. PARA TWEET CONVERTIR FLAT USERS AS BOOKS A USERS2VEC_BOOKS
 
-	for metric in ['angular', 'euclidean']:
-		for which_model in ['google', 'wiki', 'twit']:
+	# for metric in ['angular', 'euclidean']:
+		# for which_model in ['google', 'wiki', 'twit']:
 			# CORRER annoy_indexer ANTES DE..
 			# for N in [5, 10, 15, 20]:
-			option1_protocol_evaluation(data_path= data_path, which_model=which_model, metric=metric)
+			# option1_protocol_evaluation(data_path= data_path, which_model=which_model, metric=metric)
 				
-			for representation in ['books', 'tweets', 'mix']:
+			# for representation in ['books', 'tweets', 'mix']:
 				# for N in [5, 10, 15, 20]:
-				option2_protocol_evaluation(data_path= data_path, which_model=which_model, metric=metric, representation=representation)
-	
+				# option2_protocol_evaluation(data_path= data_path, which_model=which_model, metric=metric, representation=representation)
+
+	save_testing_recommendations(data_path= data_path, which_model= 'google', metric= 'angular', representation= 'books')
 	
 if __name__ == '__main__':
 	main()
