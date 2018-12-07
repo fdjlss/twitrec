@@ -7,6 +7,7 @@ from gensim.parsing.preprocessing import preprocess_string, strip_tags, strip_pu
 from gensim.similarities import WmdSimilarity
 from nltk.corpus import stopwords
 from textblob.blob import TextBlob
+from scipy import spatial
 import os
 import json
 import numpy as np
@@ -76,7 +77,8 @@ def flat_doc(document, model, extremes=None):
 	flat_doc = [w for w in flat_doc if w in model.vocab] #Deja sólo palabras del vocabulario
 	if flat_doc == []:
 		flat_doc = ['book'] #Si el libro queda vacío, agregarle un token para no tener problemas más adelante
-	return flat_doc
+	return flat_docdef get_tweets_as_flat_docs(tweet_path, train_users):
+
 
 def flatten_all_docs(solr, model, filter_extremes=False):
 	dict_docs = {}
@@ -240,9 +242,51 @@ def recs_cleaner(solr, consumpt, recs):
 
 	return clean_recs
 	
+"""
+MEJOR EJECUTADO EN EL INTERPRETER:
+import numpy as np
+recs = np.load(recs_path).item()
+"""
+
+def diversity(recs, N):
+	divs = []
+	recs = recs[:N]
+	which_model = 'google'
+	docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
+	for i in range(len(recs)):
+		for j in range(i+1, len(recs)):
+			divs.append( spatial.distance.cosine(docs2vec[recs[i]], docs2vec[recs[j]]) )
+
+	return mean(divs)
+
 
 def main():
 	pass
 
 if __name__ == '__main__':
 	main()
+
+
+# # NUM_TERMS EN CADA FIELD
+# fields = {}
+# for doc in docs:
+# 	for field in doc:
+# 		if field=='_version_': continue
+# 		if field not in fields: fields[field] = 0
+# 		for item in doc[field]:
+# 			num_terms = len(str(item).split(' '))
+# 		fields[field] += num_terms
+
+# x = fields
+# sorted_x = sorted(x.items(), key=operator.itemgetter(1))
+
+# # VER EN CUANTOS DOCUMENTOS HAY ALGO DE CADA FIELD
+# fields = {}
+# for doc in docs:
+# 	for field in doc:
+# 		if field=='_version_': continue
+# 		if field not in fields: fields[field] = 0
+# 		fields[field] += 1
+
+# x = fields
+# sorted_x = sorted(x.items(), key=operator.itemgetter(1))

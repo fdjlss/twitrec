@@ -129,18 +129,44 @@ def ALS_protocol_evaluation(data_path, params):
 
 
 	for N in [5, 10, 15, 20]:
-		with open('TwitterRatings/implicit/clean/protocol.txt', 'a') as file:
+		with open('TwitterRatings/implicit/protocol.txt', 'a') as file:
 			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
+
+def save_testing_recommendations(data_path, params):
+	solr = "http://localhost:8983/solr/grrecsys"
+	recommendations = {}
+
+	test_c  = consumption(ratings_path= data_path+'test/test_N20.data', rel_thresh= 0, with_ratings= True)
+	train_c = consumption(ratings_path= data_path+'eval_train_N20.data', rel_thresh= 0, with_ratings= False)
+	all_c   = consumption(ratings_path= data_path+'eval_all_N20.data', rel_thresh= 0, with_ratings= True)
+	items_ids = list(set( [ itemId for userId, itemsDict in all_c.items() for itemId in itemsDict ] ))
+	idcoder   = IdCoder(items_ids, all_c.keys())
+
+	ones, row, col = get_data(data_path= data_path, all_c= all_c, idcoder= idcoder, fold= 0, N= 20, mode= "testing")
+	matrix         = csr_matrix((ones, (row, col)), dtype=np.float64 )
+	user_items     = matrix.T.tocsr()
+	model          = implicit.als.AlternatingLeastSquares(factors= params['f'], regularization= params['lamb'], iterations= params['mi'], dtype= np.float64)
+	model.fit(matrix)
+
+	for userId in test_c: 
+		recommends = model.recommend(userid= int(idcoder.coder('user', userId)), user_items= user_items, N= 200)
+		book_recs  = [ idcoder.decoder('item', tupl[0]) for tupl in recommends ]
+		book_recs  = remove_consumed(user_consumption= train_c[userId], rec_list= book_recs)
+		book_recs  = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:100])		
+		recommendations[userId] = book_recs
+	
+	np.save('TwitterRatings/recommended_items/implicit.npy', recommendations)
 
 
 	
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
-	opt_params = ALS_tuning(data_path= data_path, N= 20)
-	# opt_params = {'f': 20, 'lamb': 0.3, 'mi': 15}
+	# opt_params = ALS_tuning(data_path= data_path, N= 20)
+	opt_params = {'f': 20, 'lamb': 0.3, 'mi': 15}
 	# for N in [5, 10, 15, 20]:
-	ALS_protocol_evaluation(data_path= data_path, params= opt_params)
+	# ALS_protocol_evaluation(data_path= data_path, params= opt_params)
+	save_testing_recommendations(data_path= data_path, params= opt_params)
 
 if __name__ == '__main__':
 	main()

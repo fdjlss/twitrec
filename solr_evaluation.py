@@ -2,6 +2,7 @@
 
 import os
 import re, json
+import numpy as np
 from urllib import urlencode, quote_plus
 from urllib2 import urlopen
 from utils_py2 import *
@@ -367,6 +368,31 @@ def option2_protocol_evaluation(data_path, solr, params):
 			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
 
+def save_testing_recommendations(data_path, solr, params):
+	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
+	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
+	recommendations = {}
+
+	for userId in test_c:
+		book_recs = []
+		for itemId in train_c[userId]:
+			encoded_params = urlencode(params)
+			url            = solr + '/mlt?q=goodreadsId:'+ itemId + "&" + encoded_params
+			response       = json.loads( urlopen(url).read().decode('utf8') )
+			try:
+				docs         = response['response']['docs']
+			except TypeError as e:
+				continue
+			book_recs.append( [ str(doc['goodreadsId'][0]) for doc in docs ] )
+
+		book_recs = flatten_list(list_of_lists=book_recs, rows=params['rows'])
+		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+		book_recs = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:50])
+		recommendations[userId] = book_recs
+	
+	np.save('TwitterRatings/recommended_items/solr.npy', recommendations)
+
+	
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = "http://localhost:8983/solr/grrecsys"
@@ -398,15 +424,9 @@ def main():
 	# 						'mlt.maxqt' : 40, #def: 25
 	# 						'mlt.maxntp' : 150000 }
 	# for N in [5, 10, 15, 20]:
-	option1_protocol_evaluation(data_path=data_path, solr=solr, params=params_o1)
+	# option1_protocol_evaluation(data_path=data_path, solr=solr, params=params_o1)
 	# option2_protocol_evaluation(data_path=data_path, solr=solr, params=params_o2)
-	# option1_testing(data_path=data_path, solr=solr, topN=[5, 10, 15, 20, 50], params=params_o1)
-	# option2_testing(data_path=data_path, solr=solr, topN=[5, 10, 15, 20, 50], params=params_o2)
-	# option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='description')
-	# option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='title.titleOfficial')
-	# option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='genres.genreName')
-	# option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='author.authors.authorName')
-	# option2(solr=solr, rows=rows, fl=fl, topN=[5, 10, 15, 20, 50], mlt_field='quotes.quoteText')
+	save_testing_recommendations(data_path= data_path, solr= solr, params= params_o1)
 
 if __name__ == '__main__':
 	main()

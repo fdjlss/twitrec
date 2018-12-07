@@ -145,6 +145,34 @@ def option2_protocol_evaluation(data_path, which_model, metric, representation):
 			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
 
+def save_testing_recommendations(data_path, which_model, metric, representation):
+	solr = 'http://localhost:8983/solr/grrecsys'
+	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
+	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
+	docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
+	users2vec = np.load('./w2v-tmp/'+which_model+'/users2vec_'+representation+'_'+which_model+'.npy').item()
+	recommendations = {}
+	
+	i = 1
+	for userId in test_c:
+		logging.info("MODO 2. {0} de {1}. User ID: {2}".format(i, len(test_c), userId))
+		i += 1
+
+		distances = dict((bookId, 0.0) for bookId in docs2vec)
+		for bookId in docs2vec:
+			if metric=='angular':
+				distances[bookId] = spatial.distance.cosine(users2vec[userId], docs2vec[bookId])
+			elif metric=='euclidean':
+				distances[bookId] = spatial.distance.euclidean(users2vec[userId], docs2vec[bookId])
+
+		sorted_sims = sorted(distances.items(), key=operator.itemgetter(1), reverse=False) #[(<grId>, MENOR dist), ..., (<grId>, MAYOR dist)]
+		book_recs   = [ bookId for bookId, sim in sorted_sims ]
+		book_recs   = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
+		book_recs   = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:50])
+		recommendations[userId] = book_recs
+	
+	np.save('TwitterRatings/recommended_items/w2v_op2gb.npy', recommendations)
+
 def main():
 	data_path = 'TwitterRatings/funkSVD/data/'
 	solr = 'http://localhost:8983/solr/grrecsys'
@@ -190,3 +218,17 @@ def main():
 	
 if __name__ == '__main__':
 	main()
+
+
+# l1 = [
+#  0.09880,
+# 0.12079,
+# 0.13040,
+# 0.13528
+# ]
+# l2 = [
+#  0.07955
+# 0.10323
+# 0.11317
+# 0.11954
+# ]
