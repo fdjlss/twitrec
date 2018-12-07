@@ -263,6 +263,7 @@ def diversity(solr, recs, N):
 	flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
 	extremes = get_extremes(flat_docs= flat_docs, n_below= 1, n_above= len(flat_docs) * 0.75)
 	for user in recs:
+		logging.info("user {}".format(user))
 		divs_user = []
 		rec_list = recs[user][:N]
 		for i in range(len(rec_list)):
