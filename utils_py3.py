@@ -77,7 +77,7 @@ def flat_doc(document, model, extremes=None):
 	flat_doc = [w for w in flat_doc if w in model.vocab] #Deja sólo palabras del vocabulario
 	if flat_doc == []:
 		flat_doc = ['book'] #Si el libro queda vacío, agregarle un token para no tener problemas más adelante
-	return flat_docdef get_tweets_as_flat_docs(tweet_path, train_users):
+	return flat_doc
 
 
 def flatten_all_docs(solr, model, filter_extremes=False):
