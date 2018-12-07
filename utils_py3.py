@@ -11,6 +11,7 @@ from scipy import spatial
 import os
 import json
 import numpy as np
+from statistics import mean
 from urllib.parse import urlencode, quote_plus
 from urllib.request import urlopen
 import operator
