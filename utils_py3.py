@@ -245,23 +245,58 @@ def recs_cleaner(solr, consumpt, recs):
 """
 MEJOR EJECUTADO EN EL INTERPRETER:
 import numpy as np
+import json
+from urllib.request import urlopen
+from scipy import spatial
+from statistics import mean
+from gensim.models import KeyedVectors
+
+solr = "http://localhost:8983/solr/grrecsys"
 recs = np.load(recs_path).item()
 """
 
-def diversity(recs, N):
-	divs = []
-	recs = recs[:N]
+def diversity(solr, recs, N):
 	which_model = 'google'
 	docs2vec  = np.load('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy').item()
-	for i in range(len(recs)):
-		for j in range(i+1, len(recs)):
-			divs.append( spatial.distance.cosine(docs2vec[recs[i]], docs2vec[recs[j]]) )
-
+	model = KeyedVectors.load_word2vec_format('/home/jschellman/gensim-data/word2vec-google-news-300/word2vec-google-news-300', binary=True)
+	divs = []
+	flat_docs = np.load('./w2v-tmp/flattened_docs.npy').item()
+	extremes = get_extremes(flat_docs= flat_docs, n_below= 1, n_above= len(flat_docs) * 0.75)
+	for user in recs:
+		divs_user = []
+		rec_list = recs[user][:N]
+		for i in range(len(rec_list)):
+			if rec_list[i] in docs2vec: 
+				pass
+			else:
+				url        = solr + '/query?q=goodreadsId:' + str(rec_list[i])
+				response   = json.loads( urlopen(url).read().decode('utf8') )
+				doc        = response['response']['docs']
+				flat_item  = flat_doc(document= doc[0], model= model, extremes= extremes)
+				embed_item = doc2vec(list_document= flat_item, model= model)
+				docs2vec[rec_list[i]] = embed_item
+			for j in range(i+1, len(rec_list)):
+				if rec_list[j] in docs2vec:
+					pass
+				else:
+					url        = solr + '/query?q=goodreadsId:' + str(rec_list[i])
+					response   = json.loads( urlopen(url).read().decode('utf8') )
+					doc        = response['response']['docs']
+					flat_item  = flat_doc(document= doc[0], model= model, extremes= extremes)
+					embed_item = doc2vec(list_document= flat_item, model= model)
+					docs2vec[rec_list[j]] = embed_item
+				divs_user.append( spatial.distance.cosine(docs2vec[rec_list[i]], docs2vec[rec_list[j]]) )
+		divs.append(mean(divs_user))
+	np.save('./w2v-tmp/'+which_model+'/docs2vec_'+which_model+'.npy', docs2vec) #
+	logging.info("DIVERSITY: {}".format(mean(divs)))
 	return mean(divs)
 
 
 def main():
-	pass
+	solr = "http://localhost:8983/solr/grrecsys"
+	recs_path = 'TwitterRatings/recommended_items/solr.npy'
+	recs = np.load(recs_path).item()
+	diversity(solr= solr, recs= recs, N= 10)
 
 if __name__ == '__main__':
 	main()
