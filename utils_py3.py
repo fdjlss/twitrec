@@ -296,7 +296,7 @@ def diversity(solr, recs, N):
 
 def main():
 	solr = "http://localhost:8983/solr/grrecsys"
-	recs_path = 'TwitterRatings/recommended_items/implicit.npy'
+	recs_path = 'TwitterRatings/recommended_items/w2v_op2gbangular.npy'
 	recs = np.load(recs_path).item()
 	diversity(solr= solr, recs= recs, N= 10)
 
