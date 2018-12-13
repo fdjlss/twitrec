@@ -4,6 +4,7 @@ import sqlite3
 import re, json
 import os
 from random import sample
+from urllib2 import urlopen
 from utils_py2 import *
 import logging
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
@@ -36,7 +37,14 @@ def book_list(db_conn):
 def random_eval(data_path, db_conn, solr):
 	test_c  = consumption(ratings_path=data_path+'test/test_N20.data', rel_thresh=0, with_ratings=True)
 	train_c = consumption(ratings_path=data_path+'eval_train_N20.data', rel_thresh=0, with_ratings=False)
-	books   = book_list(db_conn=db_conn)
+	dict_docs = {}
+	url = solr + '/query?q=*:*&rows=100000' #n docs: 50,862 < 100,000
+	docs = json.loads( urlopen(url).read().decode('utf8') )
+	docs = docs['response']['docs']
+	books = [ str(doc['goodreadsId'][0]) for doc in docs ]
+	docs
+	
+	# books   = book_list(db_conn=db_conn)
 
 	MRRs   = dict((N, []) for N in [5, 10, 15, 20])
 	nDCGs  = dict((N, []) for N in [5, 10, 15, 20])
