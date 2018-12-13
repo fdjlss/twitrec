@@ -42,7 +42,6 @@ def random_eval(data_path, db_conn, solr):
 	docs = json.loads( urlopen(url).read().decode('utf8') )
 	docs = docs['response']['docs']
 	books = [ str(doc['goodreadsId'][0]) for doc in docs ]
-	docs
 	
 	# books   = book_list(db_conn=db_conn)
 
