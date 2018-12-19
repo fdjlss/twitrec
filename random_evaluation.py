@@ -53,7 +53,7 @@ def random_eval(data_path, db_conn, solr):
 	for userId in test_c:
 		book_recs = sample(books, k=200)
 		book_recs = remove_consumed(user_consumption=train_c[userId], rec_list=book_recs)
-		book_recs = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:100])		
+		# book_recs = recs_cleaner(solr= solr, consumpt= train_c[userId], recs= book_recs[:100])		
 		recs      = user_ranked_recs(user_recs=book_recs, user_consumpt=test_c[userId])
 
 		for N in [5, 10, 15, 20]:
@@ -65,7 +65,7 @@ def random_eval(data_path, db_conn, solr):
 
 
 	for N in [5, 10, 15, 20]:
-		with open('TwitterRatings/random/clean/results.txt', 'a') as file:
+		with open('TwitterRatings/random/results.txt', 'a') as file:
 			file.write( "N=%s, nDCG=%s, MAP=%s, MRR=%s, R-precision=%s\n" % \
 				(N, mean(nDCGs[N]), mean(APs[N]), mean(MRRs[N]), mean(Rprecs[N])) )	
 
