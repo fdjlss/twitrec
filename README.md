@@ -1,4 +1,4 @@
-# Book Recommendations with Twitter
+# Hybrid Recommender System for Goodreads.com users
 <!--
 <pre>
      __________________,.............,    
